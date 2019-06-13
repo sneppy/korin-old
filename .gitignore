@@ -1,0 +1,22 @@
+# Build and temp files --------------------------
+/build/
+/temp/
+temp/
+temp.*
+
+# Local and generated files
+/local/
+*.generated.*
+*.gen.*
+
+# Binaries --------------------------------------
+/bin/
+/dist/
+
+# Editor files ----------------------------------
+### VS Code ###
+/.vscode/
+
+### Bitpocket ###
+/.bitpocket/
+/.bitignore
