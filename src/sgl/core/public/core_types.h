@@ -1,1 +1,1 @@
-typedef unsigned int uint32;
+#pragma once

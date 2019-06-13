@@ -1,8 +1,5 @@
-/**
- * This code runs all unit tests defined
- * in the test folder
- */
-#include "test_all.gen.h"
+#include <gtest/gtest.h>
+#include "test_templates.h"
 
 int main(int argc, char ** argv)
 {
