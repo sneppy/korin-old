@@ -1,1 +1,4 @@
-typedef unsigned int uint32;
+#pragma once
+
+#include "misc/build.h"
+#include "hal/platform.h"
