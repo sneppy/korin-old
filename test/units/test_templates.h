@@ -17,10 +17,15 @@ TEST(templates, types)
 	ASSERT_TRUE((IsPointer<void**>::value));
 	ASSERT_FALSE((IsPointer<int&>::value));
 
-	// Check is reference
+	// Is reference
 	ASSERT_TRUE((IsReference<float&>::value));
 	ASSERT_TRUE((IsReference<const double&>::value));
 	ASSERT_FALSE((IsReference<int*>::value));
+
+	// Is integral
+	ASSERT_TRUE((IsIntegral<int32>::value));
+	ASSERT_TRUE((IsIntegral<sizet>::value));
+	ASSERT_FALSE((IsIntegral<float32>::value));
 
 	// Remove pointer
 	ASSERT_TRUE((IsSameType<void, typename RemovePointer<void*>::Type>::value));

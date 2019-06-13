@@ -16,6 +16,12 @@ template<typename T> struct IsSameType<T, T> { enum {value = true}; };
 /// @}
 
 /**
+ * Sets value to true if type is void
+ */
+template<typename T>
+using IsVoid = IsSameType<T, void>;
+
+/**
  * Sets value to true if type is a pointer
  * @{
  */
@@ -42,50 +48,30 @@ template<typename T> struct IsReference<T&> { enum {value = true}; };
 /// @}
 
 /**
- * Sets value to true if type is void
- */
-template<typename T>
-using IsVoid = IsSameType<T, void>;
-
-/**
- * Remove a single pointer from T
- * If T is not a pointer sets Type to T
+ * Sets value to true if type is integral
+ * (i.e. int, char, short, etc.)
  * @{
  */
 template<typename T>
-struct RemovePointer
+struct IsIntegral
 {
-	using Type = T;
+	enum {value = false};
 };
 
-template<typename T> struct RemovePointer<T*> { using Type = T; };
-/// @}
+template<> struct IsIntegral<int8>	{ enum {value = true}; };
+template<> struct IsIntegral<int16>	{ enum {value = true}; };
+template<> struct IsIntegral<int32>	{ enum {value = true}; };
+template<> struct IsIntegral<int64>	{ enum {value = true}; };
 
-/**
- * Remove all pointers from T
- * @{
- */
-template<typename T>
-struct RemoveAllPointers
-{
-	using Type = T;
-};
+template<> struct IsIntegral<uint8>		{ enum {value = true}; };
+template<> struct IsIntegral<uint16>	{ enum {value = true}; };
+template<> struct IsIntegral<uint32>	{ enum {value = true}; };
+template<> struct IsIntegral<uint64>	{ enum {value = true}; };
 
-template<typename T> struct RemoveAllPointers<T*> { using Type = typename RemoveAllPointers<T>::Type; };
-/// @}
+template<> struct IsIntegral<bool> { enum {value = true}; };
 
-/**
- * Remove a single reference from T
- * If T is not a reference sets Type to T
- * @{
- */
-template<typename T>
-struct RemoveReference
-{
-	using Type = T;
-};
-
-template<typename T> struct RemoveReference<T&> { using Type = T; };
+template<> struct IsIntegral<ansichar>	{ enum {value = true}; };
+template<> struct IsIntegral<widechar>	{ enum {value = true}; };
 /// @}
 
 /**
@@ -145,3 +131,44 @@ struct IsTriviallyAssignable
 {
 	enum {value = __has_trivial_assign(T)};
 };
+
+/**
+ * Remove a single pointer from T
+ * If T is not a pointer sets Type to T
+ * @{
+ */
+template<typename T>
+struct RemovePointer
+{
+	using Type = T;
+};
+
+template<typename T> struct RemovePointer<T*> { using Type = T; };
+/// @}
+
+/**
+ * Remove all pointers from T
+ * @{
+ */
+template<typename T>
+struct RemoveAllPointers
+{
+	using Type = T;
+};
+
+template<typename T> struct RemoveAllPointers<T*> { using Type = typename RemoveAllPointers<T>::Type; };
+/// @}
+
+/**
+ * Remove a single reference from T
+ * If T is not a reference sets Type to T
+ * @{
+ */
+template<typename T>
+struct RemoveReference
+{
+	using Type = T;
+};
+
+template<typename T> struct RemoveReference<T&> { using Type = T; };
+/// @}
