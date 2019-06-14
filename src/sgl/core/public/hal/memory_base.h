@@ -7,8 +7,8 @@
  */
 enum
 {
-	DEFAULT_ALIGNMENT	= 0x8,
-	MIN_ALIGNMENT		= 0x8
+	DEFAULT_ALIGNMENT	= sizeof(void*),
+	MIN_ALIGNMENT		= sizeof(void*)
 };
 
 /**

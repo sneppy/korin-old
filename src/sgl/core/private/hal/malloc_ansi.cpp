@@ -1,4 +1,5 @@
 #include "hal/malloc_ansi.h"
+#include "hal/platform_math.h"
 
 #if PLATFORM_UNIX
 	#include <malloc.h>
@@ -6,7 +7,8 @@
 
 void * MallocAnsi::alloc(sizet size, sizet alignment)
 {
-	// TODO: Compute actual alignment
+	// Compute actual alignment
+	alignment = PlatformMath::max(alignment, MIN_ALIGNMENT);
 
 	void * out;
 
@@ -22,19 +24,20 @@ void * MallocAnsi::alloc(sizet size, sizet alignment)
 
 void * MallocAnsi::realloc(void * orig, sizet size, sizet alignment)
 {
-	// TODO: compute actual alignment
+	// Compute actual alignment
+	alignment = PlatformMath::max(alignment, MIN_ALIGNMENT);
 
 	void * out;
 
 #if PLATFORM_UNIX
 	if (orig && size > 0)
 	{
-		sizet usable = malloc_usable_size(orig);
+		sizet usableSize = malloc_usable_size(orig);
 		if (UNLIKELY(::posix_memalign(&out, alignment, size) != 0))
 			return nullptr;
-		else if (LIKELY(usable))
-			// TODO: limit by usable size
-			Memory::memcpy(out, orig, size);
+		
+		if (LIKELY(usableSize))
+			Memory::memcpy(out, orig, PlatformMath::min(size, usableSize));
 		
 		// Free original block
 		::free(orig);
