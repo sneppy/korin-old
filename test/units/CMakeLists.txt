@@ -2,6 +2,7 @@
 
 set(UNITS
 
+	"templates"
 	"memory"
 	"math"
 )
@@ -113,7 +114,7 @@ foreach(UNIT ${UNITS})
 	list(APPEND PUBLIC_FILES ${PUBLIC_FILE}) # Watch for changes
 	file(APPEND "test_all.gen.h"
 	
-		"#include \"${PUBLIC_FILE}\""
+		"#include \"${PUBLIC_FILE}\"\n"
 	)
 
 endforeach(UNIT ${UNITS})
