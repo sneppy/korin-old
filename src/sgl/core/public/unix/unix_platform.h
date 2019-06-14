@@ -10,9 +10,9 @@ struct UnixPlatformTypes : public GenericPlatformTypes
 
 };
 
-using PlatformTypes = UnixPlatformTypes;
-
 // Platform definitions
+
+#define PLATFORM_UNIX 1
 
 #if defined(_LINUX64) || defined(_LP64)
 	#define PLATFORM_64 1
@@ -37,5 +37,10 @@ using PlatformTypes = UnixPlatformTypes;
 	#define FORCE_INLINE __attribute__((always_inline)) inline
 #endif
 
-#define LIKELY(exp)		__builtin_expect(static_cast<bool>(expr), 1)
-#define UNLIKELY(exp)	__builtin_expect(static_cast<bool>(expr), 0)
+#define LIKELY(expr)	__builtin_expect(static_cast<bool>(expr), 1)
+#define UNLIKELY(expr)	__builtin_expect(static_cast<bool>(expr), 0)
+
+#define RESTRICT __restrict__
+
+#define ALIGN(n) __attribute__((aligned(n)))
+#define PACK(n) __attribute__((packed, aligned(n)))

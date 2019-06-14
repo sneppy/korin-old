@@ -2,6 +2,7 @@
 
 set(UNITS
 
+	"memory"
 	"math"
 )
 
