@@ -5,6 +5,7 @@ set(UNITS
 	"templates"
 	"memory"
 	"math"
+	"containers"
 )
 
 list(LENGTH UNIT NUM_UNITS)

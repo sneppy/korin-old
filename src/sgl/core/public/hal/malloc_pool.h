@@ -172,7 +172,7 @@ public:
  * argument)
  */
 template<uint32 inNumBlocks, uint32 inBlockSize, sizet inBlockAlignment>
-class MallocPoolT : public MallocPool
+class MallocPoolInline : public MallocPool
 {
 public:
 	/**
@@ -180,7 +180,7 @@ public:
 	 * 
 	 * @param [in] inBuffer optional buffer not owned by the allocator
 	 */
-	explicit FORCE_INLINE MallocPoolT(void * inBuffer = nullptr)
+	explicit FORCE_INLINE MallocPoolInline(void * inBuffer = nullptr)
 		: MallocPool(inNumBlocks, inBlockSize, inBlockAlignment, inBuffer)
 	{
 		//
