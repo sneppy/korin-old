@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "platform_memory.h"
 
 /**
  * 

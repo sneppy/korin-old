@@ -4,6 +4,7 @@
 
 #include "hal/platform_memory.h"
 #include "hal/malloc_ansi.h"
+#include "hal/malloc_pool.h"
 #include "hal/malloc_object.h"
 
 TEST(memory, malloc_ansi)
@@ -28,6 +29,57 @@ TEST(memory, malloc_ansi)
 	dst = malloc->realloc(dst, 65536, 1u << 16);
 	ASSERT_EQ(reinterpret_cast<uintp>(dst) & ((1u << 16) - 1), 0x0);
 
+	delete malloc;
+
+	SUCCEED();
+}
+
+TEST(memory, memory_pool)
+{
+	const uint32 numBlocks = 4096;
+	const uint32 blockSize = 1024;
+	const uint32 blockAlignment = 64;
+
+	MemoryPool * pool = new MemoryPool(numBlocks, blockSize, blockAlignment, nullptr);
+	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks);
+
+	void * block = pool->acquire();
+	ASSERT_TRUE(block != nullptr);
+	ASSERT_EQ((uintp)block & (blockAlignment - 1), 0);
+	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks - 1);
+
+	pool->release(block);
+	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks);
+
+	struct 
+	{
+		/**
+		 * Remove all blocks
+		 */
+		void operator()(MemoryPool * pool, uint32 & numBlocks) const
+		{
+			void * block = pool->acquire();
+
+			if (LIKELY(block != nullptr))
+			{
+				++numBlocks;
+				operator()(pool, numBlocks);
+				pool->release(block);
+			}
+		}
+	} cycleBlocks;
+
+	// Cycle all blocks twice
+	uint32 testedNumBlocks;
+
+	cycleBlocks(pool, testedNumBlocks = 0);
+	ASSERT_EQ(testedNumBlocks, numBlocks);
+
+	cycleBlocks(pool, testedNumBlocks = 0);
+	ASSERT_EQ(testedNumBlocks, numBlocks);
+
+	delete pool;
+
 	SUCCEED();
 }
 
@@ -40,7 +92,8 @@ TEST(memory, malloc_object)
 		void * something;
 	} * foo;
 
-	MallocObject<Foo, MallocAnsi> * malloc = new MallocObject<Foo, MallocAnsi>(new MallocAnsi);
+	MallocAnsi * innerMalloc = new MallocAnsi;
+	MallocObject<Foo, MallocAnsi> * malloc = new MallocObject<Foo, MallocAnsi>(innerMalloc);
 
 	// Do some allocations
 	foo = malloc->alloc(1);
@@ -52,6 +105,9 @@ TEST(memory, malloc_object)
 	foo[10].something = foo;
 
 	malloc->free(foo);
+
+	delete malloc;
+	delete innerMalloc;
 
 	SUCCEED();
 }

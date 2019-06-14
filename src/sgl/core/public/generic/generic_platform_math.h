@@ -2,6 +2,8 @@
 
 #include "core_types.h"
 #include "hal/platform_crt.h"
+#include "templates/enable_if.h"
+#include "templates/types.h"
 
 /**
  * Platform independent math utilities
@@ -55,6 +57,41 @@ struct GenericPlatformMath
 		return a > static_cast<A>(b) ? a : static_cast<A>(b);
 	}
 	/// @}
+
+	/**
+	 * Align integer to the closest aligned
+	 * value smaller or equal to it
+	 * 
+	 * ! Alignment must be a power of 2
+	 * 
+	 * @param [in] n integer
+	 * @param [in] alignment required alignment
+	 * @return aligned integer
+	 */
+	template<typename T>
+	static constexpr FORCE_INLINE T align2Down(T n, sizet alignment)
+	{
+		static_assert(IsIntegral<T>::value, "T must be an integral type");
+
+		return n & (alignment - 1) ^ n;
+	}
+
+	/**
+	 * Align integer to the closest aligned
+	 * value greater than it
+	 * 
+	 * ! Alignment must be a power of 2
+	 * 
+	 * @param [in] n integral value
+	 * @param [in] alignment required alignment
+	 */
+	template<typename T>
+	static constexpr FORCE_INLINE T align2Up(T n, sizet alignment)
+	{
+		static_assert(IsIntegral<T>::value, "T must be an integral type");
+
+		return (n | (alignment - 1)) + 1;
+	}
 };
 
 template<>
