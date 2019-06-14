@@ -19,6 +19,7 @@
  */
 class MemoryPool
 {
+	friend class MallocPool;
 	friend class MallocPooled;
 
 protected:
@@ -62,6 +63,14 @@ public:
 	 * @param [in] inBlockAlignment blocks alignment
 	 */
 	MemoryPool(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlignment = DEFAULT_ALIGNMENT, void * inBuffer = nullptr);
+
+	/**
+	 * Destructor, deallocates own buffer
+	 */
+	FORCE_INLINE ~MemoryPool()
+	{
+		if (bHasOwnBuffer) ::free(buffer);
+	}
 
 	/**
 	 * Returns numbe of free blocks
@@ -112,7 +121,7 @@ public:
 	 * 
 	 * @return block address
 	 */
-	void * acquire();
+	void * acquireBlock();
 
 	/**
 	 * Release a previously acquired block.
@@ -121,5 +130,38 @@ public:
 	 * 
 	 * @param [in] block previously acquired block
 	 */
-	void release(void * block);
+	void releaseBlock(void * block);
+};
+
+/**
+ * Malloc wrapper for a single memory pool
+ * 
+ * If pool is exhausted backs up to c
+ * standard allocation
+ */
+class MallocPool : public MallocBase
+{
+protected:
+	/// Underlying memory pool
+	MemoryPool pool;
+
+public:
+	/**
+	 * Pool constructor
+	 * 
+	 * @see MemoryPool::MemoryPool
+	 */
+	FORCE_INLINE MallocPool(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlignment = DEFAULT_ALIGNMENT, void * inBuffer = nullptr)
+		: pool(inNumBlocks, inBlockSize, inBlockAlignment, inBuffer)
+	{
+		//
+	}
+
+	//////////////////////////////////////////////////
+	// MallocBase interface
+	//////////////////////////////////////////////////
+	
+	virtual void * alloc(sizet size, sizet alignment = DEFAULT_ALIGNMENT) override;
+	virtual void * realloc(void * orig, sizet size, sizet alignment = DEFAULT_ALIGNMENT) override;
+	virtual void free(void * orig) override;
 };

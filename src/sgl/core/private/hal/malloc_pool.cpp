@@ -1,4 +1,5 @@
 #include "hal/malloc_pool.h"
+#include "misc/assert.h"
 
 MemoryPool::MemoryPool(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlignment, void * inBuffer)
 	: buffer{inBuffer}
@@ -14,7 +15,7 @@ MemoryPool::MemoryPool(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlign
 	if (bHasOwnBuffer)
 	{
 	#if PLATFORM_UNIX
-		if (UNLIKELY(posix_memalign(&buffer, blockAlignment, bufferSize) != 0))	
+		if (UNLIKELY(::posix_memalign(&buffer, blockAlignment, bufferSize) != 0))	
 			// TODO: handle error
 			;
 	#else
@@ -38,7 +39,7 @@ MemoryPool::MemoryPool(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlign
 	*link = nullptr;
 }
 
-void * MemoryPool::acquire()
+void * MemoryPool::acquireBlock()
 {
 	// Pool exhausted
 	if (UNLIKELY(head == nullptr)) return nullptr;
@@ -52,12 +53,9 @@ void * MemoryPool::acquire()
 	return out;
 }
 
-void MemoryPool::release(void * block)
+void MemoryPool::releaseBlock(void * block)
 {
-#if BUILD_DEBUG
-	if (!hasBlock(block))
-		printf("ERROR: block @ %p is not owned by pool @ %p\n", block, this);
-#endif
+	CHECKF(hasBlock(block), "trying to free a block allocated from another pool or allocator")
 
 	if (LIKELY(head))
 	{
@@ -68,4 +66,53 @@ void MemoryPool::release(void * block)
 		*getBlockLink(head = block) = nullptr;
 
 	++numFreeBlocks;
+}
+
+//////////////////////////////////////////////////
+// MallocPool
+//////////////////////////////////////////////////
+
+void * MallocPool::alloc(sizet size, sizet alignment)
+{
+	CHECKF(size <= pool.blockSize, "requested size exceed pool block max size, backup allocator will be used (pool block size is 0x%x, requested size is 0x%x)", pool.blockSize, size)
+	CHECKF(alignment <= pool.blockAlignment, "requested alignment exceeds pool block alignment, backup allocator will be used (pool block alignment is 0x%x, requested alignment is 0x%x)", pool.blockAlignment, alignment)
+
+	void * out = nullptr;
+
+	if (LIKELY(pool.getNumFreeBlocks() > 0 && size <= pool.blockSize && alignment <= pool.blockAlignment))
+		out = pool.acquireBlock();
+	else
+		; // TODO: use backup allocator
+	
+	return out;
+}
+
+void * MallocPool::realloc(void * orig, sizet size, sizet alignment)
+{
+	CHECKF(size <= pool.blockSize, "requested size exceed pool block max size, backup allocator will be used (pool block size is 0x%x, requested size is 0x%x)", pool.blockSize, size)
+	CHECKF(alignment <= pool.blockAlignment, "requested alignment exceeds pool block alignment, backup allocator will be used (pool block alignment is 0x%x, requested alignment is 0x%x)", pool.blockAlignment, alignment)
+
+	void * out = orig;
+
+	if (LIKELY(pool.hasBlock(orig)))
+	{
+		if (size > pool.blockSize)
+		{
+			pool.releaseBlock(orig);
+		}
+		else
+			; // Return original block
+	}
+	else
+		; // TODO: use backup allocator
+
+	return out;
+}
+
+void MallocPool::free(void * orig)
+{
+	if (LIKELY(pool.hasBlock(orig)))
+		pool.releaseBlock(orig);
+	else
+		; // TODO: use backup allocator
 }

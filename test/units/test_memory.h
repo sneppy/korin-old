@@ -43,12 +43,12 @@ TEST(memory, memory_pool)
 	MemoryPool * pool = new MemoryPool(numBlocks, blockSize, blockAlignment, nullptr);
 	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks);
 
-	void * block = pool->acquire();
+	void * block = pool->acquireBlock();
 	ASSERT_TRUE(block != nullptr);
 	ASSERT_EQ((uintp)block & (blockAlignment - 1), 0);
 	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks - 1);
 
-	pool->release(block);
+	pool->releaseBlock(block);
 	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks);
 
 	struct 
@@ -58,13 +58,13 @@ TEST(memory, memory_pool)
 		 */
 		void operator()(MemoryPool * pool, uint32 & numBlocks) const
 		{
-			void * block = pool->acquire();
+			void * block = pool->acquireBlock();
 
 			if (LIKELY(block != nullptr))
 			{
 				++numBlocks;
 				operator()(pool, numBlocks);
-				pool->release(block);
+				pool->releaseBlock(block);
 			}
 		}
 	} cycleBlocks;
