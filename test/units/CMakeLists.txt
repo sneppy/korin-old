@@ -2,7 +2,7 @@
 
 set(UNITS
 
-	# Empty
+	"math"
 )
 
 list(LENGTH UNIT NUM_UNITS)
