@@ -13,13 +13,6 @@
 	#define PLATFORM_LINUX 0
 #endif
 
-// If apple or linux, define platform unix
-#if PLATFORM_LINUX || PLATFORM_APPLE
-	#define PLATFORM_UNIX 1
-#else
-	#define PLATFORM_UNIX 0
-#endif
-
 // Include specific platform definitions
 #if PLATFORM_WINDOWS
 	#include "windows/windows_platform.h"
@@ -27,13 +20,15 @@
 	#include "apple/apple_platform.h"
 #elif PLATFORM_LINUX
 	#include "linux/linux_platform.h"
-#elif PLATFORM_UNIX
-	#include "unix/unix_platform.h"
 #else
 	#error "Unknown platform"
 #endif
 
 // Set to false undefined platform properties
+
+#ifndef PLATFORM_UNIX
+	#define PLATFORM_UNIX 0
+#endif
 
 #ifndef PLATFORM_64
 	#define PLATFORM_64 0
@@ -62,11 +57,23 @@
 #endif
 
 #ifndef LIKELY
-	#define LIKELY(exp) (exp)
+	#define LIKELY(expr) (expr)
 #endif
 
 #ifndef UNLIKELY
-	#define UNLIKELY(exp) (exp)
+	#define UNLIKELY(expr) (expr)
+#endif
+
+#ifndef RESTRICT
+	#define RESTRICT restrict
+#endif
+
+#ifndef ALIGN
+	#define ALIGN(n) alignas(n)
+#endif
+
+#ifndef PACK
+	#define PACK(n) ALIGN(n)
 #endif
 
 // Platform independent types
