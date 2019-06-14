@@ -7,7 +7,7 @@
  */
 struct LinuxPlatformMemory : public UnixPlatformMemory
 {
-
+	//
 };
 
 using PlatformMemory = LinuxPlatformMemory;

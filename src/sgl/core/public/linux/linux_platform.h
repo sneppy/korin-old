@@ -7,7 +7,7 @@
  */
 struct LinuxPlatformTypes : public UnixPlatformTypes
 {
-
+	//
 };
 
 using PlatformTypes = LinuxPlatformTypes;

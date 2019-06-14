@@ -7,7 +7,7 @@
  */
 struct LinuxPlatformMath : public UnixPlatformMath
 {
-
+	//
 };
 
 using PlatformMath = LinuxPlatformMath;

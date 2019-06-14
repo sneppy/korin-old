@@ -7,7 +7,7 @@
  */
 struct UnixPlatformTypes : public GenericPlatformTypes
 {
-
+	//
 };
 
 // Platform definitions

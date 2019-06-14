@@ -165,3 +165,24 @@ public:
 	virtual void * realloc(void * orig, sizet size, sizet alignment = DEFAULT_ALIGNMENT) override;
 	virtual void free(void * orig) override;
 };
+
+/**
+ * MallocPool with static block num, size
+ * and alignment (can be used as template
+ * argument)
+ */
+template<uint32 inNumBlocks, uint32 inBlockSize, sizet inBlockAlignment>
+class MallocPoolT : public MallocPool
+{
+public:
+	/**
+	 * Default constructor
+	 * 
+	 * @param [in] inBuffer optional buffer not owned by the allocator
+	 */
+	explicit FORCE_INLINE MallocPoolT(void * inBuffer = nullptr)
+		: MallocPool(inNumBlocks, inBlockSize, inBlockAlignment, inBuffer)
+	{
+		//
+	}
+};
