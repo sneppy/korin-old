@@ -15,7 +15,8 @@
 template<typename T, typename MallocT = MallocAnsi>
 class Array
 {
-	template<typename, typename> friend class Array;
+	template<typename, typename>	friend class Array;
+									friend String;
 
 protected:
 	/// Used allocator
@@ -50,12 +51,21 @@ protected:
 	 * 
 	 * @param [in] dst,src destination and source
 	 * @param [in] n number of elements to copy
+	 * @{
 	 */
-	FORCE_INLINE void constructCopyElements(T * dst, const T * src, uint64 n)
+	template<typename _T>
+	FORCE_INLINE typename EnableIf<!IsTriviallyConstructible<_T>::value>::Type constructCopyElements(_T * RESTRICT dst, const _T * RESTRICT src, uint64 n)
 	{
 		for (uint32 i = 0; i < n; ++i)
-			new (dst + i) T(src[i]);
+			new (dst + i) _T(src[i]);
 	}
+
+	template<typename _T>
+	FORCE_INLINE typename EnableIf<IsTriviallyConstructible<_T>::value>::Type constructCopyElements(_T * RESTRICT dst, const _T * RESTRICT src, uint64 n)
+	{
+		Memory::memcpy(dst, src, n * sizeof(_T));
+	}
+	///@}
 
 	/**
 	 * Destroy 
