@@ -35,3 +35,7 @@
 	{ \
 		return func(forward<Args>(args)...); \
 	}
+
+/**
+ * Remove the const qualifier from a method call
+ */

@@ -38,4 +38,9 @@ TEST(templates, types)
 	// Remove reference
 	ASSERT_TRUE((IsSameType<short, typename RemoveReference<short&>::Type>::value));
 	ASSERT_FALSE((IsSameType<short, typename RemoveReference<short&&>::Type>::value));
+
+	// Remove const qualifier
+	ASSERT_TRUE((IsSameType<int, typename RemoveConst<const int>::Type>::value));
+	ASSERT_TRUE((IsSameType<int*, typename RemoveConst<const int*>::Type>::value));
+	ASSERT_TRUE((IsSameType<int&, typename RemoveConst<const int&>::Type>::value));
 }

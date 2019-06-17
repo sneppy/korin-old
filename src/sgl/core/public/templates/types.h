@@ -172,3 +172,18 @@ struct RemoveReference
 
 template<typename T> struct RemoveReference<T&> { using Type = T; };
 /// @}
+
+/**
+ * Remove const qualifier from T
+ * @{
+ */
+template<typename T>
+struct RemoveConst
+{
+	using Type = T;
+};
+
+template<typename T> struct RemoveConst<const T>	{ using Type = T; };
+template<typename T> struct RemoveConst<const T*>	{ using Type = T*; };
+template<typename T> struct RemoveConst<const T&>	{ using Type = T&; };
+/// @}

@@ -6,6 +6,7 @@
 #include "containers/string.h"
 #include "containers/list.h"
 #include "containers/pair.h"
+#include "containers/tree.h"
 
 #include "hal/malloc_ansi.h"
 #include "hal/malloc_pool.h"
@@ -125,6 +126,22 @@ TEST(containers, list)
 	ASSERT_FALSE(bNotEmpty);
 
 	SUCCEED();
+}
+
+template<typename T>
+struct LessThan
+{
+	FORCE_INLINE int32 operator()(const T & a, const T & b) const
+	{
+		return int32(a > b) - int32(a < b);
+	}
+};
+
+TEST(containers, tree)
+{
+	BinaryNode<float32, LessThan<float32>> * node = new (typename RemovePointer<decltype(node)>::Type)(3.14f);
+	node->find(3.14f);
+	node->insert(new BinaryNode<float32, LessThan<float32>>(5.f));
 }
 
 TEST(containers, map)
