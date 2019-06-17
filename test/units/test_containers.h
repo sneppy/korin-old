@@ -4,6 +4,7 @@
 
 #include "containers/array.h"
 #include "containers/string.h"
+#include "containers/list.h"
 
 #include "hal/malloc_ansi.h"
 #include "hal/malloc_pool.h"
@@ -62,4 +63,62 @@ TEST(containers, string)
 	ASSERT_TRUE(strcmp(c.getData(), "sneppy rulez") == 0);
 
 	SUCCEED();
+}
+
+TEST(containers, list)
+{
+	List<uint32> list;
+	uint32 n;
+	bool bNotEmpty;
+
+	ASSERT_EQ(list.getLength(), 0);
+	ASSERT_TRUE(list.getHead() == nullptr);
+	ASSERT_TRUE(list.getTail() == nullptr);
+
+	list.pushFront(4u);
+	list.pushFront(3u);
+
+	ASSERT_EQ(list.getLength(), 2);
+	ASSERT_EQ(list.getHead()->data, 3);
+	ASSERT_EQ(list.getTail()->data, 4);
+
+	list.pushBack(5u);
+	list.pushBack(6u);
+
+	ASSERT_EQ(list.getLength(), 4);
+	ASSERT_EQ(list.getHead()->data, 3);
+	ASSERT_EQ(list.getTail()->data, 6);
+
+	auto link = list.getHead()->next;
+
+	ASSERT_EQ(link->data, 4);
+
+	list.remove(link);
+
+	ASSERT_EQ(list.getLength(), 3);
+	ASSERT_EQ(list.getHead()->data, 3);
+	ASSERT_EQ(list.getTail()->data, 6);
+
+	list.remove(list.getHead());
+	
+	ASSERT_EQ(list.getLength(), 2);
+	ASSERT_EQ(list.getHead()->data, 5);
+	ASSERT_EQ(list.getTail()->data, 6);
+
+	bNotEmpty = list.popBack(n);
+
+	ASSERT_EQ(list.getLength(), 1);
+	ASSERT_EQ(list.getHead(), list.getTail());
+	ASSERT_EQ(n, 6);
+
+	bNotEmpty = list.popFront(n);
+
+	ASSERT_EQ(list.getLength(), 0);
+	ASSERT_EQ(list.getHead(), nullptr);
+	ASSERT_EQ(list.getTail(), nullptr);
+	ASSERT_EQ(n, 5);
+
+	bNotEmpty = list.popFront(n);
+
+	ASSERT_FALSE(bNotEmpty);
 }

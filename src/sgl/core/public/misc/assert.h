@@ -1,9 +1,14 @@
 #pragma once
 
+/**
+ * CHECK prints a warning if condition evaluates
+ * to false. CHECKF prints a formatted warning
+ */
+
 #if BUILD_RELEASE
 
 	#define CHECK(expr)
-	#define CHECKF(expr)
+	#define CHECKF(expr, format, ...)
 
 #else
 
