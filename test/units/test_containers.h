@@ -5,6 +5,7 @@
 #include "containers/array.h"
 #include "containers/string.h"
 #include "containers/list.h"
+#include "containers/pair.h"
 
 #include "hal/malloc_ansi.h"
 #include "hal/malloc_pool.h"
@@ -58,6 +59,7 @@ TEST(containers, string)
 	ASSERT_TRUE(strcmp(b.getData(), "rulez") == 0);
 
 	const String c = a + ' ' + b;
+	
 	ASSERT_EQ(c.getLength(), 12);
 	ASSERT_EQ(c[12], '\0');
 	ASSERT_TRUE(strcmp(c.getData(), "sneppy rulez") == 0);
@@ -121,4 +123,21 @@ TEST(containers, list)
 	bNotEmpty = list.popFront(n);
 
 	ASSERT_FALSE(bNotEmpty);
+
+	SUCCEED();
+}
+
+TEST(containers, map)
+{
+	Pair<uint32, uint32> pair(8u, 3u);
+	
+	ASSERT_EQ(pair.getKey(), 8);
+	ASSERT_EQ(pair.getVal(), 3);
+
+	pair = Pair<uint32, uint32>(4u);
+
+	ASSERT_EQ(pair.getKey(), 4);
+	ASSERT_EQ(pair.getVal(), 0);
+
+	SUCCEED();
 }
