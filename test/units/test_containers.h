@@ -139,7 +139,7 @@ struct LessThan
 
 TEST(containers, tree)
 {
-	using Node = BinaryNode<uint32, LessThan<float32>>;
+	using Node = BinaryNode<uint32, LessThan<uint32>>;
 
 	Node * root = new Node(3u), * node = nullptr;
 	root->color = Node::Color::BLACK;
@@ -191,6 +191,15 @@ TEST(containers, tree)
 		ASSERT_EQ(node->data, i);
 	
 	ASSERT_TRUE(node == nullptr);
+
+	node = new Node(2);
+
+	ASSERT_NE(root->insertUnique(node), node);
+	ASSERT_EQ(root->insertUnique(node), root->left);
+
+	node = new Node(0);
+
+	ASSERT_EQ(root->insertUnique(node), node);
 }
 
 TEST(containers, map)

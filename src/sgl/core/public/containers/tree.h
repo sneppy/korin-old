@@ -243,6 +243,48 @@ public:
 		}
 	}
 
+	/**
+	 * Insert node in subtree only if no
+	 * duplicate exists
+	 * 
+	 * @param [in] node node to insert
+	 * @return inserted node or existing duplicate node
+	 */
+	BinaryNode * insertUnique(BinaryNode * node)
+	{
+		int32 cmp = CompareT()(node->data, this->data);
+
+		if (cmp < 0)
+		{
+			if (left)
+				return left->insertUnique(node);
+			else
+			{
+				setPrevNode(node);
+				setLeftChild(node);
+				repairInserted(node);
+
+				return node;
+			}
+		}
+		else if (cmp > 0)
+		{
+			if (right)
+				return right->insertUnique(node);
+			else
+			{
+				setNextNode(node);
+				setRightChild(node);
+				repairInserted(node);
+
+				return node;
+			}
+		}
+		else
+			// Found duplicate node
+			return this;
+	}
+
 protected:
 	/**
 	 * Perform left[right] rotation on this node
