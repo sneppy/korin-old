@@ -3,6 +3,9 @@
 #include "core_types.h"
 #include "platform_memory.h"
 #include "platform_math.h"
+#include "containers/array.h"
+#include "containers/list.h"
+#include "containers/tree.h"
 
 /**
  * A single pool allocator consists of
@@ -54,6 +57,19 @@ private:
 	/// Head of free blocks list
 	void * head;
 
+protected:
+	/**
+	 * Computes logical block size
+	 * 
+	 * @param [in] blockSize required block size
+	 * @param [in] blockAlignment required block alignment
+	 * @return aligned block size
+	 */
+	static constexpr FORCE_INLINE sizet computeLogicalBlockSize(sizet blockSize, sizet blockAlignment)
+	{
+		return PlatformMath::align2Up(blockSize + blockLinkSize - 1, blockAlignment);
+	}
+
 public:
 	/**
 	 * Pool constructor
@@ -73,11 +89,19 @@ public:
 	}
 
 	/**
-	 * Returns numbe of free blocks
+	 * Returns number of free blocks
 	 */
 	FORCE_INLINE uint32 getNumFreeBlocks() const
 	{
 		return numFreeBlocks;
+	}
+
+	/**
+	 * Returns true if pool is exhausted
+	 */
+	FORCE_INLINE bool isExhausted() const
+	{
+		return head == nullptr;
 	}
 
 	/**
@@ -167,11 +191,11 @@ public:
 };
 
 /**
- * MallocPool with static block num, size
+ * A MallocPool with static block num, size
  * and alignment (can be used as template
  * argument)
  */
-template<uint32 inNumBlocks, uint32 inBlockSize, sizet inBlockAlignment>
+template<uint32 inNumBlocks, uint32 inBlockSize, sizet inBlockAlignment = DEFAULT_ALIGNMENT>
 class MallocPoolInline : public MallocPool
 {
 public:
@@ -185,4 +209,178 @@ public:
 	{
 		//
 	}
+};
+
+/**
+ * Similar to a malloc pool but with a dynamic
+ * list of pools that can grow unbounded.
+ * 
+ * When pools are exhausted they are moved to
+ * the back of the list. When a pool is freed
+ * is moved back to the front. This ensure that
+ * we can always fetch the head of the list.
+ * 
+ * If the head of the list is exhausted a new
+ * pool is created
+ * 
+ * If a allocation request is made with a size
+ * larger than the pool size a backup allocator
+ * is used.
+ * 
+ * Pools cannot have specific alignments.
+ * 
+ * A tree is used to quickly find the pool that
+ * allocated a chunk of memory
+ * 
+ * The initial number of pools can be choose
+ */
+class MallocPooled : public MallocBase
+{
+protected:
+	/**
+	 * Compare class used to find memory pool
+	 */
+	struct FindPool
+	{
+		FORCE_INLINE int32 operator()(const MemoryPool * a, const MemoryPool * b) const
+		{
+			return int32(a->buffer > b->buffer) - int32(a->buffer < b->buffer);
+		}
+	};
+
+	/// Link type
+	using Link = ::Link<MemoryPool*>;
+
+	/// Node type
+	using Node = ::BinaryNode<MemoryPool*, FindPool>;
+
+	/// Head of memory pool list
+	Link * head;
+
+	/// Root of memory pool tree
+	Node * root;
+
+	/// Toatal number of pool
+	uint32 numPools;
+
+	/**
+	 * Static pool description
+	 */
+	struct
+	{
+		/// Number of blocks
+		uint32 numBlocks;
+
+		/// Size of a pool block (in Bytes)
+		sizet blockSize;
+
+		/// Block alignment (in Bytes)
+		sizet blockAlignment;
+
+		/// Buffer size
+		sizet bufferSize;
+	} const poolInfo;
+
+	/// Pool allocation size
+	sizet poolAllocSize;
+
+protected:
+	/**
+	 * Create and return a new pool in buffer
+	 * Also updates list and tree
+	 * 
+	 * @param [in] buffer pool buffer
+	 */
+	FORCE_INLINE MemoryPool * createPool(void * buffer)
+	{
+		CHECK(buffer != nullptr)
+
+		++numPools;
+
+		// Create pool structure after buffer
+		MemoryPool * pool = new (reinterpret_cast<MemoryPool*>(reinterpret_cast<uintp>(buffer) + poolInfo.bufferSize)) MemoryPool(poolInfo.numBlocks, poolInfo.blockSize, poolInfo.blockAlignment, buffer);
+
+		// Add to tree
+		Node * node = new (reinterpret_cast<Node*>(pool + 1)) Node(pool);
+		if (root)
+		{
+			root->insert(node);
+			root = root->getRoot();
+		}
+		else
+		{
+			root = node;
+			root->color = Node::Color::BLACK;
+		}
+
+		// Add to list
+		Link * link = new (reinterpret_cast<Link*>(node + 1)) Link(pool);
+		if (head)
+		{
+			link->next = head;
+			link->prev = head->prev;
+			link->next->prev = link;
+			link->prev->next = link;
+			head = link;
+		}
+		else
+		{
+			head = link;
+			head->prev = head->next = head;
+		}
+
+		return pool;
+	}
+
+	/**
+	 * Destroy pool
+	 * 
+	 * @param [in] pool pointer to the pool structure
+	 */
+	FORCE_INLINE void destroyPool(MemoryPool * pool)
+	{
+		void * buffer = pool->buffer;
+		Node * node = reinterpret_cast<Node*>(pool + 1);
+		Link * link = reinterpret_cast<Link*>(node + 1);
+
+		// Remove from list
+		// TODO
+		link->~Link();
+
+		// Remove from tree
+		if (node->remove() == root)
+			root = root->right;
+		
+		node->~Node();
+		
+		// Destroy pool
+		pool->~MemoryPool();
+
+		// Dealloc buffer
+		::free(buffer);
+	}
+
+public:
+	/**
+	 * Pool constructor
+	 * 
+	 * @see MemoryPool::MemoryPool
+	 */
+	MallocPooled(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlignment = DEFAULT_ALIGNMENT, uint32 initialNumPools = 1);
+
+	/**
+	 * Returns number of pools created
+	 */
+	FORCE_INLINE uint32 getNumPools() const
+	{
+		return numPools;
+	}
+
+	//////////////////////////////////////////////////
+	// MallocBase interface
+	//////////////////////////////////////////////////
+	
+	virtual void * alloc(sizet size, sizet alignment = DEFAULT_ALIGNMENT) override;
+	virtual void * realloc(void * orig, sizet size, sizet alignment = DEFAULT_ALIGNMENT) override;
+	virtual void free(void * orig) override;
 };

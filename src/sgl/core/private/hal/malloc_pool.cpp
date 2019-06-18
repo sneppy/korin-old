@@ -22,6 +22,8 @@ MemoryPool::MemoryPool(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlign
 		// TODO: Windows code
 	#endif
 	}
+	
+	CHECKF((reinterpret_cast<uintp>(buffer) & (blockAlignment - 1)) == 0, "buffer is not correctly aligned (required alignment %llx)", blockAlignment)
 
 	head = buffer;
 	
@@ -115,4 +117,82 @@ void MallocPool::free(void * orig)
 		pool.releaseBlock(orig);
 	else
 		; // TODO: use backup allocator
+}
+
+//////////////////////////////////////////////////
+// MallocPooled
+//////////////////////////////////////////////////
+
+MallocPooled::MallocPooled(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlignment, uint32 initialNumPools)
+	: head{nullptr}
+	, root{nullptr}
+	, numPools{0}
+	, poolInfo{
+		inNumBlocks,
+		inBlockSize,
+		inBlockAlignment,
+		inNumBlocks * MemoryPool::computeLogicalBlockSize(inBlockSize, inBlockAlignment)
+	}
+	, poolAllocSize{0}
+{
+	// Determine pool allocation size
+	poolAllocSize += poolInfo.bufferSize;
+	poolAllocSize += sizeof(MemoryPool);
+	poolAllocSize += sizeof(Node);
+	poolAllocSize += sizeof(Link);
+
+	// Allocate initial buffer
+	for (uint32 poolIdx = 0; poolIdx < initialNumPools; ++poolIdx)
+	{
+		void * buffer = nullptr;
+		if (posix_memalign(&buffer, poolInfo.blockAlignment, poolAllocSize) == 0)
+			createPool(buffer);
+	}
+
+	CHECK(head != nullptr && root != nullptr)
+}
+
+void * MallocPooled::alloc(sizet size, sizet alignment)
+{
+	CHECKF(size <= poolInfo.blockSize, "requested size exceed pool block max size, backup allocator will be used (pool block size is 0x%llx, requested size is 0x%llx)", poolInfo.blockSize, size)
+	CHECKF(alignment <= poolInfo.blockAlignment, "requested alignment exceeds pool block alignment, backup allocator will be used (pool block alignment is 0x%llx, requested alignment is 0x%llx)", poolInfo.blockAlignment, alignment)
+
+	void * out = nullptr;
+
+	if (size <= poolInfo.blockSize && alignment <= poolInfo.blockAlignment)
+	{
+		MemoryPool * pool = head->data;
+
+		// Create a new pool if necessary
+		if (pool->isExhausted())
+		{
+			void * buffer = nullptr;
+			if (posix_memalign(&buffer, poolInfo.blockAlignment, poolAllocSize) == 0)
+				MemoryPool * pool = createPool(buffer);
+		}
+
+		// Acquire block from pool
+		out = pool->acquireBlock();
+
+		if (pool->isExhausted())
+			// Move to back
+			head = head->next;
+	}
+	else
+		// TODO: backup allocator
+	
+	return out;
+}
+
+void * MallocPooled::realloc(void * orig, sizet size, sizet alignment)
+{
+	CHECKF(size <= poolInfo.blockSize, "requested size exceed pool block max size, backup allocator will be used (pool block size is 0x%llx, requested size is 0x%llx)", poolInfo.blockSize, size)
+	CHECKF(alignment <= poolInfo.blockAlignment, "requested alignment exceeds pool block alignment, backup allocator will be used (pool block alignment is 0x%llx, requested alignment is 0x%llx)", poolInfo.blockAlignment, alignment)
+
+	return orig;
+}
+
+void MallocPooled::free(void * orig)
+{
+	//
 }

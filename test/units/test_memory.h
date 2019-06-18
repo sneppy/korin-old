@@ -83,6 +83,34 @@ TEST(memory, memory_pool)
 	SUCCEED();
 }
 
+TEST(memory, malloc_pooled)
+{
+
+	struct Foo
+	{
+		float32 vec[4];
+		void * next;
+	} * foo;
+	
+	MallocPooled * malloc = new MallocPooled(65536, sizeof(Foo), alignof(Foo), 8);
+
+	foo = reinterpret_cast<Foo*>(malloc->alloc(sizeof(Foo), alignof(Foo)));
+	foo->next = foo;
+	foo->vec[0] = 3.14f;
+
+	ASSERT_TRUE(foo != nullptr);
+
+	for (uint32 i = 0; i < 65536 * 15; ++i)
+	{
+		foo = reinterpret_cast<Foo*>(malloc->alloc(sizeof(Foo), alignof(Foo)));
+		foo->vec[0] = (float32)i;
+	}
+	
+	ASSERT_EQ(malloc->getNumPools(), 16);
+
+	SUCCEED();
+}
+
 TEST(memory, malloc_object)
 {
 	struct Foo

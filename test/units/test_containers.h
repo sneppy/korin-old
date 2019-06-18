@@ -173,7 +173,7 @@ TEST(containers, tree)
 	ASSERT_EQ(root->right->right->right->data, 7);
 	ASSERT_TRUE(root->right->right->left == nullptr);
 
-	node = root->insert(new Node(1));
+	node = root->insert(new Node(1u));
 
 	ASSERT_EQ(root->getMin()->data, 1);
 	ASSERT_EQ(root->getMax()->data, 7);
@@ -192,12 +192,12 @@ TEST(containers, tree)
 	
 	ASSERT_TRUE(node == nullptr);
 
-	node = new Node(2);
+	node = new Node(2u);
 
 	ASSERT_NE(root->insertUnique(node), node);
 	ASSERT_EQ(root->insertUnique(node), root->left);
 
-	node = new Node(0);
+	node = new Node(0u);
 
 	ASSERT_EQ(root->insertUnique(node), node);
 }

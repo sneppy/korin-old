@@ -333,7 +333,6 @@ protected:
 	}
 	/// @}
 
-public:
 	/**
 	 * Repair inserted node
 	 * 
@@ -410,5 +409,19 @@ public:
 				}
 			}
 		}
+	}
+
+public:
+	/**
+	 * Remove node from tree
+	 * 
+	 * ! Only guarantees that the value is removed
+	 * ! not the actual node (values are moved)
+	 * 
+	 * @return pointer to node actually evicted from tree
+	 */
+	BinaryNode * remove()
+	{
+		return this;
 	}
 };
