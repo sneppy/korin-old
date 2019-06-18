@@ -7,9 +7,25 @@
  * A struct with two elements (conceptually
  * key and value or simply first and second)
  */
-template<typename A, typename B>
+template<typename A, typename B, typename CompareT>
 struct Pair
 {
+	/// Key and value types @{
+	using KeyT = A;
+	using ValT = B;
+	/// @}
+
+	/**
+	 * 
+	 */
+	struct FindPair
+	{
+		FORCE_INLINE int32 operator()(const Pair & a, const Pair & b) const
+		{
+			return CompareT()(a.first, b.first);
+		}
+	};
+
 	/// Key
 	A first;
 

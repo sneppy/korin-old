@@ -204,15 +204,38 @@ TEST(containers, tree)
 
 TEST(containers, map)
 {
-	Pair<uint32, uint32> pair(8u, 3u);
+	using PairT = Pair<uint32, uint32, LessThan<uint32>>;
+	PairT pair(8u, 3u);
 	
 	ASSERT_EQ(pair.getKey(), 8);
 	ASSERT_EQ(pair.getVal(), 3);
 
-	pair = Pair<uint32, uint32>(4u);
+	pair = PairT(4u);
 
 	ASSERT_EQ(pair.getKey(), 4);
 	ASSERT_EQ(pair.getVal(), 0);
+
+	using Node = BinaryNode<PairT, PairT::FindPair>;
+
+	Node * root = new Node(PairT(8u, 3u));
+	root->color = Node::Color::BLACK;
+	
+	ASSERT_EQ(root->data.first, 8);
+	ASSERT_EQ(root->data.second, 3);
+
+	ASSERT_EQ(root->find(PairT(8u)), root);
+	ASSERT_TRUE(root->find(PairT(4u)) == nullptr);
+
+	root->insertUnique(new Node(PairT(4u, 9u)));
+	root = root->getRoot();
+	root->insertUnique(new Node(PairT(7u, 2u)));
+	root = root->getRoot();
+	root->insertUnique(new Node(PairT(8u, 11u)));
+	root = root->getRoot();
+
+	ASSERT_EQ(root->find(PairT(4u))->data.second, 9u);
+	ASSERT_EQ(root->find(PairT(7u))->data.second, 2u);
+	ASSERT_EQ(root->find(PairT(8u))->data.second, 3u);
 
 	SUCCEED();
 }
