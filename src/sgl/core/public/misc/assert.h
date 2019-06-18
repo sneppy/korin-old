@@ -16,7 +16,7 @@
 		{ \
 			if (UNLIKELY(!(expr))) \
 			{ \
-				fprintf(stderr, "Check failed at " __FILE__ ": " #expr) \
+				fprintf(stderr, "Check failed at " __FILE__ ":%u: " #expr, __LINE__); \
 			} \
 		} \
 	
@@ -24,7 +24,7 @@
 		{ \
 			if (UNLIKELY(!(expr))) \
 			{ \
-				fprintf(stderr, "Check failed at " __FILE__ ": " format "\n", ##__VA_ARGS__); \
+				fprintf(stderr, "Check failed at " __FILE__ ":%u: " format "\n", __LINE__, ##__VA_ARGS__); \
 			} \
 		} \
 

@@ -139,9 +139,58 @@ struct LessThan
 
 TEST(containers, tree)
 {
-	BinaryNode<float32, LessThan<float32>> * node = new (typename RemovePointer<decltype(node)>::Type)(3.14f);
-	node->find(3.14f);
-	node->insert(new BinaryNode<float32, LessThan<float32>>(5.f));
+	using Node = BinaryNode<uint32, LessThan<float32>>;
+
+	Node * root = new Node(3u), * node = nullptr;
+	root->color = Node::Color::BLACK;
+	
+	ASSERT_EQ(root->find(3), root);
+	ASSERT_TRUE(root->find(2) == nullptr);
+
+	node = new Node(2u);
+	root->insert(node);
+
+	ASSERT_EQ(root->left, node);
+	ASSERT_EQ(root->find(2), node);
+	ASSERT_EQ(node->parent, root);
+
+	node = new Node(4u);
+	root->insert(node);
+
+	ASSERT_EQ(root->right, node);
+	ASSERT_EQ(root->find(4), node);
+	ASSERT_EQ(node->parent, root);
+
+	node = root->insert(new Node(5u));
+	node = root->insert(new Node(6u));
+	node = root->insert(new Node(7u));
+
+	ASSERT_TRUE(root->parent == nullptr);
+	ASSERT_EQ(root->left->data, 2);
+	ASSERT_EQ(root->right->data, 5);
+	ASSERT_EQ(root->right->left->data, 4);
+	ASSERT_EQ(root->right->right->data, 6);
+	ASSERT_EQ(root->right->right->right->data, 7);
+	ASSERT_TRUE(root->right->right->left == nullptr);
+
+	node = root->insert(new Node(1));
+
+	ASSERT_EQ(root->getMin()->data, 1);
+	ASSERT_EQ(root->getMax()->data, 7);
+
+	node = root->getMin();
+
+	for (uint32 i = 1; i <= 7; ++i, node = node->next)
+		ASSERT_EQ(node->data, i);
+	
+	ASSERT_TRUE(node == nullptr);
+
+	node = root->getMax();
+
+	for (uint32 i = 7; i >= 1; --i, node = node->prev)
+		ASSERT_EQ(node->data, i);
+	
+	ASSERT_TRUE(node == nullptr);
 }
 
 TEST(containers, map)

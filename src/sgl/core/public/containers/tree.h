@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "misc/assert.h"
 #include "templates/utility.h"
 
 /**
@@ -175,6 +176,8 @@ protected:
 	 */
 	FORCE_INLINE BinaryNode * setPrevNode(BinaryNode * node)
 	{
+		CHECK(node != nullptr)
+
 		if (prev != nullptr)
 			prev->next = node;
 		
@@ -187,6 +190,8 @@ protected:
 
 	FORCE_INLINE BinaryNode * setNextNode(BinaryNode * node)
 	{
+		CHECK(node != nullptr)
+
 		if (next != nullptr)
 			next->prev = node;
 		
@@ -218,6 +223,7 @@ public:
 			{
 				setPrevNode(node);
 				setLeftChild(node);
+				repairInserted(node);
 
 				return node;
 			}
@@ -230,10 +236,137 @@ public:
 			{
 				setNextNode(node);
 				setRightChild(node);
+				repairInserted(node);
 
 				return node;
 			}
 		}
+	}
 
+protected:
+	/**
+	 * Perform left[right] rotation on this node
+	 * @{
+	 */
+	FORCE_INLINE void rotateLeft()
+	{
+		BinaryNode * root = parent;
+		BinaryNode * pivot = right;
+
+		// Replace right child whit right->left child
+		setRightChild(right->left);
+
+		// Rotate
+		pivot->setLeftChild(this);
+
+		if (root)
+		{
+			root->left == this
+				? root->setLeftChild(pivot)
+				: root->setRightChild(pivot);
+		}
+		else
+			pivot->parent = nullptr;
+	}
+
+	FORCE_INLINE void rotateRight()
+	{
+		BinaryNode * root = parent;
+		BinaryNode * pivot = left;
+
+		// Replace left child whit left->right child
+		setLeftChild(left->right);
+
+		// Rotate
+		pivot->setRightChild(this);
+
+		if (root)
+		{
+			root->right == this
+				? root->setRightChild(pivot)
+				: root->setLeftChild(pivot);
+		}
+		else
+			pivot->parent = nullptr;
+	}
+	/// @}
+
+public:
+	/**
+	 * Repair inserted node
+	 * 
+	 * @param [in] node inserted node
+	 */
+	static void repairInserted(BinaryNode * node)
+	{
+		// Case 0: I'm (g)root
+		if (node->parent == nullptr)
+			node->color = Color::BLACK;
+		
+		// Case 1: parent is black
+		else if (node->parent->color == Color::BLACK)
+			node->color = Color::RED;
+		
+		else
+		{
+			// Get relatives
+			BinaryNode
+				* parent = node->parent,
+				* grand = parent->parent,
+				* uncle = grand
+					? (grand->left == parent ? grand->right : grand->left)
+					: nullptr;
+			
+			// Case 2: uncle is red
+			if (isRed(uncle))
+			{
+				uncle->color = parent->color = Color::BLACK;
+				grand->color = Color::RED;
+
+				// Repair grand
+				repairInserted(grand);
+			}
+
+			// Case 3: uncle is black
+			else
+			{
+				if (grand->left == parent)
+				{
+					if (parent->right == node)
+					{
+						parent->rotateLeft();
+						grand->rotateRight();
+
+						node->color = Color::BLACK;
+						grand->color = Color::RED;
+					}
+					else
+					{
+						grand->rotateRight();
+
+						parent->color = Color::BLACK;
+						grand->color = Color::RED;
+					}
+				}
+				else
+				{
+					if (parent->left == node)
+					{
+						parent->rotateRight();
+						grand->rotateLeft();
+
+						node->color = Color::BLACK;
+						grand->color = Color::RED;
+					}
+					else
+					{
+						grand->rotateLeft();
+
+						parent->color = Color::BLACK;
+						grand->color = Color::RED;
+					}
+				}
+			}
+		}
 	}
 };

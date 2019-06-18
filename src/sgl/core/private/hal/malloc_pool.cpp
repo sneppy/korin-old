@@ -74,8 +74,8 @@ void MemoryPool::releaseBlock(void * block)
 
 void * MallocPool::alloc(sizet size, sizet alignment)
 {
-	CHECKF(size <= pool.blockSize, "requested size exceed pool block max size, backup allocator will be used (pool block size is 0x%x, requested size is 0x%x)", pool.blockSize, size)
-	CHECKF(alignment <= pool.blockAlignment, "requested alignment exceeds pool block alignment, backup allocator will be used (pool block alignment is 0x%x, requested alignment is 0x%x)", pool.blockAlignment, alignment)
+	CHECKF(size <= pool.blockSize, "requested size exceed pool block max size, backup allocator will be used (pool block size is 0x%llx, requested size is 0x%llx)", pool.blockSize, size)
+	CHECKF(alignment <= pool.blockAlignment, "requested alignment exceeds pool block alignment, backup allocator will be used (pool block alignment is 0x%llx, requested alignment is 0x%llx)", pool.blockAlignment, alignment)
 
 	void * out = nullptr;
 
@@ -89,8 +89,8 @@ void * MallocPool::alloc(sizet size, sizet alignment)
 
 void * MallocPool::realloc(void * orig, sizet size, sizet alignment)
 {
-	CHECKF(size <= pool.blockSize, "requested size exceed pool block max size, backup allocator will be used (pool block size is 0x%x, requested size is 0x%x)", pool.blockSize, size)
-	CHECKF(alignment <= pool.blockAlignment, "requested alignment exceeds pool block alignment, backup allocator will be used (pool block alignment is 0x%x, requested alignment is 0x%x)", pool.blockAlignment, alignment)
+	CHECKF(size <= pool.blockSize, "requested size exceed pool block max size, backup allocator will be used (pool block size is 0x%llx, requested size is 0x%llx)", pool.blockSize, size)
+	CHECKF(alignment <= pool.blockAlignment, "requested alignment exceeds pool block alignment, backup allocator will be used (pool block alignment is 0x%llx, requested alignment is 0x%llx)", pool.blockAlignment, alignment)
 
 	void * out = orig;
 
