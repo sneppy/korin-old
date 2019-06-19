@@ -85,7 +85,6 @@ TEST(memory, memory_pool)
 
 TEST(memory, malloc_pooled)
 {
-
 	struct Foo
 	{
 		float32 vec[4];

@@ -168,18 +168,20 @@ void * MallocPooled::alloc(sizet size, sizet alignment)
 		{
 			void * buffer = nullptr;
 			if (posix_memalign(&buffer, poolInfo.blockAlignment, poolAllocSize) == 0)
-				MemoryPool * pool = createPool(buffer);
+				pool = createPool(buffer);
 		}
 
 		// Acquire block from pool
 		out = pool->acquireBlock();
 
 		if (pool->isExhausted())
+		{
 			// Move to back
 			head = head->next;
+		}
 	}
 	else
-		// TODO: backup allocator
+		; // TODO: backup allocator
 	
 	return out;
 }
