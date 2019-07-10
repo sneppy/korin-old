@@ -246,6 +246,26 @@ struct Vec4
 	{
 		return Vec4{*this} /= s;
 	}
+
+	friend FORCE_INLINE Vec4 operator+(T s, const Vec4 & v)
+	{
+		return v += s;
+	}
+
+	friend FORCE_INLINE Vec4 operator-(T s, const Vec4 & v)
+	{
+		return v -= s;
+	}
+
+	friend FORCE_INLINE Vec4 operator*(T s, const Vec4 & v)
+	{
+		return v *= s;
+	}
+
+	friend FORCE_INLINE Vec4 operator/(T s, const Vec4 & v)
+	{
+		return v /= s;
+	}
 	/// @}
 
 	/**

@@ -8,6 +8,7 @@
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "math/vec4.h"
+#include "math/quat.h"
 
 TEST(math, general)
 {
@@ -288,6 +289,32 @@ TEST(math, vec4)
 	ASSERT_EQ(point.y, 2);
 	ASSERT_EQ(point.z, 3);
 	ASSERT_EQ(point.w, 1);
+
+	SUCCEED();
+}
+
+TEST(math, quat)
+{
+	Quat r, s, t;
+	Vec3<float32> a, b, c;
+
+	r = {M_PI_2, Vec3<float32>{0.f, 1.f, 0.f}};
+	s = {M_PI_4, Vec3<float32>{0.f, 1.f, 0.f}};
+
+	a = {1.f, 0.f, 0.f};
+	b = {0.f, 0.f, -1.f};
+	c = {1.f, 0.f, -1.f};
+	c.normalize();
+
+	ASSERT_TRUE((b - (r * a)).isNearlyZero());
+	ASSERT_TRUE((c - (s * a)).isNearlyZero());
+
+	t = r * s;
+	c = {-1.f, 0.f, -1.f};
+	c.normalize();
+
+	ASSERT_TRUE(((t * a) - (r * (s * a))).isNearlyZero());
+	ASSERT_TRUE((c - (t * a)).isNearlyZero());
 
 	SUCCEED();
 }

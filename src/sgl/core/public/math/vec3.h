@@ -32,7 +32,7 @@ struct Vec3
 	/**
 	 * Zero initialize vector
 	 */
-	FORCE_INLINE Vec3()
+	constexpr FORCE_INLINE Vec3()
 		: array{}
 	{
 		//
@@ -43,7 +43,7 @@ struct Vec3
 	 * 
 	 * @param [in] inX,inY,inZ vector components
 	 */
-	FORCE_INLINE Vec3(T inX, T inY, T inZ)
+	constexpr FORCE_INLINE Vec3(T inX, T inY, T inZ)
 		: array{inX, inY, inZ}
 	{
 		//
@@ -54,7 +54,7 @@ struct Vec3
 	 * 
 	 * @param [in] s scalar value
 	 */
-	FORCE_INLINE Vec3(T s)
+	constexpr FORCE_INLINE Vec3(T s)
 		: array{s, s, s}
 	{
 		//
@@ -250,6 +250,26 @@ struct Vec3
 	FORCE_INLINE Vec3 operator/(T s) const
 	{
 		return Vec3{*this} /= s;
+	}
+
+	friend FORCE_INLINE Vec3 operator+(T s, const Vec3 & v)
+	{
+		return v + s;
+	}
+
+	friend FORCE_INLINE Vec3 operator-(T s, const Vec3 & v)
+	{
+		return v - s;
+	}
+
+	friend FORCE_INLINE Vec3 operator*(T s, const Vec3 & v)
+	{
+		return v * s;
+	}
+
+	friend FORCE_INLINE Vec3 operator/(T s, const Vec3 & v)
+	{
+		return v / s;
 	}
 	/// @}
 

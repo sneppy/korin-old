@@ -239,6 +239,26 @@ struct alignas(2 * sizeof(T)) Vec2
 	{
 		return Vec2{*this} /= s;
 	}
+
+	friend FORCE_INLINE Vec2 operator+(T s, Vec2 v)
+	{
+		return v += s;
+	}
+
+	friend FORCE_INLINE Vec2 operator-(T s, Vec2 v)
+	{
+		return v -= s;
+	}
+
+	friend FORCE_INLINE Vec2 operator*(T s, Vec2 v)
+	{
+		return v *= s;
+	}
+
+	friend FORCE_INLINE Vec2 operator/(T s, Vec2 v)
+	{
+		return v /= s;
+	}
 	/// @}
 
 	/**

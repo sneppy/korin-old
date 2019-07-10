@@ -9,6 +9,7 @@
 template<typename T> struct Vec2;
 template<typename T> struct Vec3;
 template<typename T> struct Vec4;
+struct Quat;
 
 //////////////////////////////////////////////////
 // Type aliases
