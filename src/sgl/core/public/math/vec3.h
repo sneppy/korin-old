@@ -58,6 +58,26 @@ struct Vec3
 	{
 		CHECKF(false, "getSize() implemented only for floating-point types")
 	}
+
+	/**
+	 * Normalize vector in-place
+	 * 
+	 * @return self
+	 */
+	FORCE_INLINE Vec3 & normalize()
+	{
+		return *this /= getSize();
+	}
+
+	/**
+	 * Returns normalized vector
+	 * 
+	 * @return new vector
+	 */
+	FORCE_INLINE Vec3 getNormal() const
+	{
+		return *this / getSize();
+	}
 	
 	/**
 	 * Returns inverted vector

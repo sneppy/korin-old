@@ -33,6 +33,12 @@ TEST(math, vec2)
 	ASSERT_FLOAT_EQ(p.getSquaredSize(), 0.5f * 0.5f + 1.25f * 1.25f);
 	ASSERT_FLOAT_EQ((-p).getSquaredSize(), p.getSquaredSize());
 
+	ASSERT_FLOAT_EQ(p.getNormal().getSquaredSize(), 1.f);
+
+	p.normalize();
+
+	ASSERT_FLOAT_EQ(p.getSquaredSize(), 1.f);
+
 	p = Vec2<float32>{3.f, 4.f};
 
 	ASSERT_FLOAT_EQ(p.getSquaredSize(), 25.f);
@@ -102,6 +108,7 @@ TEST(math, vec3)
 
 	ASSERT_FLOAT_EQ(a.getSquaredSize(), 0.4f * 0.4f + 0.3f * 0.3f);
 	ASSERT_FLOAT_EQ(a.getSize(), 0.5f);
+	ASSERT_FLOAT_EQ((-a).getSquaredSize(), a.getSquaredSize());
 
 	b = a / a.getSize();
 
@@ -109,6 +116,13 @@ TEST(math, vec3)
 	ASSERT_FLOAT_EQ(b.y, 0.6f);
 	ASSERT_FLOAT_EQ(b.z, 0.f);
 
+	ASSERT_FLOAT_EQ(a.getNormal().getSquaredSize(), 1.f);
+
+	a.normalize();
+
+	ASSERT_FLOAT_EQ(a.getSquaredSize(), 1.f);
+
+	a = Vec3<float32>{0.4f, 0.3f, 0.f};
 	b += a;
 
 	ASSERT_FLOAT_EQ(b.x, 1.2f);
@@ -165,11 +179,19 @@ TEST(math, vec4)
 
 	ASSERT_FLOAT_EQ(a.getSquaredSize(), 0.4f * 0.4f + 0.3f * 0.3f + 1.f);
 	ASSERT_FLOAT_EQ(a.getSize(), PlatformMath::sqrt(a.getSquaredSize()));
+	ASSERT_FLOAT_EQ((-a).getSquaredSize(), a.getSquaredSize());
 
 	b = a / a.getSize();
 	
 	ASSERT_FLOAT_EQ(b.getSquaredSize(), 1.f);
 
+	ASSERT_FLOAT_EQ(a.getNormal().getSquaredSize(), 1.f);
+
+	a.normalize();
+
+	ASSERT_FLOAT_EQ(a.getSquaredSize(), 1.f);
+
+	a = Vec4<float32>{0.4f, 0.3f, 0.f, 1.f};
 	b = Vec4<float32>{0.8f, 0.6f, 0.2f, 0.9f};
 	b += a;
 

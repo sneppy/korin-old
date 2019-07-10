@@ -56,6 +56,26 @@ struct Vec4
 	}
 
 	/**
+	 * Normalize vector in-place
+	 * 
+	 * @return self
+	 */
+	FORCE_INLINE Vec4 & normalize()
+	{
+		return *this /= getSize();
+	}
+
+	/**
+	 * Returns normalized vector
+	 * 
+	 * @return new vector
+	 */
+	FORCE_INLINE Vec4 getNormal() const
+	{
+		return *this / getSize();
+	}
+
+	/**
 	 * Returns inverted vector
 	 * 
 	 * @return new vector

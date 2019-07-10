@@ -8,7 +8,7 @@
  * Templated 2D vector
  */
 template<typename T>
-struct Vec2
+struct alignas(2 * sizeof(T)) Vec2
 {
 	union
 	{
@@ -59,7 +59,26 @@ struct Vec2
 	FORCE_INLINE T getSize() const
 	{
 		CHECKF(false, "getSize() is implemented only for floating-point types")
-		return T{};
+	}
+
+	/**
+	 * Normalize vector in-place
+	 * 
+	 * @return self
+	 */
+	FORCE_INLINE Vec2 & normalize()
+	{
+		return *this /= getSize();
+	}
+
+	/**
+	 * Returns normalized vector
+	 * 
+	 * @return new vector
+	 */
+	FORCE_INLINE Vec2 getNormal() const
+	{
+		return *this / getSize();
 	}
 
 	/**
