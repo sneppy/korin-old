@@ -11,6 +11,11 @@
 template<typename T>
 struct alignas(2 * sizeof(T)) Vec2
 {
+	/// Static values @{
+	static const Vec2 zero;
+	static const Vec2 unit;
+	/// @}
+
 	union
 	{
 		struct
@@ -34,7 +39,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	/**
 	 * Zero initialize vector
 	 */
-	FORCE_INLINE Vec2()
+	constexpr FORCE_INLINE Vec2()
 		: array{}
 	{
 		//
@@ -45,7 +50,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * 
 	 * @param [in] inX,inY,inZ vector components
 	 */
-	FORCE_INLINE Vec2(T inX, T inY)
+	constexpr FORCE_INLINE Vec2(T inX, T inY)
 		: array{inX, inY}
 	{
 		//
@@ -56,7 +61,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * 
 	 * @param [in] s scalar value
 	 */
-	FORCE_INLINE Vec2(T s)
+	constexpr FORCE_INLINE Vec2(T s)
 		: array{s, s}
 	{
 		//

@@ -11,6 +11,17 @@
 template<typename T>
 struct Vec3
 {
+	/// Static values @{
+	static const Vec3 zero;
+	static const Vec3 unit;
+	static const Vec3 right;
+	static const Vec3 left;
+	static const Vec3 up;
+	static const Vec3 down;
+	static const Vec3 forward;
+	static const Vec3 backward;
+	/// @}
+
 	union
 	{
 		struct

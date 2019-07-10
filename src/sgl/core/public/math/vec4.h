@@ -11,6 +11,11 @@
 template<typename T>
 struct Vec4
 {
+	/// Static values @{
+	static const Vec4 zero;
+	static const Vec4 unit;
+	/// @}
+
 	union
 	{
 		/// Array layout
@@ -27,7 +32,7 @@ struct Vec4
 	/**
 	 * Zero initializes vector
 	 */
-	FORCE_INLINE Vec4()
+	constexpr FORCE_INLINE Vec4()
 		: array{}
 	{
 		//
@@ -38,7 +43,7 @@ struct Vec4
 	 * 
 	 * @param [in] inX,inY,inZ vector components
 	 */
-	FORCE_INLINE Vec4(T inX, T inY, T inZ, T inW)
+	constexpr FORCE_INLINE Vec4(T inX, T inY, T inZ, T inW)
 		: array{inX, inY, inZ, inW}
 	{
 		//
@@ -49,7 +54,7 @@ struct Vec4
 	 * 
 	 * @param [in] s scalar value
 	 */
-	FORCE_INLINE Vec4(T s)
+	constexpr FORCE_INLINE Vec4(T s)
 		: array{s, s, s, s}
 	{
 		//

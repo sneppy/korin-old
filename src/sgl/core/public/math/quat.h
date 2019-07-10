@@ -129,4 +129,39 @@ public:
 		const Vec3<float32> t = 2.f * (q ^ v);
 		return v + (this->w * t) + (q ^ t);
 	}
+
+	/**
+	 * Returns direction vector
+	 * @{
+	 */
+	FORCE_INLINE Vec3<float32> getRight() const
+	{
+		return *this * Vec3<float32>::right;
+	}
+
+	FORCE_INLINE Vec3<float32> getLeft() const
+	{
+		return *this * Vec3<float32>::left;
+	}
+
+	FORCE_INLINE Vec3<float32> getUp() const
+	{
+		return *this * Vec3<float32>::up;
+	}
+
+	FORCE_INLINE Vec3<float32> getDown() const
+	{
+		return *this * Vec3<float32>::down;
+	}
+
+	FORCE_INLINE Vec3<float32> getForward() const
+	{
+		return *this * Vec3<float32>::forward;
+	}
+
+	FORCE_INLINE Vec3<float32> getBackward() const
+	{
+		return *this * Vec3<float32>::backward;
+	}
+	/// @}
 };

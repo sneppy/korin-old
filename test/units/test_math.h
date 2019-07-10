@@ -316,5 +316,11 @@ TEST(math, quat)
 	ASSERT_TRUE(((t * a) - (r * (s * a))).isNearlyZero());
 	ASSERT_TRUE((c - (t * a)).isNearlyZero());
 
+	t = (-s) * t;
+
+	ASSERT_TRUE((Vec3<float32>::up - t.getUp()).isNearlyZero());
+	ASSERT_TRUE((Vec3<float32>::forward - t.getLeft()).isNearlyZero());
+	ASSERT_TRUE((Vec3<float32>::left - t.getBackward()).isNearlyZero());
+
 	SUCCEED();
 }
