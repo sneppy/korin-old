@@ -264,6 +264,82 @@ struct alignas(2 * sizeof(T)) Vec2
 	}
 
 	/**
+	 * Compare two vectors
+	 * 
+	 * @param [in] other vector operand
+	 * @return comparison mask
+	 * @{
+	 */
+	FORCE_INLINE int32 cmpeq(Vec2 other) const
+	{
+		return (x == other.x) | (y == other.y) << 1;
+	}
+
+	FORCE_INLINE int32 cmpne(Vec2 other) const
+	{
+		return (x != other.x) | (y != other.y) << 1;
+	}
+
+	FORCE_INLINE int32 cmplt(Vec2 other) const
+	{
+		return (x < other.x) | (y < other.y) << 1;
+	}
+
+	FORCE_INLINE int32 cmpgt(Vec2 other) const
+	{
+		return (x > other.x) | (y > other.y) << 1;
+	}
+
+	FORCE_INLINE int32 cmple(Vec2 other) const
+	{
+		return (x <= other.x) | (y <= other.y) << 1;
+	}
+
+	FORCE_INLINE int32 cmpge(Vec2 other) const
+	{
+		return (x >= other.x) | (y >= other.y) << 1;
+	}
+	/// @}
+
+	/**
+	 * Strict comparison operators
+	 * 
+	 * @param [in] other second operand
+	 * @return true if true for all components
+	 * @{
+	 */
+	FORCE_INLINE bool operator==(Vec2 other) const
+	{
+		return cmpeq(other) == 0x3;
+	}
+
+	FORCE_INLINE bool operator!=(Vec2 other) const
+	{
+		return cmpne(other) == 0x3;
+	}
+
+	FORCE_INLINE bool operator<(Vec2 other) const
+	{
+		return cmplt(other) == 0x3;
+	}
+
+	FORCE_INLINE bool operator>(Vec2 other) const
+	{
+		return cmpgt(other) == 0x3;
+	}
+
+	FORCE_INLINE bool operator<=(Vec2 other) const
+	{
+		return cmple(other) == 0x3;
+	}
+
+	FORCE_INLINE bool operator>=(Vec2 other) const
+	{
+		return cmpge(other) == 0x3;
+	}
+	/// @}
+
+	/**
 	 * Cast to subtype
 	 * 
 	 * @return new vector

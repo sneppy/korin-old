@@ -92,6 +92,23 @@ TEST(math, vec2)
 
 	ASSERT_FLOAT_EQ(cross.z, 12.5f * 1.f - 15.f * 0.5f);
 
+	Vec2<float32> a{1.f, 2.f}, b{5.f, 1.f}, c = a;
+
+	ASSERT_EQ(a.cmpeq(b), 0x0);
+	ASSERT_EQ(a.cmpeq(c), 0x3);
+	ASSERT_EQ(a.cmpeq(c), c.cmpeq(a));
+	ASSERT_EQ(a.cmpne(b), 0x3);
+	ASSERT_EQ(a.cmpne(c), 0x0);
+	ASSERT_EQ(a.cmpne(c), c.cmpne(a));
+	ASSERT_EQ(a.cmplt(b), 0x1);
+	ASSERT_EQ(a.cmplt(c), 0x0);
+	ASSERT_EQ(a.cmpgt(b), 0x2);
+	ASSERT_EQ(a.cmpgt(c), 0x0);
+	ASSERT_EQ(a.cmple(b), 0x1);
+	ASSERT_EQ(a.cmple(c), 0x3);
+	ASSERT_EQ(a.cmpge(b), 0x2);
+	ASSERT_EQ(a.cmpge(c), 0x3);
+
 	Vec2<int32> point = p;
 	
 	ASSERT_EQ(point.x, 12);
@@ -162,6 +179,23 @@ TEST(math, vec3)
 	ASSERT_FLOAT_EQ(c.y, 5.25f);
 	ASSERT_FLOAT_EQ(c.z, -1.5f);
 
+	c = a;
+
+	ASSERT_EQ(a.cmpeq(b), 0x0);
+	ASSERT_EQ(a.cmpeq(c), 0x7);
+	ASSERT_EQ(a.cmpeq(c), c.cmpeq(a));
+	ASSERT_EQ(a.cmpne(b), 0x7);
+	ASSERT_EQ(a.cmpne(c), 0x0);
+	ASSERT_EQ(a.cmpne(c), c.cmpne(a));
+	ASSERT_EQ(a.cmplt(b), 0x3);
+	ASSERT_EQ(a.cmplt(c), 0x0);
+	ASSERT_EQ(a.cmpgt(b), 0x4);
+	ASSERT_EQ(a.cmpgt(c), 0x0);
+	ASSERT_EQ(a.cmple(b), 0x3);
+	ASSERT_EQ(a.cmple(c), 0x7);
+	ASSERT_EQ(a.cmpge(b), 0x4);
+	ASSERT_EQ(a.cmpge(c), 0x7);
+
 	Vec3<int32> point = a;
 	
 	ASSERT_EQ(point.x, 0);
@@ -230,6 +264,23 @@ TEST(math, vec4)
 	b = Vec4<float32>{2.f, 5.f, 1.5f, 1.f};
 
 	ASSERT_FLOAT_EQ(a & b, 16.5f);
+
+	c = a;
+
+	ASSERT_EQ(a.cmpeq(b), 0x8);
+	ASSERT_EQ(a.cmpeq(c), 0xf);
+	ASSERT_EQ(a.cmpeq(c), c.cmpeq(a));
+	ASSERT_EQ(a.cmpne(b), 0x7);
+	ASSERT_EQ(a.cmpne(c), 0x0);
+	ASSERT_EQ(a.cmpne(c), c.cmpne(a));
+	ASSERT_EQ(a.cmplt(b), 0x3);
+	ASSERT_EQ(a.cmplt(c), 0x0);
+	ASSERT_EQ(a.cmpgt(b), 0x4);
+	ASSERT_EQ(a.cmpgt(c), 0x0);
+	ASSERT_EQ(a.cmple(b), 0xb);
+	ASSERT_EQ(a.cmple(c), 0xf);
+	ASSERT_EQ(a.cmpge(b), 0xc);
+	ASSERT_EQ(a.cmpge(c), 0xf);
 
 	Vec4<int32> point = a;
 	

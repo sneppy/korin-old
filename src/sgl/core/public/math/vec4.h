@@ -260,6 +260,82 @@ struct Vec4
 	}
 
 	/**
+	 * Compare two vectors
+	 * 
+	 * @param [in] other vector operand
+	 * @return comparison mask
+	 * @{
+	 */
+	FORCE_INLINE int32 cmpeq(const Vec4 & other) const
+	{
+		return (x == other.x) | (y == other.y) << 1 | (z == other.z) << 2 | (w == other.w) << 3;
+	}
+
+	FORCE_INLINE int32 cmpne(const Vec4 & other) const
+	{
+		return (x != other.x) | (y != other.y) << 1 | (z != other.z) << 2 | (w != other.w) << 3;
+	}
+
+	FORCE_INLINE int32 cmplt(const Vec4 & other) const
+	{
+		return (x < other.x) | (y < other.y) << 1 | (z < other.z) << 2 | (w < other.w) << 3;
+	}
+
+	FORCE_INLINE int32 cmpgt(const Vec4 & other) const
+	{
+		return (x > other.x) | (y > other.y) << 1 | (z > other.z) << 2 | (w > other.w) << 3;
+	}
+
+	FORCE_INLINE int32 cmple(const Vec4 & other) const
+	{
+		return (x <= other.x) | (y <= other.y) << 1 | (z <= other.z) << 2 | (w <= other.w) << 3;
+	}
+
+	FORCE_INLINE int32 cmpge(const Vec4 & other) const
+	{
+		return (x >= other.x) | (y >= other.y) << 1 | (z >= other.z) << 2 | (w >= other.w) << 3;
+	}
+	/// @}
+
+	/**
+	 * Strict comparison operators
+	 * 
+	 * @param [in] other second operand
+	 * @return true if true for all components
+	 * @{
+	 */
+	FORCE_INLINE bool operator==(const Vec4 & other) const
+	{
+		return cmpeq(other) == 0xf;
+	}
+
+	FORCE_INLINE bool operator!=(const Vec4 & other) const
+	{
+		return cmpne(other) == 0xf;
+	}
+
+	FORCE_INLINE bool operator<(const Vec4 & other) const
+	{
+		return cmplt(other) == 0xf;
+	}
+
+	FORCE_INLINE bool operator>(const Vec4 & other) const
+	{
+		return cmpgt(other) == 0xf;
+	}
+
+	FORCE_INLINE bool operator<=(const Vec4 & other) const
+	{
+		return cmple(other) == 0xf;
+	}
+
+	FORCE_INLINE bool operator>=(const Vec4 & other) const
+	{
+		return cmpge(other) == 0xf;
+	}
+	/// @}
+
+	/**
 	 * Cast to subtype
 	 * 
 	 * @return new vector

@@ -280,6 +280,91 @@ struct Vec3
 	}
 
 	/**
+	 * Returns true if vector's length is nearly zero
+	 */
+	FORCE_INLINE bool isNearlyZero() const
+	{
+		CHECKF(false, "isNearlyZero() implemented only for floating-point types")
+		return false;
+	}
+
+	/**
+	 * Compare two vectors
+	 * 
+	 * @param [in] other vector operand
+	 * @return comparison mask
+	 * @{
+	 */
+	FORCE_INLINE int32 cmpeq(const Vec3 & other) const
+	{
+		return (x == other.x) | (y == other.y) << 1 | (z == other.z) << 2;
+	}
+
+	FORCE_INLINE int32 cmpne(const Vec3 & other) const
+	{
+		return (x != other.x) | (y != other.y) << 1 | (z != other.z) << 2;
+	}
+
+	FORCE_INLINE int32 cmplt(const Vec3 & other) const
+	{
+		return (x < other.x) | (y < other.y) << 1 | (z < other.z) << 2;
+	}
+
+	FORCE_INLINE int32 cmpgt(const Vec3 & other) const
+	{
+		return (x > other.x) | (y > other.y) << 1 | (z > other.z) << 2;
+	}
+
+	FORCE_INLINE int32 cmple(const Vec3 & other) const
+	{
+		return (x <= other.x) | (y <= other.y) << 1 | (z <= other.z) << 2;
+	}
+
+	FORCE_INLINE int32 cmpge(const Vec3 & other) const
+	{
+		return (x >= other.x) | (y >= other.y) << 1 | (z >= other.z) << 2;
+	}
+	/// @}
+
+	/**
+	 * Strict comparison operators
+	 * 
+	 * @param [in] other second operand
+	 * @return true if true for all components
+	 * @{
+	 */
+	FORCE_INLINE bool operator==(const Vec3 & other) const
+	{
+		return cmpeq(other) == 0x7;
+	}
+
+	FORCE_INLINE bool operator!=(const Vec3 & other) const
+	{
+		return cmpne(other) == 0x7;
+	}
+
+	FORCE_INLINE bool operator<(const Vec3 & other) const
+	{
+		return cmplt(other) == 0x7;
+	}
+
+	FORCE_INLINE bool operator>(const Vec3 & other) const
+	{
+		return cmpgt(other) == 0x7;
+	}
+
+	FORCE_INLINE bool operator<=(const Vec3 & other) const
+	{
+		return cmple(other) == 0x7;
+	}
+
+	FORCE_INLINE bool operator>=(const Vec3 & other) const
+	{
+		return cmpge(other) == 0x7;
+	}
+	/// @}
+
+	/**
 	 * Cast to subtype
 	 * 
 	 * @return new vector
@@ -299,4 +384,10 @@ template<>
 FORCE_INLINE float32 Vec3<float32>::getSize() const
 {
 	return PlatformMath::sqrt(getSquaredSize());
+}
+
+template<>
+FORCE_INLINE bool Vec3<float32>::isNearlyZero() const
+{
+	return getSquaredSize() < 4 * FLT_EPSILON;
 }
