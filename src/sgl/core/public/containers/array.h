@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core_types.h"
-#include "containers/containers_fwd.h"
+#include "containers/containers_types.h"
 #include "misc/utility.h"
 #include "templates/utility.h"
 #include "hal/platform_memory.h"

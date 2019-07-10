@@ -3,7 +3,7 @@
 #include "core_types.h"
 #include "misc/assert.h"
 #include "hal/platform_math.h"
-#include "math_fwd.h"
+#include "math_types.h"
 
 /**
  * A templated vector with 4 components
@@ -23,6 +23,49 @@ struct Vec4
 			/// @}
 		};
 	};
+
+	/**
+	 * Zero initializes vector
+	 */
+	FORCE_INLINE Vec4()
+		: array{}
+	{
+		//
+	}
+
+	/**
+	 * Initializes vector components
+	 * 
+	 * @param [in] inX,inY,inZ vector components
+	 */
+	FORCE_INLINE Vec4(T inX, T inY, T inZ, T inW)
+		: array{inX, inY, inZ, inW}
+	{
+		//
+	}
+
+	/**
+	 * Scalar constructor
+	 * 
+	 * @param [in] s scalar value
+	 */
+	FORCE_INLINE Vec4(T s)
+		: array{s, s, s, s}
+	{
+		//
+	}
+
+	/**
+	 * Vec3 constructor
+	 * 
+	 * @param [in] other Vec3 vector
+	 * @param [in] inW in w component
+	 */
+	FORCE_INLINE Vec4(const Vec3<T> & other, T inW)
+		: array{other.x, other.y, other.z, inW}
+	{
+		//
+	}
 
 	/**
 	 * Returns i-th component

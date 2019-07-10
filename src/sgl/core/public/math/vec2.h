@@ -3,6 +3,7 @@
 #include "core_types.h"
 #include "misc/assert.h"
 #include "hal/platform_math.h"
+#include "math_types.h"
 
 /**
  * Templated 2D vector
@@ -29,6 +30,37 @@ struct alignas(2 * sizeof(T)) Vec2
 		/// Array layout
 		T array[2];		
 	};
+
+	/**
+	 * Zero initialize vector
+	 */
+	FORCE_INLINE Vec2()
+		: array{}
+	{
+		//
+	}
+
+	/**
+	 * Initializes vector components
+	 * 
+	 * @param [in] inX,inY,inZ vector components
+	 */
+	FORCE_INLINE Vec2(T inX, T inY)
+		: array{inX, inY}
+	{
+		//
+	}
+
+	/**
+	 * Scalar constructor
+	 * 
+	 * @param [in] s scalar value
+	 */
+	FORCE_INLINE Vec2(T s)
+		: array{s, s}
+	{
+		//
+	}
 
 	/**
 	 * Returns i-th component
@@ -221,14 +253,14 @@ struct alignas(2 * sizeof(T)) Vec2
 	}
 
 	/**
-	 * Returns cross product as a scalar value
+	 * Returns cross product as a 3D vector
 	 * 
 	 * @param [in] other vector operand
-	 * @return y component of cross product
+	 * @return scaled z-axis vector
 	 */
-	FORCE_INLINE T operator^(Vec2 other) const
+	FORCE_INLINE Vec3<T> operator^(Vec2 other) const
 	{
-		return x * other.y - y * other.x;
+		return Vec3<T>{0.f, 0.f, x * other.y - y * other.x};
 	}
 
 	/**

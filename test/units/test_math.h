@@ -4,7 +4,7 @@
 
 #include "core_types.h"
 #include "hal/platform_math.h"
-#include "math/math_fwd.h"
+#include "math/math_types.h"
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "math/vec4.h"
@@ -88,9 +88,9 @@ TEST(math, vec2)
 
 	ASSERT_FLOAT_EQ(dot, 12.5f * 0.5f + 15.f * 1.f);
 
-	float32 cross = p ^ Vec2<float32>{0.5f, 1.f};
+	Vec3<float32> cross = p ^ Vec2<float32>{0.5f, 1.f};
 
-	ASSERT_FLOAT_EQ(cross, 12.5f * 1.f - 15.f * 0.5f);
+	ASSERT_FLOAT_EQ(cross.z, 12.5f * 1.f - 15.f * 0.5f);
 
 	Vec2<int32> point = p;
 	

@@ -3,6 +3,7 @@
 #include "core_types.h"
 #include "misc/assert.h"
 #include "hal/platform_math.h"
+#include "math_types.h"
 
 /**
  * A vector with 3 components
@@ -27,6 +28,49 @@ struct Vec3
 		/// Array layout
 		T array[3];
 	};
+
+	/**
+	 * Zero initialize vector
+	 */
+	FORCE_INLINE Vec3()
+		: array{}
+	{
+		//
+	}
+
+	/**
+	 * Initializes vector components
+	 * 
+	 * @param [in] inX,inY,inZ vector components
+	 */
+	FORCE_INLINE Vec3(T inX, T inY, T inZ)
+		: array{inX, inY, inZ}
+	{
+		//
+	}
+
+	/**
+	 * Scalar constructor
+	 * 
+	 * @param [in] s scalar value
+	 */
+	FORCE_INLINE Vec3(T s)
+		: array{s, s, s}
+	{
+		//
+	}
+
+	/**
+	 * Vec2 constructor
+	 * 
+	 * @param [in] other Vec2 vector
+	 * @param [in] inZ z component
+	 */
+	FORCE_INLINE Vec3(const Vec2<T> & other, T inZ)
+		: array{other.x, other.y, inZ}
+	{
+		//
+	}
 
 	/**
 	 * Returns i-th component
