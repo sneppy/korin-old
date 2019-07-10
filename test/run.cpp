@@ -6,14 +6,7 @@
 #include "hal/malloc_pool.h"
 #include "containers/tree.h"
 
-template<typename T>
-struct LessThan
-{
-	FORCE_INLINE int32 operator()(const T & a, const T & b) const
-	{
-		return int32(a > b) - int32(a < b);
-	}
-};
+#include <immintrin.h>
 
 int main()
 {

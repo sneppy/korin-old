@@ -1,7 +1,7 @@
 ### Compiler setup
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAG}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAG} -mavx")
 
 ## Global compile definitions
 
