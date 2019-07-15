@@ -1,4 +1,3 @@
-#include <gtest/gtest.h>
 #include "test_memory.h"
 
 int main(int argc, char ** argv)

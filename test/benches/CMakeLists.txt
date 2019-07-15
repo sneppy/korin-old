@@ -1,20 +1,15 @@
-### Setup unit tests
+### Setup benchmarks
 
-set(UNITS
+set(BENCHES
 
-	"templates"
-	"memory"
 	"math"
-	"containers"
 )
 
-list(LENGTH UNIT NUM_UNITS)
-
-## Create and build all units
-foreach(UNIT ${UNITS})
+## Create and build all benches
+foreach(BENCH ${BENCHES})
 	
-	set(PRIVATE_FILE "test_${UNIT}.cpp")
-	set(PUBLIC_FILE "test_${UNIT}.h")
+	set(PRIVATE_FILE "bench_${BENCH}.cpp")
+	set(PUBLIC_FILE "bench_${BENCH}.h")
 	
 	## Create private file if necessary
 	get_filename_component(PRIVATE_FILE ${PRIVATE_FILE} ABSOLUTE)
@@ -22,13 +17,10 @@ foreach(UNIT ${UNITS})
 	
 		file(WRITE ${PRIVATE_FILE}
 		
-			"#include \"test_${UNIT}.h\"\n"
+			"#include \"bench_${BENCH}.h\"\n"
 			"\n"
-			"int main(int argc, char ** argv)\n"
-			"{\n"
-			"\ttesting::InitGoogleTest(&argc, argv);\n"
-			"\treturn RUN_ALL_TESTS();\n"
-			"}\n"
+			"BENCHMARK_MAIN();\n"
+			"\n"
 		)
 		
 	endif(NOT EXISTS ${PRIVATE_FILE})
@@ -41,13 +33,13 @@ foreach(UNIT ${UNITS})
 		
 			"#pragma once\n"
 			"\n"
-			"#include \"gtest/gtest.h\"\n"
+			"#include \"benchmark/benchmark.h\"\n"
 		)
 		
 	endif(NOT EXISTS ${PUBLIC_FILE})
 
 	## Create executable
-	set(TARGET_NAME ${PROJECT_NAME}-test_${UNIT})
+	set(TARGET_NAME ${PROJECT_NAME}-bench_${BENCH})
 	add_executable(${TARGET_NAME}
 	
 		${PUBLIC_FILE}
@@ -58,12 +50,11 @@ foreach(UNIT ${UNITS})
 	target_link_libraries(${TARGET_NAME}
 
 		${PROJECT_NAME}
-		gtest_main
-		${CMAKE_THREAD_LIBS_INIT}
+		benchmark
 	)
 
 	## Create make target
-	add_custom_target(test_${UNIT}
+	add_custom_target(bench_${BENCH}
 
 		COMMAND				<$TARGET_PROPERTY:${TARGET_NAME},RUNTIME_OUTPUT_DIRECTORY>
 		DEPENDS				${TARGET_NAME}
@@ -72,12 +63,12 @@ foreach(UNIT ${UNITS})
 
 endforeach()
 
-### Create target to run all test units
+### Create target to run all benchmarks
 	
-set(PRIVATE_FILE "test_all.gen.cpp")
-set(PUBLIC_FILE "test_all.gen.h")
+set(PRIVATE_FILE "bench_all.gen.cpp")
+set(PUBLIC_FILE "bench_all.gen.h")
 
-## Generate files that includes all unit tests
+## Generate files that includes all benchmarks
 get_filename_component(PRIVATE_FILE ${PRIVATE_FILE} ABSOLUTE)
 file(WRITE ${PRIVATE_FILE}
 
@@ -87,11 +78,8 @@ file(WRITE ${PRIVATE_FILE}
 	"\n"
 	"#include \"${PUBLIC_FILE}\"\n"
 	"\n"
-	"int main(int argc, char ** argv)\n"
-	"{\n"
-	"\ttesting::InitGoogleTest(&argc, argv);\n"
-	"\treturn RUN_ALL_TESTS();\n"
-	"}\n"
+	"BENCHMARK_MAIN();\n"
+	"\n"
 )
 
 get_filename_component(PUBLIC_FILE ${PUBLIC_FILE} ABSOLUTE)
@@ -103,41 +91,40 @@ file(WRITE ${PUBLIC_FILE}
 	"\n"
 	"#pragma once\n"
 	"\n"
-	"#include \"gtest/gtest.h\"\n"
+	"#include \"benchmark/benchmark.h\"\n"
 	"\n"
 )
 
 ## Append all test units public files
-foreach(UNIT ${UNITS})
+foreach(BENCH ${BENCHES})
 	
-	set(UNIT_PUBLIC_FILE "test_${UNIT}.h")
-	list(APPEND UNIT_PUBLIC_FILES ${UNIT_PUBLIC_FILE}) # Watch for changes
+	set(BENCH_PUBLIC_FILE "bench_${BENCH}.h")
+	list(APPEND BENCH_PUBLIC_FILES ${BENCH_PUBLIC_FILE}) # Watch for changes
 	file(APPEND ${PUBLIC_FILE}
 	
-		"#include \"${UNIT_PUBLIC_FILE}\"\n"
+		"#include \"${BENCH_PUBLIC_FILE}\"\n"
 	)
 
-endforeach(UNIT ${UNITS})
+endforeach()
 
 ## Create executable for all units
-set(TARGET_NAME ${PROJECT_NAME}-test_all)
+set(TARGET_NAME ${PROJECT_NAME}-bench_all)
 add_executable(${TARGET_NAME}
 
 	${PRIVATE_FILE}
 	${PUBLIC_FILE}
-	${UNIT_PUBLIC_FILES}
+	${BENCH_PUBLIC_FILES}
 )
 
 ## Link SGL library
 target_link_libraries(${TARGET_NAME}
 
 	${PROJECT_NAME}
-	gtest_main
-	${CMAKE_THREAD_LIBS_INIT}
+	benchmark
 )
 
 ## Create make target
-add_custom_target(test_${UNIT}
+add_custom_target(bench_${UNIT}
 
 	COMMAND				<$TARGET_PROPERTY:${TARGET_NAME},RUNTIME_OUTPUT_DIRECTORY>
 	DEPENDS				${TARGET_NAME}

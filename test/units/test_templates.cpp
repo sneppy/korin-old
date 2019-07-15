@@ -1,4 +1,3 @@
-#include <gtest/gtest.h>
 #include "test_templates.h"
 
 int main(int argc, char ** argv)

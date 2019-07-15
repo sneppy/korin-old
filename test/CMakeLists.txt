@@ -43,3 +43,13 @@ if(CREATE_TEST_TARGET)
 	add_subdirectory(units)
 
 endif(CREATE_TEST_TARGET)
+
+### Include benchmarks
+
+option(BUILD_BENCHMARKS "If true build all benchmark targets" ON)
+
+if(CREATE_TEST_TARGET)
+
+	add_subdirectory(benches)
+
+endif(CREATE_TEST_TARGET)

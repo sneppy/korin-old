@@ -1,4 +1,3 @@
-#include <gtest/gtest.h>
 #include "test_math.h"
 
 int main(int argc, char ** argv)

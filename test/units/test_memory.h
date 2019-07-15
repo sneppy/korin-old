@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 
 #include "hal/platform_memory.h"
 #include "hal/malloc_ansi.h"
