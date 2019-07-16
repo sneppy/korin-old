@@ -8,6 +8,43 @@
 #include <string.h>
 #include <time.h>
 
+/* template<typename T>
+static inline void doNotOptimizeAway(T && data)
+{
+	asm volatile("" : "+r" (data));
+} */
+
+static inline void doNotOptimizeAway(void * p)
+{
+	asm volatile("" : : "g" (p) : "memory");
+}
+
+void mat4f_transpose(float a[4][4])
+{
+	__m128 a0, a1, a2, a3;
+	__m128 v0, v1, v2, v3;
+
+    a0 = _mm_load_ps(a[0]);
+	a1 = _mm_load_ps(a[1]);
+	a2 = _mm_load_ps(a[2]);
+	a3 = _mm_load_ps(a[3]);
+
+    v0 = _mm_unpacklo_ps(a0, a2);
+    v1 = _mm_unpacklo_ps(a1, a3);
+    v2 = _mm_unpackhi_ps(a0, a2);
+    v3 = _mm_unpackhi_ps(a1, a3);
+
+    a0 = _mm_unpacklo_ps(v0, v1);
+    a1 = _mm_unpackhi_ps(v0, v1);
+    a2 = _mm_unpacklo_ps(v2, v3);
+    a3 = _mm_unpackhi_ps(v2, v3);
+
+	_mm_store_ps(a[0], a0);
+	_mm_store_ps(a[1], a1);
+	_mm_store_ps(a[2], a2);
+	_mm_store_ps(a[3], a3);
+}
+
 void mat4f_mul_mat_s(float * __restrict__ a, const float * __restrict__ b)
 {
 	a = (float*)__builtin_assume_aligned(a, 32);
@@ -78,6 +115,87 @@ void mat4f_mul_mat(float a[4][4], const float b[4][4])
     k = _mm_add_ps(k, l);
     i = _mm_add_ps(i, j);
     _mm_store_ps(a[3], _mm_add_ps(i, k));
+}
+
+void mat4f_inv_transform(float a[4][4])
+{
+	__m128 a0, a1, a2, a3;
+	__m128 v0, v1, v2, v3, v4, v5, v6, v7;
+	
+    a0 = _mm_load_ps(a[0]);
+	a1 = _mm_load_ps(a[1]);
+	a2 = _mm_load_ps(a[2]);
+	a3 = _mm_load_ps(a[3]);
+
+    v0 = _mm_unpacklo_ps(a0, a2);
+    v1 = _mm_unpacklo_ps(a1, a3);
+    v2 = _mm_unpackhi_ps(a0, a2);
+    v3 = _mm_unpackhi_ps(a1, a3);
+
+    a0 = _mm_unpacklo_ps(v0, v1);
+    a1 = _mm_unpackhi_ps(v0, v1);
+    a2 = _mm_unpacklo_ps(v2, v3);
+    a3 = _mm_unpackhi_ps(v2, v3);
+
+	// Invert 3x3
+
+	v0 = _mm_permute_ps(a1, 0xc9);
+	v1 = _mm_permute_ps(a2, 0xd2);
+	v0 = _mm_mul_ps(v0, v1);
+
+	v2 = _mm_permute_ps(a1, 0xd2);
+	v3 = _mm_permute_ps(a2, 0xc9);
+	v1 = _mm_mul_ps(v2, v3);
+
+	v4 = _mm_permute_ps(a0, 0xc9);
+	v5 = _mm_permute_ps(a2, 0xd2);
+	v2 = _mm_mul_ps(v4, v5);
+
+	v0 = _mm_sub_ps(v0, v1);
+
+	v6 = _mm_permute_ps(a0, 0xd2);
+	v7 = _mm_permute_ps(a2, 0xc9);
+	v3 = _mm_mul_ps(v6, v7);
+
+	v4 = _mm_permute_ps(a0, 0xc9);
+	v5 = _mm_permute_ps(a1, 0xd2);
+	v4 = _mm_mul_ps(v4, v5);
+
+	v1 = _mm_sub_ps(v3, v2); // -(v2 - v3)
+
+	v6 = _mm_permute_ps(a0, 0xd2);
+	v7 = _mm_permute_ps(a1, 0xc9);
+	v5 = _mm_mul_ps(v6, v7);
+
+	v7 = _mm_mul_ps(a0, v0);
+	v7 = _mm_hadd_ps(v7, v7);
+	v7 = _mm_hadd_ps(v7, v7);
+	v7 = _mm_rcp_ps(v7);
+
+	v2 = _mm_sub_ps(v4, v5);
+
+	v0 = _mm_mul_ps(v0, v7);
+	v1 = _mm_mul_ps(v1, v7);
+	v2 = _mm_mul_ps(v2, v7);
+
+	v4 = _mm_mul_ps(a3, v0);
+	v5 = _mm_mul_ps(a3, v1);
+	v6 = _mm_mul_ps(a3, v2);
+
+	v4 = _mm_hadd_ps(v4, v5);
+	v5 = _mm_hadd_ps(v6, _mm_xor_ps(v7, v7));
+
+	v4 = _mm_hadd_ps(v4, v5);
+
+    v4 = _mm_xor_ps(v4, _mm_set1_ps(-0.f));
+	v0 = _mm_blend_ps(v0, _mm_permute_ps(v4, 0x3f), 0x8);
+	v1 = _mm_blend_ps(v1, _mm_permute_ps(v4, 0x7f), 0x8);
+	v2 = _mm_blend_ps(v2, _mm_permute_ps(v4, 0xbf), 0x8);
+
+	_mm_store_ps(a[0], v0);
+	_mm_store_ps(a[1], v1);
+	_mm_store_ps(a[2], v2);
+	// a[3] as is
 }
 
 void mat4f_inv(float a[4][4])
@@ -357,6 +475,27 @@ bool gluInvertMatrix(const float m[16], float invOut[16])
     return true;
 }
 
+static void benchMat4Transpose(benchmark::State & state)
+{
+	alignas(32) float a[4][4] = {
+		{1.f, 0.f, 0.f, 2.f},
+		{0.f, 1.f, 0.f, 2.f},
+		{0.f, 0.f, 1.f, 2.f},
+		{0.f, 0.f, 0.f, 1.f}
+	};
+
+	for (int i = 0; i < 16; ++i)
+		a[i / 4][i % 4] = rand() / (float)RAND_MAX;
+
+	for (auto _ : state)
+	{
+		mat4f_transpose(a);
+	}
+
+	doNotOptimizeAway(a);
+}
+BENCHMARK(benchMat4Transpose);
+
 static void benchMat4MulMat(benchmark::State & state)
 {
 	alignas(32) float a[4][4] = {
@@ -376,6 +515,8 @@ static void benchMat4MulMat(benchmark::State & state)
 	{
 		mat4f_mul_mat(a, b);
 	}
+	
+	doNotOptimizeAway(a);
 }
 BENCHMARK(benchMat4MulMat);
 
@@ -398,6 +539,8 @@ static void benchMat4MulMatS(benchmark::State & state)
 	{
 		mat4f_mul_mat_s(a, b);
 	}
+	
+	doNotOptimizeAway(a);
 }
 BENCHMARK(benchMat4MulMatS);
 
@@ -417,8 +560,31 @@ static void benchMat4Inv(benchmark::State & state)
 	{
 		mat4f_inv(a);
 	}
+
+	doNotOptimizeAway(a);
 }
 BENCHMARK(benchMat4Inv);
+
+static void benchMat4InvTransform(benchmark::State & state)
+{
+	alignas(32) float a[4][4] = {
+		{1.f, 0.f, 0.f, 2.f},
+		{0.f, 1.f, 0.f, 2.f},
+		{0.f, 0.f, 1.f, 2.f},
+		{0.f, 0.f, 0.f, 1.f}
+	};
+
+	/* for (int i = 0; i < 16; ++i)
+		a[i / 4][i % 4] = rand() / (float)RAND_MAX; */
+
+	for (auto _ : state)
+	{
+		mat4f_inv_transform(a);
+	}
+
+	doNotOptimizeAway(a);
+}
+BENCHMARK(benchMat4InvTransform);
 
 static void benchMat4InvGlu(benchmark::State & state)
 {
@@ -436,7 +602,8 @@ static void benchMat4InvGlu(benchmark::State & state)
 	for (auto _ : state)
 	{
 		gluInvertMatrix(a, b);
-		gluInvertMatrix(b, a);
 	}
+
+	doNotOptimizeAway(b);
 }
 BENCHMARK(benchMat4InvGlu);
