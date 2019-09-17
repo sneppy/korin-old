@@ -23,7 +23,7 @@ foreach(BENCH ${BENCHES})
 			"\n"
 		)
 		
-	endif(NOT EXISTS ${PRIVATE_FILE})
+	endif()
 	
 	## Same for public file
 	get_filename_component(PUBLIC_FILE ${PUBLIC_FILE} ABSOLUTE)
@@ -36,7 +36,7 @@ foreach(BENCH ${BENCHES})
 			"#include \"benchmark/benchmark.h\"\n"
 		)
 		
-	endif(NOT EXISTS ${PUBLIC_FILE})
+	endif()
 
 	## Create executable
 	set(TARGET_NAME ${PROJECT_NAME}-bench_${BENCH})
@@ -46,10 +46,10 @@ foreach(BENCH ${BENCHES})
 		${PRIVATE_FILE}
 	)
 
-	## Link SGL library
+	## Link main library
 	target_link_libraries(${TARGET_NAME}
 
-		${PROJECT_NAME}
+		${PROJECT_NAME}-lib
 		benchmark
 	)
 
@@ -119,7 +119,7 @@ add_executable(${TARGET_NAME}
 ## Link SGL library
 target_link_libraries(${TARGET_NAME}
 
-	${PROJECT_NAME}
+	${PROJECT_NAME}-lib
 	benchmark
 )
 

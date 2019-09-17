@@ -1,11 +1,12 @@
 #pragma once
 
 #include "core_types.h"
-#include "containers/containers_types.h"
 #include "misc/utility.h"
-#include "templates/utility.h"
 #include "hal/platform_memory.h"
 #include "hal/malloc_ansi.h"
+#include "templates/utility.h"
+#include "templates/allocators.h"
+#include "containers/containers_types.h"
 
 /**
  * An array is a collection of elements
@@ -53,23 +54,80 @@ protected:
 	 * @param [in] n number of elements to copy
 	 * @{
 	 */
-	template<typename _T>
-	FORCE_INLINE typename EnableIf<!IsTriviallyConstructible<_T>::value>::Type constructCopyElements(_T * RESTRICT dst, const _T * RESTRICT src, uint64 n)
+	template<typename TT>
+	FORCE_INLINE typename EnableIf<!IsTriviallyConstructible<TT>::value>::Type constructCopyElements(TT * RESTRICT dst, const TT * RESTRICT src, uint64 n)
 	{
 		for (uint32 i = 0; i < n; ++i)
-			new (dst + i) _T(src[i]);
+			new (dst + i) TT(src[i]);
 	}
 
-	template<typename _T>
-	FORCE_INLINE typename EnableIf<IsTriviallyConstructible<_T>::value>::Type constructCopyElements(_T * RESTRICT dst, const _T * RESTRICT src, uint64 n)
+	template<typename TT>
+	FORCE_INLINE typename EnableIf<IsTriviallyConstructible<TT>::value>::Type constructCopyElements(TT * RESTRICT dst, const TT * RESTRICT src, uint64 n)
 	{
-		Memory::memcpy(dst, src, n * sizeof(_T));
+		Memory::memcpy(dst, src, n * sizeof(TT));
 	}
 	///@}
 
 	/**
-	 * Destroy 
+	 * Destroy elements in range
+	 * 
+	 * @param [in] begin,end array range
 	 */
+	FORCE_INLINE void destroyElements(T * begin, T * end)
+	{
+		for (; begin != end; ++begin)
+			begin->~T();
+	}
+
+	/**
+	 * Destroy array, also deallocates
+	 * managed allocator
+	 */
+	FORCE_INLINE void destroy()
+	{
+		if (buffer)
+		{
+			// Destroy elements and deallocate buffer
+			destroyElements(buffer, buffer + count);
+			allocator->free(buffer);
+			buffer = nullptr;
+		}
+
+		// Destroy managed allocator
+		if (bHasOwnAlloc) delete allocator;
+	}
+
+	/**
+	 * Resize buffer if new capacity exceeds
+	 * current capacity
+	 * 
+	 * @param [in] inCapacity required capacity
+	 * @return true if buffer was resized
+	 */
+	FORCE_INLINE bool resizeIfNecessary(uint64 inCapacity)
+	{
+		if (inCapacity > capacity)
+		{
+			// Compute minimum capacity according to policy
+			capacity = capacity ? capacity : 2;
+			while (capacity < inCapacity) capacity *= 2;
+
+			// Allocate new memory
+			T * inBuffer = ObjectAllocator<T>{allocator}.alloc(capacity);
+
+			// Copy elements and free old buffer
+			if (buffer)
+			{
+				constructCopyElements(inBuffer, buffer, count);
+				allocator->free(buffer);
+			}
+
+			buffer = inBuffer;
+			return true;
+		}
+
+		return false;
+	}
 
 public:
 	/**
@@ -92,14 +150,38 @@ public:
 
 		// Create initial buffer
 		if (capacity)
-		{
-			const sizet bufferSize = capacity * sizeof(T);
-			buffer = reinterpret_cast<T*>(allocator->alloc(bufferSize, alignof(T)));
-		}
+			buffer = ObjectAllocator<T>{allocator}.alloc(capacity);
 
 		// Default construct elements
 		if (count)
 			constructDefaultElements(buffer, buffer + count);
+	}
+
+	/**
+	 * Default constructor
+	 */
+	FORCE_INLINE Array()
+		: Array{0, 0, nullptr}
+	{
+		//
+	}
+
+	/**
+	 * Buffer constructor
+	 * 
+	 * @param [in] src source buffer
+	 * @param [in] inCount elements count
+	 * @param [in] slack extra space
+	 * @param [in] inAllocator optional allocator
+	 */
+	FORCE_INLINE Array(const T * src, uint64 inCount, uint64 slack = 0, MallocT * inAllocator = nullptr)
+		: Array{inCount + slack, inCount, inAllocator}
+	{
+		CHECK(buffer != nullptr)
+
+		// Copy source buffer to destination
+		if (count)
+			constructCopyElements(buffer, src, count);
 	}
 
 	/**
@@ -108,14 +190,9 @@ public:
 	 * Performs a copy of all elements
 	 */
 	Array(const Array & other)
-		: Array(other.capacity, 0, nullptr)
+		: Array{other.buffer, other.count, 0, nullptr}
 	{
-		// Set count manually (we don't want to default construct)
-		count = other.count;
-
-		// Copy elements
-		if (count)
-			constructCopyElements(buffer, other.buffer, count);
+		//
 	}
 
 	/**
@@ -125,14 +202,9 @@ public:
 	 */
 	template<typename MallocU>
 	Array(const Array<T, MallocU> & other)
-		: Array(other.capacity, 0, nullptr)
+		: Array{other.buffer, other.count, 0, nullptr}
 	{
-		// Set count manually
-		count = other.count;
-
-		// Copy elements
-		if (count)
-			constructCopyElements(buffer, other.buffer, count);
+		//
 	}
 
 	/**
@@ -153,30 +225,70 @@ public:
 	}
 
 	/**
-	 * Default constructor
-	 */
-	FORCE_INLINE Array()
-		: Array(0, 0, nullptr)
-	{
-		//
-	}
-
-	/**
 	 * Array destructor, destroys elements,
 	 * deallocates buffer and destroys managed
 	 * allocator
 	 */
 	FORCE_INLINE ~Array()
 	{
-		if (buffer)
-		{
-			allocator->free(buffer);
+		destroy();
+	}
 
-			// TODO: Destroy elements
-		}
+	/**
+	 * Copy assignment with same allocator
+	 */
+	Array & operator=(const Array & other)
+	{
+		// Destroy elements
+		destroyElements(buffer, buffer + count);
 
-		// Destroy managed allocator
-		if (bHasOwnAlloc) delete allocator;
+		// Resize if necessary and copy buffer
+		resizeIfNecessary((count = other.count));
+
+		if (other.count)
+			constructCopyElements(buffer, other.buffer, other.count);
+		
+		return *this;
+	}
+
+	/**
+	 * Copy assignment with different allocator
+	 */
+	template<typename MallocU>
+	Array & operator=(const Array<T, MallocU> & other)
+	{
+		// Destroy elements
+		destroyElements(buffer, buffer + count);
+
+		// Resize if necessary and copy buffer
+		resizeIfNecessary((count = other.count));
+
+		if (other.count)
+			constructCopyElements(buffer, other.buffer, other.count);
+		
+		return *this;
+	}
+
+	/**
+	 * Move assignment
+	 */
+	Array & operator=(Array && other)
+	{
+		// Destroy first
+		destroy();
+
+		bHasOwnAlloc = other.bHasOwnAlloc;
+		allocator = other.allocator;
+		buffer = other.buffer;
+		capacity = other.capacity;
+		count = other.count;
+
+		other.bHasOwnAlloc = false;
+		other.allocator = nullptr;
+		other.buffer = nullptr;
+		other.capacity = other.count = 0;
+
+		return *this;
 	}
 
 	/**
@@ -236,40 +348,6 @@ public:
 	METHOD_ALIAS_CONST(getAt, operator[])
 	/// @}
 
-protected:
-	/**
-	 * Resize buffer if new capacity exceeds
-	 * current capacity
-	 * 
-	 * @param [in] inCapacity required capacity
-	 * @return true if buffer was resized
-	 */
-	FORCE_INLINE bool resizeIfNecessary(uint64 inCapacity)
-	{
-		if (inCapacity > capacity)
-		{
-			// Compute minimum capacity according to policy
-			capacity = capacity ? capacity : 2;
-			while (capacity < inCapacity) capacity *= 2;
-
-			// Allocate new memory
-			T * inBuffer = reinterpret_cast<T*>(allocator->alloc(capacity * sizeof(T), alignof(T)));
-
-			// Copy elements and free old buffer
-			if (buffer)
-			{
-				constructCopyElements(inBuffer, buffer, count);
-				allocator->free(buffer);
-			}
-
-			buffer = inBuffer;
-			return true;
-		}
-
-		return false;
-	}
-
-public:
 	/**
 	 * Insert a new element at the end of the
 	 * array
@@ -277,10 +355,20 @@ public:
 	 * @param [in] t element to insert
 	 * @return reference to element
 	 */
-	template<typename _T>
-	T & add(_T && t)
+	template<typename TT>
+	T & add(TT && t)
 	{
 		resizeIfNecessary(count + 1);
-		return *(new (buffer + count++) T(forward<_T>(t)));
+		return *(new (buffer + count++) T(forward<TT>(t)));
+	}
+
+	/**
+	 * Remove element at index
+	 * 
+	 * @param [in] idx element index
+	 */
+	void remove(uint32 idx)
+	{
+		// TODO:
 	}
 };

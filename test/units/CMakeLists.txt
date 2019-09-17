@@ -57,7 +57,7 @@ foreach(UNIT ${UNITS})
 	## Link SGL library
 	target_link_libraries(${TARGET_NAME}
 
-		${PROJECT_NAME}
+		${PROJECT_NAME}-lib
 		gtest_main
 		${CMAKE_THREAD_LIBS_INIT}
 	)
@@ -117,7 +117,7 @@ foreach(UNIT ${UNITS})
 		"#include \"${UNIT_PUBLIC_FILE}\"\n"
 	)
 
-endforeach(UNIT ${UNITS})
+endforeach()
 
 ## Create executable for all units
 set(TARGET_NAME ${PROJECT_NAME}-test_all)
@@ -131,7 +131,7 @@ add_executable(${TARGET_NAME}
 ## Link SGL library
 target_link_libraries(${TARGET_NAME}
 
-	${PROJECT_NAME}
+	${PROJECT_NAME}-lib
 	gtest_main
 	${CMAKE_THREAD_LIBS_INIT}
 )

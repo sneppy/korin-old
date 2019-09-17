@@ -41,14 +41,14 @@ public:
 	 * 
 	 * @param [in] inData node data
 	 */
-	template<typename _T>
-	FORCE_INLINE BinaryNode(_T && inData)
+	template<typename TT>
+	FORCE_INLINE BinaryNode(TT && inData)
 		: parent{nullptr}
 		, left{nullptr}
 		, right{nullptr}
 		, next{nullptr}
 		, prev{nullptr}
-		, data{forward<_T>(inData)}
+		, data{forward<TT>(inData)}
 		, color{Color::RED}
 	{
 		//

@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "templates/types.h"
+#include <templates/types.h>
 
 TEST(templates, types)
 {

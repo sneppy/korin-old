@@ -24,11 +24,11 @@ public:
 	/**
 	 * Data constructor
 	 */
-	template<typename _T>
-	explicit FORCE_INLINE Link(_T && inData)
+	template<typename TT>
+	explicit FORCE_INLINE Link(TT && inData)
 		: next{nullptr}
 		, prev{nullptr}
-		, data{forward<_T>(inData)}
+		, data{forward<TT>(inData)}
 	{
 		//
 	}
@@ -86,10 +86,10 @@ protected:
 	 * @param [in] data link data
 	 * @return link pointer
 	 */
-	template<typename _T>
-	FORCE_INLINE Link * createLink(_T && data)
+	template<typename TT>
+	FORCE_INLINE Link * createLink(TT && data)
 	{
-		return new(reinterpret_cast<Link*>(allocator->alloc(sizeof(Link), alignof(Link)))) Link(forward<_T>(data));
+		return new(reinterpret_cast<Link*>(allocator->alloc(sizeof(Link), alignof(Link)))) Link(forward<TT>(data));
 	}
 
 	/**
@@ -160,13 +160,13 @@ public:
 	 * @param [in] data inserted element
 	 * @return reference to inserted data
 	 */
-	template<typename _T>
-	T & pushFront(_T && data)
+	template<typename TT>
+	T & pushFront(TT && data)
 	{
 		++length;
 		
 		// Create link
-		Link * link = createLink(forward<_T>(data));
+		Link * link = createLink(forward<TT>(data));
 
 		if (head)
 		{
@@ -185,13 +185,13 @@ public:
 	 * @param [in] data inserted element
 	 * @return reference to inserted data
 	 */
-	template<typename _T>
-	T & pushBack(_T && data)
+	template<typename TT>
+	T & pushBack(TT && data)
 	{
 		++length;
 		
 		// Create link
-		Link * link = createLink(forward<_T>(data));
+		Link * link = createLink(forward<TT>(data));
 
 		if (tail)
 		{

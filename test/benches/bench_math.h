@@ -2,17 +2,14 @@
 
 #include <benchmark/benchmark.h>
 
+#include <core_types.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <immintrin.h>
 #include <string.h>
 #include <time.h>
-
-/* template<typename T>
-static inline void doNotOptimizeAway(T && data)
-{
-	asm volatile("" : "+r" (data));
-} */
+#include <math.h>
 
 static inline void doNotOptimizeAway(void * p)
 {
@@ -196,6 +193,39 @@ void mat4f_inv_transform(float a[4][4])
 	_mm_store_ps(a[1], v1);
 	_mm_store_ps(a[2], v2);
 	// a[3] as is
+}
+
+template<typename T>
+static inline void swap(T & a, T & b)
+{
+	T t = a;
+	a = b;
+	b = t;
+}
+
+void mat4f_transpose_scalar(float * __restrict__ a)
+{
+    a = (float*)__builtin_assume_aligned(a, 32);
+
+	swap(a[1], a[4]);
+	swap(a[2], a[8]);
+	swap(a[3], a[12]);
+	swap(a[6], a[9]);
+	swap(a[7], a[13]);
+	swap(a[11], a[14]);
+}
+
+void mat4f_inv_transform_unscaled(float * __restrict__ a)
+{
+    a = (float*)__builtin_assume_aligned(a, 32);
+
+	swap(a[1], a[4]);
+	swap(a[2], a[8]);
+	swap(a[6], a[9]);
+
+	a[3] = -a[3];
+	a[7] = -a[7];
+	a[11] = -a[11];
 }
 
 void mat4f_inv(float a[4][4])
@@ -484,9 +514,6 @@ static void benchMat4Transpose(benchmark::State & state)
 		{0.f, 0.f, 0.f, 1.f}
 	};
 
-	for (int i = 0; i < 16; ++i)
-		a[i / 4][i % 4] = rand() / (float)RAND_MAX;
-
 	for (auto _ : state)
 	{
 		mat4f_transpose(a);
@@ -495,6 +522,24 @@ static void benchMat4Transpose(benchmark::State & state)
 	doNotOptimizeAway(a);
 }
 BENCHMARK(benchMat4Transpose);
+
+static void benchMat4TransposeS(benchmark::State & state)
+{
+	alignas(32) float a[4][4] = {
+		{1.f, 0.f, 0.f, 2.f},
+		{0.f, 1.f, 0.f, 2.f},
+		{0.f, 0.f, 1.f, 2.f},
+		{0.f, 0.f, 0.f, 1.f}
+	};
+
+	for (auto _ : state)
+	{
+		mat4f_transpose_scalar(a[0]);
+	}
+
+	doNotOptimizeAway(a);
+}
+BENCHMARK(benchMat4TransposeS);
 
 static void benchMat4MulMat(benchmark::State & state)
 {
@@ -579,7 +624,7 @@ static void benchMat4InvTransform(benchmark::State & state)
 
 	for (auto _ : state)
 	{
-		mat4f_inv_transform(a);
+		mat4f_inv_transform_unscaled(a[0]);
 	}
 
 	doNotOptimizeAway(a);
@@ -607,3 +652,105 @@ static void benchMat4InvGlu(benchmark::State & state)
 	doNotOptimizeAway(b);
 }
 BENCHMARK(benchMat4InvGlu);
+
+static void benchMat4(benchmark::State & state)
+{
+	alignas(32) float a[4][4] = {
+		{1.f, 0.f, 0.f, 2.f},
+		{0.f, 1.f, 0.f, 2.f},
+		{0.f, 0.f, 1.f, 2.f},
+		{0.f, 0.f, 0.f, 1.f}
+	};
+	alignas(32) float b[4][4] = {
+		{2.f, 0.f, 0.f, 2.f},
+		{0.f, 2.f, 0.f, 2.f},
+		{0.f, 0.f, 2.f, 2.f},
+		{0.f, 0.f, 0.f, 1.f}
+	};
+
+	for (auto _ : state)
+	{
+		mat4f_transpose(a);
+		mat4f_mul_mat(a, b);
+		mat4f_inv_transform(a);
+		mat4f_mul_mat(a, b);
+	}
+
+	doNotOptimizeAway(a);
+}
+BENCHMARK(benchMat4);
+
+static void benchMat4S(benchmark::State & state)
+{
+	alignas(32) float a[4][4] = {
+		{1.f, 0.f, 0.f, 2.f},
+		{0.f, 1.f, 0.f, 2.f},
+		{0.f, 0.f, 1.f, 2.f},
+		{0.f, 0.f, 0.f, 1.f}
+	};
+	alignas(32) float b[4][4] = {
+		{2.f, 0.f, 0.f, 2.f},
+		{0.f, 2.f, 0.f, 2.f},
+		{0.f, 0.f, 2.f, 2.f},
+		{0.f, 0.f, 0.f, 1.f}
+	};
+
+	for (auto _ : state)
+	{
+		mat4f_transpose_scalar(a[0]);
+		mat4f_mul_mat_s(a[0], b[0]);
+		gluInvertMatrix(a[0], b[0]);
+		mat4f_mul_mat_s(a[0], b[0]);
+	}
+
+	doNotOptimizeAway(a);
+}
+BENCHMARK(benchMat4S);
+
+void vec3f_mul_vec_loop(float * __restrict__ a, float * __restrict__ b)
+{
+    a = (float*)__builtin_assume_aligned(a, 16);
+    b = (float*)__builtin_assume_aligned(b, 16);
+
+    for (int i = 0; i < 3; ++i)
+        a[i] *= b[i];
+}
+
+void vec4f_mul_vec_loop(float * __restrict__ a, float * __restrict__ b)
+{
+    a = (float*)__builtin_assume_aligned(a, 16);
+    b = (float*)__builtin_assume_aligned(b, 16);
+
+    for (int i = 0; i < 4; ++i)
+        a[i] *= b[i];
+}
+
+static void benchVec4Mul(benchmark::State & state)
+{
+	alignas(16) float a[4] = {1.f, 2.f, 0.5f, 3.f};
+	alignas(16) float b[4] = {15.f, 1.f, 0.2f, 2.5f};
+
+	for (auto _ : state)
+	{
+		for (int i = 0; i < 100; ++i)
+			vec4f_mul_vec_loop(a, b);
+	}
+
+	doNotOptimizeAway(a);
+}
+BENCHMARK(benchVec4Mul);
+
+static void benchVec3Mul(benchmark::State & state)
+{
+	alignas(16) float a[3] = {1.f, 2.f, 0.5f};
+	alignas(16) float b[3] = {15.f, 1.f, 0.2f};
+
+	for (auto _ : state)
+	{
+		for (int i = 0; i < 100; ++i)
+			vec3f_mul_vec_loop(a, b);
+	}
+
+	doNotOptimizeAway(a);
+}
+BENCHMARK(benchVec3Mul);
