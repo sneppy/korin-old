@@ -4,6 +4,7 @@ set(BENCHES
 
 	"math"
 	"string"
+	"array"
 )
 
 ## Create and build all benches
