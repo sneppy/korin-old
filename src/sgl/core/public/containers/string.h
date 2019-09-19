@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "hal/platform_strings.h"
 #include "array.h"
 
 /**
@@ -28,8 +29,20 @@ public:
 	 * 
 	 * @param [in] n string length
 	 */
-	explicit FORCE_INLINE String(uint64 n = 0)
-		: array(n + 1, n, nullptr)
+	FORCE_INLINE String()
+		: array{0, 0, nullptr}
+	{
+		//
+	}
+
+	/**
+	 * Initializes an empty string of capacity n
+	 * (excluding terminating character)
+	 * 
+	 * @param [in] n string capacity
+	 */
+	explicit FORCE_INLINE String(sizet n)
+		: array{n + 1, n, nullptr}
 	{
 		terminateString();
 	}
@@ -40,8 +53,8 @@ public:
 	 * @param [in] src stream of characters
 	 * @param [in] len source length (in Bytes)
 	 */
-	FORCE_INLINE String(const ansichar * src, uint64 n)
-		: array(n + 1, n, nullptr)
+	FORCE_INLINE String(const ansichar * src, sizet n)
+		: array{n + 1, n, nullptr}
 	{
 		// Copy source and terminate string
 		Memory::memcpy(array.buffer, src, n);
@@ -54,8 +67,7 @@ public:
 	 * @param [in] src a null-terminated C string
 	 */
 	FORCE_INLINE String(const ansichar * src)
-		// TODO: Replace with PlatformString methods
-		: array(strlen(src) + 1, 0, nullptr)
+		: array{PlatformStrings::getLength(src) + 1, 0, nullptr}
 	{
 		// Manually set count
 		array.count = array.capacity - 1;
@@ -70,7 +82,7 @@ public:
 	 * would not be terminated
 	 */
 	FORCE_INLINE String(const String & other)
-		: array(other.array)
+		: array{other.array.buffer, other.array.count, 1, nullptr}
 	{
 		terminateString();
 	}
@@ -83,10 +95,9 @@ protected:
 	 * @param [in] slack extra slack to add
 	 */
 	FORCE_INLINE String(const String & other, sizet slack)
-		: array(other.array.count + slack + 1, 0, nullptr)
+		: array{other.array.buffer, other.array.count, slack + 1, nullptr}
 	{
-		array.count = other.array.count;
-		Memory::memcpy(array.buffer, other.array.buffer, array.count + 1); // Copy null character
+		terminateString();
 	}
 
 public:
@@ -94,18 +105,41 @@ public:
 	 * Move constructor, no copy involved
 	 */
 	FORCE_INLINE String(String && other)
-		: array(move(other.array))
+		: array{move(other.array)}
 	{
 		//
 	}
 
 	/**
+	 * Copy assignment
+	 */
+	FORCE_INLINE String & operator=(const String & other)
+	{
+		// Copy array
+		array = other.array;
+		return *this;
+	}
+
+	/**
+	 * Move assignment
+	 */
+	FORCE_INLINE String & operator=(String && other)
+	{
+		// Move array
+		array = move(other.array);
+		return *this;
+	}
+
+	/**
 	 * Returns string length
+	 * @{
 	 */
 	FORCE_INLINE sizet getLength() const
 	{
 		return array.count;
 	}
+	METHOD_ALIAS_CONST(getSize, getLength)
+	/// @}
 
 	/**
 	 * Returns string raw content
@@ -161,6 +195,110 @@ public:
 	/// @}
 
 	/**
+	 * Compare string with another string, case sensitive
+	 * 
+	 * @param [in] other string operand or c string
+	 * @return 0 if strings are equal, the difference of the first non-equal characters otherwise
+	 */
+	FORCE_INLINE int32 cmp(const String & other) const
+	{
+		return PlatformStrings::cmp(array.buffer, other.array.buffer);
+	}
+
+	FORCE_INLINE int32 cmp(const char * other) const
+	{
+		return PlatformStrings::cmp(array.buffer, other);
+	}
+	/// @}
+
+	/**
+	 * Compare string with another string, case insensitive
+	 * 
+	 * @param [in] other string operand or c string
+	 * @return 0 if strings are equal, the difference of the first non-equal characters otherwise
+	 */
+	FORCE_INLINE int32 icmp(const String & other) const
+	{
+		return PlatformStrings::icmp(array.buffer, other.array.buffer);
+	}
+
+	FORCE_INLINE int32 icmp(const char * other) const
+	{
+		return PlatformStrings::icmp(array.buffer, other);
+	}
+	/// @}
+
+	/**
+	 * Returns true[false] if two strings are equal, case sensitive
+	 * 
+	 * @param [in] other other string
+	 * @return true[false] if strings are equal
+	 * @{
+	 */
+	FORCE_INLINE bool operator==(const String & other) const
+	{
+		return cmp(other) == 0;
+	}
+
+	FORCE_INLINE bool operator==(const char * other) const
+	{
+		return cmp(other) == 0;
+	}
+
+	FORCE_INLINE bool operator!=(const String & other) const
+	{
+		return cmp(other) != 0;
+	}
+
+	FORCE_INLINE bool operator!=(const char * other) const
+	{
+		return cmp(other) != 0;
+	}
+	/// @}
+
+	/**
+	 * Append formatted text to string
+	 * 
+	 * @param [in] format format string
+	 * @param [in] args format arguments
+	 * @return reference to self
+	 */
+	template<typename... Args>
+	String & appendFormat(const char * format, Args &&... args)
+	{
+		// We have an overhead due to the fact that we
+		// don't know the size of the formatted string
+		// a priori
+		constexpr size_t maxlen = 1024;
+		char buff[maxlen] = {};
+
+		// Print in buffer
+		int32 len = snprintf(buff, maxlen, format, forward<Args>(args)...);
+
+		// Resize buffer and copy content
+		array.resizeIfNecessary(array.count + len + 1);
+		PlatformMemory::memcpy(array.buffer + array.count, buff, len + 1);
+		array.count += len;
+
+		return *this;
+	}
+
+	/**
+	 * Generic object formatter, expects toString() method
+	 * * Actually, I haven't decided yet. I don' like toString()
+	 * * reminds me of fucking Java
+	 * 
+	 * @param [in] arg format argument
+	 * @return reference to self
+	 */
+	template<typename T>
+	FORCE_INLINE String & operator+=(const T & t)
+	{
+		// Replace with formatted string
+		return operator+=(move(t.toString()));
+	}
+
+	/**
 	 * Append a single character to this string
 	 * 
 	 * @param [in] c character to append
@@ -168,6 +306,7 @@ public:
 	 */
 	String & operator+=(ansichar c)
 	{
+		// Resize and write character in buffer
 		array.resizeIfNecessary(array.count + 2);
 		array.buffer[array.count] = c;
 		array.count += 1;
@@ -185,13 +324,12 @@ public:
 	 */
 	String & operator+=(const ansichar * cstr)
 	{
-		// TODO: Replace with PlatformString methods
-		const sizet len = strlen(cstr);
+		const sizet len = PlatformStrings::getLength(cstr);
 		
+		// Resize buffer and copy string content
 		array.resizeIfNecessary(array.count + len + 1);
-		Memory::memcpy(array.buffer + array.count, cstr, len);
+		Memory::memcpy(array.buffer + array.count, cstr, len + 1);
 		array.count += len;
-		terminateString();
 
 		return *this;
 	}
@@ -201,62 +339,220 @@ public:
 	 * this string
 	 * 
 	 * @param [in] other string to append
-	 * @return self
+	 * @return reference to self
 	 */
 	String & operator+=(const String & other)
 	{
+		// Resize buffer and copy string content
 		array.resizeIfNecessary(array.count + other.array.count + 1);
-		Memory::memcpy(array.buffer + array.count, other.array.buffer, other.array.count);
+		Memory::memcpy(array.buffer + array.count, other.array.buffer, other.array.count + 1);
 		array.count += other.array.count;
-		terminateString();
 
 		return *this;
 	}
+
+	/**
+	 * Append number as string
+	 * 
+	 * @param [in] num number to append
+	 * @return reference to self
+	 * @{
+	 */
+	FORCE_INLINE String & operator+=(int32 num)
+	{
+		return appendFormat("%d", num);
+	}
+
+	FORCE_INLINE String & operator+=(int64 num)
+	{
+		return appendFormat("%lld", num);
+	}
+
+	FORCE_INLINE String & operator+=(uint32 num)
+	{
+		return appendFormat("%u", num);
+	}
+
+	FORCE_INLINE String & operator+=(uint64 num)
+	{
+		return appendFormat("%llu", num);
+	}
+
+	FORCE_INLINE String & operator+=(float32 num)
+	{
+		return appendFormat("%f", num);
+	}
+
+	FORCE_INLINE String & operator+=(float64 num)
+	{
+		return appendFormat("%f", num);
+	}
+	/// @}
+
+	/**
+	 * Makes a new copy of the string and appends content to it
+	 * 
+	 * @param [in] arg content to append
+	 * @return new string
+	 */
+	template<typename Arg>
+	FORCE_INLINE String operator+(const Arg & arg) const
+	{
+		return String{*this}.operator+=(arg);
+	}
+
+	/**
+	 * Print formatted text into string
+	 * 
+	 * @param [in] format format string
+	 * @param [in] args format arguments
+	 * @return reference to self
+	 */
+	template<typename... Args>
+	String & printFormat(const char * format, Args &&... args)
+	{
+		// We have an overhead due to the fact that we
+		// don't know the size of the formatted string
+		// a priori
+		constexpr sizet maxlen = 1024;
+		char buff[maxlen] = {};
+
+		// Print in buffer
+		array.count = snprintf(buff, maxlen, format, forward<Args>(args)...);
+		
+		// Resize buffer and copy content
+		array.resizeIfNecessary(array.count + 1);
+		PlatformMemory::memcpy(array.buffer, buff, (sizet)(array.count + 1));
+
+		return *this;
+	}
+
+	/**
+	 * Generic object formatter, expects toString() method
+	 * * Actually, I haven't decided yet. I don' like toString()
+	 * * reminds me of fucking Java
+	 * 
+	 * @param [in] arg format argument
+	 * @return reference to self
+	 */
+	template<typename T>
+	FORCE_INLINE String & operator<<=(const T & t)
+	{
+		// Replace with formatted string
+		return operator=(move(t.toString()));
+	}
 	
-	METHOD_ALIAS(append, operator+=)
-
 	/**
-	 * Concatenates this string with a single
-	 * character, generates a new string
+	 * Read content from file and append to string
 	 * 
-	 * @param [in] c character to append
-	 * @return new string
+	 * @param [in] fp source file pointer
+	 * @return reference to self
 	 */
-	FORCE_INLINE String operator+(ansichar c) const
+	String & operator<<=(FILE * fp)
 	{
-		String out(*this, 1);
-		return move(out += c);
+		return *this;
 	}
 
 	/**
-	 * Concatenates this string with a c string,
-	 * generates a new string
+	 * Print number as string
 	 * 
-	 * @param [in] cstr c string to append
+	 * @param [in] num number to append
+	 * @return reference to self
+	 * @{
+	 */
+	FORCE_INLINE String & operator<<=(int32 num)
+	{
+		return printFormat("%d", num);
+	}
+
+	FORCE_INLINE String & operator<<=(int64 num)
+	{
+		return printFormat("%lld", num);
+	}
+
+	FORCE_INLINE String & operator<<=(uint32 num)
+	{
+		return printFormat("%u", num);
+	}
+
+	FORCE_INLINE String & operator<<=(uint64 num)
+	{
+		return printFormat("%llu", num);
+	}
+
+	FORCE_INLINE String & operator<<=(float32 num)
+	{
+		return printFormat("%f", num);
+	}
+
+	FORCE_INLINE String & operator<<=(float64 num)
+	{
+		return printFormat("%f", num);
+	}
+	/// @}
+
+	/**
+	 * Makes a new copy of the string with the new content
+	 * 
+	 * @param [in] arg argument to format
 	 * @return new string
 	 */
-	String operator+(const ansichar * cstr) const
+	template<typename Arg>
+	FORCE_INLINE String operator<<(const Arg & arg) const
 	{
-		// TODO: Replace with PlatformString methods
-		const sizet len = strlen(cstr);
-		String out(*this, len);
-		Memory::memcpy(out.array.buffer + out.array.count, cstr, len + 1); // Copy null character
-
-		return move(out);
+		return String{}.operator<<=(arg);
 	}
 
 	/**
-	 * Concatenates this string with another
-	 * string, generates a new string
+	 * Static constructor, returns a formatted string
 	 * 
-	 * @param [in] other string to append
-	 * @return new string
+	 * @param [in] format format string
+	 * @param [in] args format arguments
 	 */
-	FORCE_INLINE String operator+(const String & other) const
+	template<typename... Args>
+	static FORCE_INLINE String format(const char * format, Args &&... args)
 	{
-		String out(*this, other.array.count);
-		return move(out += other);
+		// We don't know string length a priori
+		constexpr sizet maxlen = 1024;
+		char buff[maxlen] = {};
+
+		// Print and return new string
+		int32 len = snprintf(buff, maxlen, format, forward<Args>(args)...);
+		return String{buff, (sizet)len};
 	}
 
-	METHOD_ALIAS(concat, operator+)
+	/**
+	 * Returns a substring of the string
+	 * 
+	 * @param [in] len substring length
+	 * @param [in] pos initial position
+	 * @return new string
+	 */
+	String substr(sizet len, sizet pos = 0)
+	{
+		return String{array.buffer + pos, len};
+	}
 };
+
+/**
+ * Special case, because we could not define
+ * this function before defining String class
+ */
+template<typename T, typename MallocT>
+String Array<T, MallocT>::toString() const
+{
+	String out{"["};
+	uint64 i; for (i = 0; i < count - 1; ++i)
+	{
+		out += buffer[i];
+		out += ", ";
+	}
+
+	if (i != 0)
+	{
+		out += buffer[i];
+		out += "]";
+	}
+
+	return out;
+}

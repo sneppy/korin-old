@@ -65,7 +65,7 @@ foreach(UNIT ${UNITS})
 	## Create make target
 	add_custom_target(test_${UNIT}
 
-		COMMAND				<$TARGET_PROPERTY:${TARGET_NAME},RUNTIME_OUTPUT_DIRECTORY>
+		COMMAND				$<TARGET_FILE:${TARGET_NAME}>
 		DEPENDS				${TARGET_NAME}
 		WORKING_DIRECTORY	${PROJECT_SOURCE_DIR}
 	)
@@ -137,9 +137,9 @@ target_link_libraries(${TARGET_NAME}
 )
 
 ## Create make target
-add_custom_target(test_${UNIT}
+add_custom_target(test_all
 
-	COMMAND				<$TARGET_PROPERTY:${TARGET_NAME},RUNTIME_OUTPUT_DIRECTORY>
+	COMMAND				$<TARGET_FILE:${TARGET_NAME}>
 	DEPENDS				${TARGET_NAME}
 	WORKING_DIRECTORY	${PROJECT_SOURCE_DIR}
 )

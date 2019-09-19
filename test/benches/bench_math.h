@@ -3,6 +3,7 @@
 #include <benchmark/benchmark.h>
 
 #include <core_types.h>
+#include <templates/utility.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,10 +12,15 @@
 #include <time.h>
 #include <math.h>
 
-static inline void doNotOptimizeAway(void * p)
-{
-	asm volatile("" : : "g" (p) : "memory");
-}
+#ifndef DO_NOT_OPTIMIZE_AWAY_IMPL
+#define DO_NOT_OPTIMIZE_AWAY_IMPL
+
+	static FORCE_INLINE void doNotOptimizeAway(void * p)
+	{
+		asm volatile("" : : "g" (p) : "memory");
+	}
+
+#endif
 
 void mat4f_transpose(float a[4][4])
 {
@@ -193,14 +199,6 @@ void mat4f_inv_transform(float a[4][4])
 	_mm_store_ps(a[1], v1);
 	_mm_store_ps(a[2], v2);
 	// a[3] as is
-}
-
-template<typename T>
-static inline void swap(T & a, T & b)
-{
-	T t = a;
-	a = b;
-	b = t;
 }
 
 void mat4f_transpose_scalar(float * __restrict__ a)

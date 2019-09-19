@@ -44,26 +44,165 @@ TEST(containers, array)
 	ASSERT_EQ(d[0].getCount(), 8);
 	ASSERT_EQ(d[1].getCount(), 8);
 
+	Array<uint32> e;
+	e.add(4u);
+	e.add(8u);
+	e.add(2u);
+	e.removeAt(1);
+
+	ASSERT_EQ(e.getCount(), 2);
+	ASSERT_EQ(e[0], 4u);
+	ASSERT_EQ(e[1], 2u);
+
+	Array<Array<Array<int32>>> f;
+	for (int32 i = 0; i < 3; ++i)
+	{
+		f.add(Array<Array<int32>>{});
+
+		for (int32 j = 0; j < 3; ++j)
+		{
+			f[i].add(Array<int32>{});
+
+			for (int32 k = 0; k < 3; ++k)
+			{
+				f[i][j].add((i * 3 + j) * 3 + k);
+			}
+		}
+	}
+
+	ASSERT_EQ(f.getCount(), 3);
+
+	for (uint32 i = 0; i < 3; ++i)
+	{
+		ASSERT_EQ(f[i].getCount(), 3);
+
+		for (uint32 j = 0; j < 3; ++j)
+		{
+			ASSERT_EQ(f[i][j].getCount(), 3);
+
+			for (uint32 k = 0; k < 3; ++k)
+			{
+				ASSERT_EQ(f[i][j][k], (i * 3 + j) * 3 + k);
+			}
+		}
+	}
+
+	f.removeAt(1);
+
+	ASSERT_EQ(f.getCount(), 2);
+	ASSERT_EQ(f[1][0][0], 18);
+	ASSERT_EQ(f[0][1][2], 5);
+	ASSERT_EQ(f[1][1][1], 22);
+
+	f.removeLast();
+
+	ASSERT_EQ(f.getCount(), 1);
+	ASSERT_EQ(f[0][2][1], 7);
+	ASSERT_EQ(f[0][1][1], 4);
+	ASSERT_EQ(f[0][0][1], 1);
+
+	f[0].removeFirst();
+
+	ASSERT_EQ(f.getCount(), 1);
+	ASSERT_EQ(f[0][1][2], 8);
+	ASSERT_EQ(f[0][1][1], 7);
+	ASSERT_EQ(f[0][0][1], 4);
+
+	f.removeFirst();
+
+	ASSERT_EQ(f.getCount(), 0);
+
+	Array<int32> g{(const int32[]){5, 1, 4, 2, 7, 8, 3}, 7};
+	
+	ASSERT_EQ(g.getCount(), 7);
+	ASSERT_EQ(g[0], 5);
+	ASSERT_EQ(g[6], 3);
+	ASSERT_EQ(g[3], 2);
+
+	int32 gg;
+	g.popAt(2, gg);
+
+	ASSERT_EQ(g.getCount(), 6);
+	ASSERT_EQ(g[2], 2);
+	ASSERT_EQ(gg, 4);
+
+	a.reset();
+	b.reset();
+	c.reset();
+	d.reset();
+	e.reset();
+	f.reset();
+	g.reset();
+
 	SUCCEED();
 }
 
 TEST(containers, string)
 {
+	ASSERT_EQ(PlatformStrings::getLength("sneppy"), 6u);
+	ASSERT_EQ(PlatformStrings::getLength("abracadabra"), 11u);
+
+	ASSERT_EQ(PlatformStrings::cmp("sneppy", "sneppy"), 0);
+	ASSERT_EQ(PlatformStrings::cmp("snappy", "sneppy"), 'a' - 'e');
+	ASSERT_EQ(PlatformStrings::cmp("sneppy", "sn"), 'e');
+
+	ASSERT_EQ(PlatformStrings::icmp("sNePpY", "SNEppy"), 0);
+	ASSERT_EQ(PlatformStrings::icmp("sneppy", "SNEPPY"), 0);
+
+	ASSERT_EQ(PlatformStrings::cmpn("snep", "sn", 2), 0);
+	ASSERT_EQ(PlatformStrings::cmpn("snyp", "snap", 2), 0);
+	ASSERT_EQ(PlatformStrings::cmpn("snep", "snap", 2, 2), 'e' - 'a');
+
+	ASSERT_EQ(PlatformStrings::icmpn("sNelLY", "SNEppy", 3), 0);
+	ASSERT_EQ(PlatformStrings::icmpn("sneppy", "UNEPPY", 3, 1), 0);
+
 	String a = "sneppy";
 	String b = "rulez";
+	
+	ASSERT_EQ(a[6], '\0');
+	ASSERT_EQ(b[5], '\0');
+
+	ASSERT_EQ(PlatformStrings::cmp(a.getData(), "sneppy"), 0);
+	ASSERT_EQ(PlatformStrings::cmp(b.getData(), "rulez"), 0);
 
 	ASSERT_EQ(a.getLength(), 6);
 	ASSERT_EQ(b.getLength(), 5);
-	ASSERT_EQ(a[6], '\0');
-	ASSERT_EQ(b[5], '\0');
-	ASSERT_TRUE(strcmp(a.getData(), "sneppy") == 0);
-	ASSERT_TRUE(strcmp(b.getData(), "rulez") == 0);
 
-	const String c = a + ' ' + b;
+	ASSERT_EQ(a.cmp(b), 's' - 'r');
+	ASSERT_EQ(a.cmp("sneppy"), 0);
+	ASSERT_EQ(a.cmp("sne"), 'p');
+
+	ASSERT_FALSE(a == b);
+	ASSERT_FALSE(b == a);
+	ASSERT_TRUE(a != b);
+	ASSERT_TRUE(b != a);
+	ASSERT_TRUE(a == "sneppy");
+	ASSERT_FALSE(a != "sneppy");
+	ASSERT_FALSE(a == "snep");
+	ASSERT_TRUE(a != "snep");
 	
-	ASSERT_EQ(c.getLength(), 12);
-	ASSERT_EQ(c[12], '\0');
-	ASSERT_TRUE(strcmp(c.getData(), "sneppy rulez") == 0);
+	String c, d, e;
+	
+	a <<= 3u;
+	b.printFormat("%.2f", 3.14f);
+
+	ASSERT_EQ(a, "3");
+	ASSERT_EQ(b, "3.14");
+
+	c = a << 4u;
+	d = b << 4.5f;
+
+	ASSERT_TRUE(c == "4");
+	ASSERT_TRUE(d == "4.500000");
+
+	e = a + ", " + b + ", " + c + ", " + d;
+
+	ASSERT_TRUE(e == "3, 3.14, 4, 4.500000");
+
+	e += ", ";
+	e += 12;
+
+	ASSERT_TRUE(e == "3, 3.14, 4, 4.500000, 12");
 
 	SUCCEED();
 }

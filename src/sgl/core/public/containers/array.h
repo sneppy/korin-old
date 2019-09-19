@@ -69,6 +69,68 @@ protected:
 	///@}
 
 	/**
+	 * Copy elements from source to destination
+	 * Source and destination buffer cannot be
+	 * overlapped
+	 * 
+	 * @param [in] dst destination buffer
+	 * @param [in] src source buffer
+	 * @param [in] n number of elements
+	 * @{
+	 */
+	template<typename TT>
+	FORCE_INLINE typename EnableIf<!IsTriviallyCopyable<TT>::value>::Type copyElements(TT * RESTRICT dst, const TT * RESTRICT src, uint64 n)
+	{
+		for (uint64 i = 0; i < n; ++n, ++dst, ++src)
+			// Non overlapping required
+			*dst = *src;
+	}
+
+	template<typename TT>
+	FORCE_INLINE typename EnableIf<IsTriviallyCopyable<TT>::value>::Type copyElements(TT * RESTRICT dst, const TT * RESTRICT src, uint64 n)
+	{
+		Memory::memcpy(dst, src, n * sizeof(TT));
+	}
+	/// @}
+
+	/**
+	 * Move elements from source to destination
+	 * Source and destination buffers can overlap
+	 * 
+	 * @param [in] dst destination buffer
+	 * @param [in] src source buffer
+	 * @param [in] n number of elements
+	 * @{
+	 */
+	template<typename TT>
+	FORCE_INLINE typename EnableIf<!IsTriviallyCopyable<TT>::value>::Type moveElements(TT * dst, TT * src, uint64 n)
+	{
+		if (LIKELY(dst < src))
+		{
+			// Copy left to right
+			for (uint64 i = 0; i < n; ++i, ++dst, ++src)
+				// Move rather than copy
+				*dst = move(*src);
+		}
+		else if (LIKELY(src > dst))
+		{
+			// Copy right to left
+			for (uint64 i = 0, j = n - 1; i < n; ++i, --j)
+				// Move rather than copy
+				dst[j] = move(src[j]);
+		}
+		else
+			; // Source and destination are the same
+	}
+
+	template<typename TT>
+	FORCE_INLINE typename EnableIf<IsTriviallyCopyable<TT>::value>::Type moveElements(TT * dst, TT * src, uint64 n)
+	{
+		memmove(dst, src, n * sizeof(TT));
+	}
+	/// @}
+
+	/**
 	 * Destroy elements in range
 	 * 
 	 * @param [in] begin,end array range
@@ -90,11 +152,20 @@ protected:
 			// Destroy elements and deallocate buffer
 			destroyElements(buffer, buffer + count);
 			allocator->free(buffer);
+			
 			buffer = nullptr;
 		}
 
+		count = capacity = 0;
+
 		// Destroy managed allocator
-		if (bHasOwnAlloc) delete allocator;
+		if (bHasOwnAlloc)
+		{
+			delete allocator;
+			
+			allocator = nullptr;
+			bHasOwnAlloc = false;
+		}
 	}
 
 	/**
@@ -149,11 +220,11 @@ public:
 			allocator = new MallocT;
 
 		// Create initial buffer
-		if (capacity)
+		if (capacity > 0)
 			buffer = ObjectAllocator<T>{allocator}.alloc(capacity);
 
 		// Default construct elements
-		if (count)
+		if (count > 0)
 			constructDefaultElements(buffer, buffer + count);
 	}
 
@@ -239,14 +310,24 @@ public:
 	 */
 	Array & operator=(const Array & other)
 	{
-		// Destroy elements
-		destroyElements(buffer, buffer + count);
+		// Resize buffer
+		resizeIfNecessary(other.count);
 
-		// Resize if necessary and copy buffer
-		resizeIfNecessary((count = other.count));
+		if (other.count < count)
+		{
+			// Copy elements and destroy the extra elements
+			copyElements(buffer, other.buffer, other.count);
+			destroyElements(buffer + other.count, buffer + count);
+		}
+		else
+		{
+			// Copy elements and construct the extra elements
+			copyElements(buffer, other.buffer, count);
+			constructCopyElements(buffer + count, other.buffer + count, other.count - count);
+		}
 
-		if (other.count)
-			constructCopyElements(buffer, other.buffer, other.count);
+		// Set new count
+		count = other.count;
 		
 		return *this;
 	}
@@ -257,14 +338,24 @@ public:
 	template<typename MallocU>
 	Array & operator=(const Array<T, MallocU> & other)
 	{
-		// Destroy elements
-		destroyElements(buffer, buffer + count);
+		// Resize buffer
+		resizeIfNecessary(other.count);
 
-		// Resize if necessary and copy buffer
-		resizeIfNecessary((count = other.count));
+		if (other.count < count)
+		{
+			// Copy elements and destroy the extra elements
+			copyElements(buffer, other.buffer, other.count);
+			destroyElements(buffer + other.count, buffer + count);
+		}
+		else
+		{
+			// Copy elements and construct the extra elements
+			copyElements(buffer, other.buffer, count);
+			constructCopyElements(buffer + count, other.buffer + count, other.count - count);
+		}
 
-		if (other.count)
-			constructCopyElements(buffer, other.buffer, other.count);
+		// Set new count
+		count = other.count;
 		
 		return *this;
 	}
@@ -302,6 +393,14 @@ public:
 	METHOD_ALIAS_CONST(getSize, getCount)
 	METHOD_ALIAS_CONST(getNum, getCount)
 	/// @}
+
+	/**
+	 * Returns true if array is empty
+	 */
+	FORCE_INLINE bool isEmpty() const
+	{
+		return count == 0;
+	}
 
 	/**
 	 * Returns total data size (in Bytes)
@@ -349,26 +448,175 @@ public:
 	/// @}
 
 	/**
-	 * Insert a new element at the end of the
-	 * array
+	 * Insert element at position
 	 * 
-	 * @param [in] t element to insert
-	 * @return reference to element
+	 * @param [in] inT element to insert
+	 * @return reference to inserted element
 	 */
 	template<typename TT>
-	T & add(TT && t)
+	T & insertAt(TT && inT, uint64 idx)
 	{
-		resizeIfNecessary(count + 1);
-		return *(new (buffer + count++) T(forward<TT>(t)));
+		const uint64 j = idx + 1;
+
+		if (idx < count)
+		{
+			resizeIfNecessary(count + 1);
+
+			// Move elements up to accomodate
+			moveElements(buffer + j, buffer + idx, count - j);
+			++count;
+		}
+		else
+			resizeIfNecessary(count = j);
+		
+		// Copy construct element
+		return *(new (buffer + idx) T{forward<TT>(inT)});
 	}
 
 	/**
-	 * Remove element at index
+	 * Insert a new element at the beginning of
+	 * the array
+	 * 
+	 * @param [in] inT element to insert
+	 * @return reference to element
+	 */
+	template<typename TT>
+	T & insertFirst(TT && inT)
+	{
+		resizeIfNecessary(count + 1);
+
+		// Move elements up
+		moveElements(buffer + 1, buffer, count);
+		++count;
+
+		// Copy construct element
+		return *(new (buffer) T{forward<TT>(inT)});
+	}
+
+	/**
+	 * Insert a new element at the end of the
+	 * array
+	 * 
+	 * @param [in] inT element to insert
+	 * @return reference to element
+	 * @{
+	 */
+	template<typename TT>
+	T & insertLast(TT && inT)
+	{
+		resizeIfNecessary(count + 1);
+		return *(new (buffer + count++) T{forward<TT>(inT)});
+	}
+	METHOD_ALIAS(add, insertLast)
+	METHOD_ALIAS(push, insertLast)
+	/// @}
+
+	/**
+	 * Remove element at index (does not
+	 * check index overflow)
 	 * 
 	 * @param [in] idx element index
 	 */
-	void remove(uint32 idx)
+	void removeAt(uint64 idx)
 	{
-		// TODO:
+		// Destroy element
+		destroyElements(buffer + idx, buffer + idx);
+
+		// Move elements to the left
+		moveElements(buffer + idx, buffer + idx + 1, (count - 1) - idx);
+
+		// Decrement count
+		--count;
 	}
+
+	/**
+	 * Remove first element
+	 */
+	FORCE_INLINE void removeFirst()
+	{
+		removeAt(0);
+	}
+
+	/**
+	 * Remove last element
+	 */
+	void removeLast()
+	{
+		// Decrement count
+		--count;
+
+		// Destroy element
+		destroyElements(buffer + count, buffer + count);
+	}
+
+	/**
+	 * Copy element out and remove it
+	 * 
+	 * @param [in] idx element idx
+	 * @param [out] outT out element
+	 */
+	FORCE_INLINE void popAt(uint64 idx, T & outT)
+	{
+		// Move out element
+		outT = move(buffer[idx]);
+
+		// Remove it
+		removeAt(idx);
+	}
+
+	/**
+	 * Pop first element
+	 */
+	FORCE_INLINE void popFirst(uint64 idx, T & outT)
+	{
+		popAt(0, outT);
+	}
+
+	/**
+	 * Pop last element
+	 */
+	FORCE_INLINE void popLast(uint64 idx, T & outT)
+	{
+		// Move out element
+		outT = move(buffer[idx]);
+
+		// Remove it
+		removeLast();
+	}
+
+	/**
+	 * Wipe out array content
+	 * @{
+	 */
+	FORCE_INLINE void empty()
+	{
+		// Destroy all elements
+		destroyElements(buffer, buffer + count);
+		count = 0;
+	}
+	METHOD_ALIAS(wipe, empty)
+	METHOD_ALIAS(clear, empty)
+	/// @}
+
+	/**
+	 * Reset array
+	 * Destroy all elements and reset storage
+	 */
+	FORCE_INLINE void reset()
+	{
+		// Empty array
+		empty();
+
+		// Deallocate storage
+		allocator->free(buffer);
+		buffer = nullptr;
+		capacity = 0;
+	}
+
+	/**
+	 * Print array to string
+	 * 
+	 * @return formatted string
+	 */
+	String toString() const;
 };
