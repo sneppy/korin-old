@@ -1,6 +1,6 @@
 #pragma once
 
-#include "benchmark/benchmark.h"
+#include <benchmark/benchmark.h>
 
 #include <core_types.h>
 #include <containers/array.h>

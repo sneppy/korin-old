@@ -298,10 +298,10 @@ protected:
 		++numPools;
 
 		// Create pool structure after buffer
-		MemoryPool * pool = new (reinterpret_cast<MemoryPool*>(reinterpret_cast<uintp>(buffer) + poolInfo.bufferSize)) MemoryPool(poolInfo.numBlocks, poolInfo.blockSize, poolInfo.blockAlignment, buffer);
+		MemoryPool * pool = new (reinterpret_cast<MemoryPool*>(reinterpret_cast<uintp>(buffer) + poolInfo.bufferSize)) MemoryPool{poolInfo.numBlocks, poolInfo.blockSize, poolInfo.blockAlignment, buffer};
 
 		// Add to tree
-		Node * node = new (reinterpret_cast<Node*>(pool + 1)) Node(pool);
+		Node * node = new (reinterpret_cast<Node*>(pool + 1)) Node{pool};
 		if (root)
 		{
 			root->insert(node);
@@ -310,11 +310,11 @@ protected:
 		else
 		{
 			root = node;
-			root->color = Node::Color::BLACK;
+			root->color = BinaryNodeColor::BLACK;
 		}
 
 		// Add to list
-		Link * link = new (reinterpret_cast<Link*>(node + 1)) Link(pool);
+		Link * link = new (reinterpret_cast<Link*>(node + 1)) Link{pool};
 		if (head)
 		{
 			link->next = head;

@@ -196,5 +196,21 @@ void * MallocPooled::realloc(void * orig, sizet size, sizet alignment)
 
 void MallocPooled::free(void * orig)
 {
-	//
+	CHECK(orig != nullptr)
+
+	// Traverse tree to find memory pool
+	// that could own this block
+	Node * it = root;
+	while (it)
+	{
+		if (it->data->hasBlock(orig))
+			break;
+		else if (orig < it->data->buffer)
+			it = it->left;
+		else
+			it = it->right;
+	}
+
+	// Release block, return to pool
+	if (it) it->data->releaseBlock(orig);
 }

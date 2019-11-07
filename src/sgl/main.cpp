@@ -1,4 +1,5 @@
 #include <core_types.h>
+#include <containers/tree.h>
 #include <containers/string.h>
 #include <stdio.h>
 
@@ -6,27 +7,54 @@
 
 int32 main()
 {
-	String name, test = String::format("%f", 3.14);
+	srand(clock());
 
-	Array<Array<Array<uint32>>> array;
-	for (uint32 i = 0; i < 4; ++i)
+	String name;
+
+	struct Cmp
 	{
-		array.add(Array<Array<uint32>>{});
-
-		for (uint32 j = 0; j < 4; ++j)
+		FORCE_INLINE int32 operator()(uint32 a, uint32 b) const
 		{
-			array[i].add(Array<uint32>{});
+			return int32(a > b) - int32(a < b);
+		}
+	};
 
-			for (uint32 k = 0; k < 4; ++k)
-			{
-				array[i][j].add((i * 4 + j) * 4 + k);
-			}
+	BinaryNode<uint32, Cmp> * root = new BinaryNode<uint32, Cmp>(2u);
+	root->color = BinaryNodeColor::BLACK;
+
+	const uint32 vals[] = {4, 6, 12, 3, 7, 10};
+	
+	for (uint32 i = 0; i < sizeof(vals) / sizeof(*vals); ++i)
+	{
+		BinaryNode<uint32, Cmp> * node = new BinaryNode<uint32, Cmp>(vals[i]);
+		root->insert(node);
+		root = root->getRoot();
+	}
+
+	name <<= *root;
+	printf("%s\n", *name);
+
+	{
+		auto node = root->find(7u);
+		if (node)
+		{
+			auto deleted = node->remove();
+			if (node == root)
+				root = node->getRoot();
 		}
 	}
 
-	name <<= array;
+	{
+		auto node = root->find(10u);
+		if (node)
+		{
+			auto deleted = node->remove();
+			if (node == root)
+				root = node->getRoot();
+		}
+	}
 
-	printf("%s\n", *name.substr(4, 3));
+	printf("%s\n", *(name << *root));
 
 	return 0;
 }

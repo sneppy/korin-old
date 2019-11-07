@@ -280,42 +280,47 @@ TEST(containers, tree)
 {
 	using Node = BinaryNode<uint32, LessThan<uint32>>;
 
-	Node * root = new Node(3u), * node = nullptr;
-	root->color = Node::Color::BLACK;
+	Node * root = new Node{3u}, * node = nullptr;
+	root->color = BinaryNodeColor::BLACK;
 	
-	ASSERT_EQ(root->find(3), root);
-	ASSERT_TRUE(root->find(2) == nullptr);
+	ASSERT_EQ(root->find(3u), root);
+	ASSERT_TRUE(root->find(2u) == nullptr);
 
-	node = new Node(2u);
+	node = new Node{2u};
 	root->insert(node);
 
 	ASSERT_EQ(root->left, node);
 	ASSERT_EQ(root->find(2), node);
 	ASSERT_EQ(node->parent, root);
 
-	node = new Node(4u);
+	node = new Node{4u};
 	root->insert(node);
+	root = root->getRoot();
 
 	ASSERT_EQ(root->right, node);
 	ASSERT_EQ(root->find(4), node);
 	ASSERT_EQ(node->parent, root);
 
-	node = root->insert(new Node(5u));
-	node = root->insert(new Node(6u));
-	node = root->insert(new Node(7u));
+	node = root->insert(new Node{5u});
+	root = root->getRoot();
+	node = root->insert(new Node{6u});
+	root = root->getRoot();
+	node = root->insert(new Node{7u});
+	root = root->getRoot();
 
 	ASSERT_TRUE(root->parent == nullptr);
-	ASSERT_EQ(root->left->data, 2);
-	ASSERT_EQ(root->right->data, 5);
-	ASSERT_EQ(root->right->left->data, 4);
-	ASSERT_EQ(root->right->right->data, 6);
-	ASSERT_EQ(root->right->right->right->data, 7);
+	ASSERT_EQ(root->left->data, 2u);
+	ASSERT_EQ(root->right->data, 5u);
+	ASSERT_EQ(root->right->left->data, 4u);
+	ASSERT_EQ(root->right->right->data, 6u);
+	ASSERT_EQ(root->right->right->right->data, 7u);
 	ASSERT_TRUE(root->right->right->left == nullptr);
 
-	node = root->insert(new Node(1u));
+	node = root->insert(new Node{1u});
+	root = root->getRoot();
 
-	ASSERT_EQ(root->getMin()->data, 1);
-	ASSERT_EQ(root->getMax()->data, 7);
+	ASSERT_EQ(root->getMin()->data, 1u);
+	ASSERT_EQ(root->getMax()->data, 7u);
 
 	node = root->getMin();
 
@@ -331,20 +336,31 @@ TEST(containers, tree)
 	
 	ASSERT_TRUE(node == nullptr);
 
-	node = new Node(2u);
+	node = new Node{2u};
 
 	ASSERT_NE(root->insertUnique(node), node);
 	ASSERT_EQ(root->insertUnique(node), root->left);
 
-	node = new Node(0u);
+	node = new Node{0u};
 
 	ASSERT_EQ(root->insertUnique(node), node);
+
+	root = root->getRoot();
+	root->getMax()->remove();
+	
+	ASSERT_EQ(root->getMax()->data, 6u);
+
+	root->getMin()->remove();
+
+	ASSERT_EQ(root->getMin()->data, 1u);
+
+	SUCCEED();
 }
 
 TEST(containers, map)
 {
 	using PairT = Pair<uint32, uint32, LessThan<uint32>>;
-	PairT pair(8u, 3u);
+	PairT pair{8u, 3u};
 	
 	ASSERT_EQ(pair.getKey(), 8);
 	ASSERT_EQ(pair.getVal(), 3);
@@ -356,25 +372,25 @@ TEST(containers, map)
 
 	using Node = BinaryNode<PairT, PairT::FindPair>;
 
-	Node * root = new Node(PairT(8u, 3u));
-	root->color = Node::Color::BLACK;
+	Node * root = new Node(PairT{8u, 3u});
+	root->color = BinaryNodeColor::BLACK;
 	
 	ASSERT_EQ(root->data.first, 8);
 	ASSERT_EQ(root->data.second, 3);
 
-	ASSERT_EQ(root->find(PairT(8u)), root);
-	ASSERT_TRUE(root->find(PairT(4u)) == nullptr);
+	ASSERT_EQ(root->find(PairT{8u}), root);
+	ASSERT_TRUE(root->find(PairT{4u}) == nullptr);
 
-	root->insertUnique(new Node(PairT(4u, 9u)));
+	root->insertUnique(new Node(PairT{4u, 9u}));
 	root = root->getRoot();
-	root->insertUnique(new Node(PairT(7u, 2u)));
+	root->insertUnique(new Node(PairT{7u, 2u}));
 	root = root->getRoot();
-	root->insertUnique(new Node(PairT(8u, 11u)));
+	root->insertUnique(new Node(PairT{8u, 11u}));
 	root = root->getRoot();
 
-	ASSERT_EQ(root->find(PairT(4u))->data.second, 9u);
-	ASSERT_EQ(root->find(PairT(7u))->data.second, 2u);
-	ASSERT_EQ(root->find(PairT(8u))->data.second, 3u);
+	ASSERT_EQ(root->find(PairT{4u})->data.second, 9u);
+	ASSERT_EQ(root->find(PairT{7u})->data.second, 2u);
+	ASSERT_EQ(root->find(PairT{8u})->data.second, 3u);
 
 	SUCCEED();
 }

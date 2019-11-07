@@ -5,6 +5,7 @@ set(BENCHES
 	"math"
 	"string"
 	"array"
+	"memory"
 )
 
 ## Create and build all benches
@@ -35,7 +36,7 @@ foreach(BENCH ${BENCHES})
 		
 			"#pragma once\n"
 			"\n"
-			"#include \"benchmark/benchmark.h\"\n"
+			"#include <benchmark/benchmark.h>\n"
 		)
 		
 	endif()
