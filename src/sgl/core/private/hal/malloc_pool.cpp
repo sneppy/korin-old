@@ -1,5 +1,10 @@
-#include "hal/malloc_pool.h"
-#include "misc/assert.h"
+#include <hal/malloc_pool.h>
+#include <misc/assert.h>
+#include <hal/platform_math.h>
+
+//////////////////////////////////////////////////
+// MemoryPool
+//////////////////////////////////////////////////
 
 MemoryPool::MemoryPool(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlignment, void * inBuffer)
 	: buffer{inBuffer}
@@ -145,11 +150,31 @@ MallocPooled::MallocPooled(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockA
 	for (uint32 poolIdx = 0; poolIdx < initialNumPools; ++poolIdx)
 	{
 		void * buffer = nullptr;
-		if (posix_memalign(&buffer, poolInfo.blockAlignment, poolAllocSize) == 0)
+		if (posix_memalign(&buffer, PlatformMath::max(poolInfo.blockAlignment, MIN_ALIGNMENT), poolAllocSize) == 0)
 			createPool(buffer);
 	}
 
 	CHECK(head != nullptr && root != nullptr)
+}
+
+bool MallocPooled::hasBlock(void * orig)
+{
+	CHECK(orig != nullptr)
+
+	// Traverse tree to find memory pool
+	// that could own this block
+	Node * it = root;
+	while (it)
+	{
+		if (it->data->hasBlock(orig))
+			return true;
+		else if (orig < it->data->buffer)
+			it = it->left;
+		else
+			it = it->right;
+	}
+
+	return false;
 }
 
 void * MallocPooled::alloc(sizet size, sizet alignment)

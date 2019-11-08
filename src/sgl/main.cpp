@@ -2,6 +2,7 @@
 #include <containers/tree.h>
 #include <containers/string.h>
 #include <containers/tuple.h>
+#include <hal/malloc_binned.h>
 #include <stdio.h>
 
 #include <string>
@@ -9,6 +10,10 @@
 int32 main()
 {
 	srand(clock());
+	
+	MallocBinned * malloc = new MallocBinned;
+
+	return 0;
 
 	String name;
 

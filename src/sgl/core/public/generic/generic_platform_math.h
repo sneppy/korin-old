@@ -59,6 +59,27 @@ struct GenericPlatformMath
 	/// @}
 
 	/**
+	 * Perform logarithm in base 2.
+	 * If argument is integer, return
+	 * floor(log2(x)).
+	 * 
+	 * @param n numeric value
+	 * @{
+	 */
+	template<typename T>
+	static constexpr FORCE_INLINE typename EnableIf<IsIntegral<T>::value && sizeof(T) < sizeof(uint64), T>::Type log2(T n)
+	{
+		return n == 0u ? 0u : 31u - __builtin_clz((uint32)n);
+	}
+
+	template<typename T>
+	static constexpr FORCE_INLINE typename EnableIf<IsIntegral<T>::value && sizeof(T) == sizeof(uint64), T>::Type log2(T n)
+	{
+		return n == 0ull ? 0ull : 63ull - __builtin_clzll((uint64)n);
+	}
+	/// @}
+
+	/**
 	 * Align integer to the closest aligned
 	 * value smaller or equal to it
 	 * 

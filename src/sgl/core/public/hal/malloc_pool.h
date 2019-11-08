@@ -236,6 +236,8 @@ public:
  */
 class MallocPooled : public MallocBase
 {
+	friend class MallocBinned;
+
 protected:
 	/**
 	 * Compare class used to find memory pool
@@ -369,12 +371,19 @@ public:
 	MallocPooled(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlignment = DEFAULT_ALIGNMENT, uint32 initialNumPools = 1);
 
 	/**
-	 * Returns number of pools created
+	 * Returns number of pools created.
 	 */
 	FORCE_INLINE uint32 getNumPools() const
 	{
 		return numPools;
 	}
+
+	/**
+	 * Returns true if has allocated block
+	 * 
+	 * @param orig block to test
+	 */
+	bool hasBlock(void * orig);	
 
 	//////////////////////////////////////////////////
 	// MallocBase interface

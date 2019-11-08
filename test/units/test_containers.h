@@ -127,6 +127,10 @@ TEST(containers, array)
 	ASSERT_EQ(g[2], 2);
 	ASSERT_EQ(gg, 4);
 
+	Array<int32> h = T(1, 5, 1, 3, 4);
+
+	ASSERT_EQ(h.getCount(), 5);
+
 	a.reset();
 	b.reset();
 	c.reset();

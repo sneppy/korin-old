@@ -14,7 +14,8 @@
 template<typename T, sizet n>
 class Tuple
 {
-	template<typename, sizet> friend class Tuple;
+	template<typename, sizet>		friend class Tuple;
+	template<typename, typename>	friend class Array;
 
 public:
 	/// Tuple length
@@ -135,6 +136,15 @@ public:
 		constexpr int64 y = (n + end) % n;
 		constexpr sizet z = y - x;
 		return Tuple<T, z>{values + x};
+	}
+
+	/**
+	 * Cast to Array
+	 */
+	template<typename MallocT>
+	FORCE_INLINE operator Array<T, MallocT>() const
+	{
+		return Array<T, MallocT>{values, n};
 	}
 };
 

@@ -1,12 +1,13 @@
 #pragma once
 
-#include "core_types.h"
-#include "misc/utility.h"
-#include "hal/platform_memory.h"
-#include "hal/malloc_ansi.h"
-#include "templates/utility.h"
-#include "templates/allocators.h"
-#include "containers/containers_types.h"
+#include "../core_types.h"
+#include "../misc/utility.h"
+#include "../misc/assert.h"
+#include "../hal/platform_memory.h"
+#include "../hal/malloc_ansi.h"
+#include "../hal/malloc_object.h"
+#include "../templates/utility.h"
+#include "containers_types.h"
 
 /**
  * An array is a collection of elements
@@ -20,11 +21,8 @@ class Array
 									friend String;
 
 protected:
-	/// Used allocator
-	MallocT * allocator;
-
-	/// Has own allocator flag
-	bool bHasOwnAlloc;
+	/// Object allocator
+	MallocObject<T, MallocT> malloc;
 
 	/// Memory support
 	T * buffer;
@@ -46,21 +44,12 @@ protected:
 		{
 			// Destroy elements and deallocate buffer
 			Memory::destroyElements(buffer, buffer + count);
-			allocator->free(buffer);
+			malloc.free(buffer);
 			
 			buffer = nullptr;
 		}
 
 		count = capacity = 0;
-
-		// Destroy managed allocator
-		if (bHasOwnAlloc)
-		{
-			delete allocator;
-			
-			allocator = nullptr;
-			bHasOwnAlloc = false;
-		}
 	}
 
 	/**
@@ -79,13 +68,13 @@ protected:
 			while (capacity < inCapacity) capacity *= 2;
 
 			// Allocate new memory
-			T * inBuffer = ObjectAllocator<T>{allocator}.alloc(capacity);
+			T * inBuffer = malloc.alloc(capacity);
 
 			// Copy elements and free old buffer
 			if (buffer)
 			{
 				Memory::constructCopyElements(inBuffer, buffer, count);
-				allocator->free(buffer);
+				malloc.free(buffer);
 			}
 
 			buffer = inBuffer;
@@ -99,28 +88,62 @@ public:
 	/**
 	 * Init constructor
 	 * 
-	 * @param [in] inCapacity initial array capacity
-	 * @param [in] inCount initial number of default elements
-	 * @param [in] allocator allocator not owned by the array
+	 * @param inCapacity initial array capacity
+	 * @param inCount initial number of default elements
+	 * @param inAllocator allocator not owned by the array
 	 */
-	Array(uint64 inCapacity, uint64 inCount, MallocT * inAllocator = nullptr)
-		: allocator{inAllocator}
-		, bHasOwnAlloc{allocator == nullptr}
+	explicit Array(uint64 inCapacity, uint64 inCount = 0, MallocT * inAllocator = nullptr)
+		: malloc{inAllocator}
 		, buffer{nullptr}
 		, capacity{inCapacity}
 		, count{inCount}
 	{
-		// Create managed allocator
-		if (bHasOwnAlloc)
-			allocator = new MallocT;
-
 		// Create initial buffer
 		if (capacity > 0)
-			buffer = ObjectAllocator<T>{allocator}.alloc(capacity);
+			buffer = malloc.alloc(capacity);
 
 		// Default construct elements
 		if (count > 0)
 			Memory::constructDefaultElements(buffer, buffer + count);
+	}
+
+	/**
+	 * Init constructor with malloc arguments
+	 * 
+	 * @param inCapacity initial array capacity
+	 * @param inCount initial number of default elements
+	 * @param inMalloc temporary object allocator
+	 */
+	template<typename ... MallocArgs>
+	Array(uint64 inCapacity, uint64 inCount, MallocObject<T, MallocT> && inMalloc)
+		: malloc{move(inMalloc)}
+		, buffer{nullptr}
+		, capacity{inCapacity}
+		, count{inCount}
+	{
+		// Create initial buffer
+		if (capacity > 0)
+			buffer = malloc.alloc(capacity);
+
+		// Default construct elements
+		if (count > 0)
+			Memory::constructDefaultElements(buffer, buffer + count);
+	}
+
+	/**
+	 * Tuple constructor, copies tuple values
+	 * in array. Use the conversion operator
+	 * if you don't want to specify an allocator.
+	 * 
+	 * @param tuple tuple object
+	 * @param inMalloc temporary objet allocator
+	 */
+	template<sizet n>
+	Array(const Tuple<T, n> & tuple, MallocObject<T, MallocT> && inMalloc)
+		: Array{n, n, move(inMalloc)}
+	{
+		// Copy construct elements
+		Memory::constructCopyElements(buffer, tuple.values, n);
 	}
 
 	/**
@@ -153,6 +176,7 @@ public:
 	 * Copy constructor with same allocator
 	 * 
 	 * Performs a copy of all elements
+	 * @{
 	 */
 	Array(const Array & other)
 		: Array{other.buffer, other.count, 0, nullptr}
@@ -176,14 +200,11 @@ public:
 	 * Move constructor
 	 */
 	Array(Array && other)
-		: allocator{other.allocator}
-		, bHasOwnAlloc{other.bHasOwnAlloc}
+		: malloc{move(other.malloc)}
 		, buffer{other.buffer}
 		, capacity{other.capacity}
 		, count{other.count}
 	{
-		other.allocator = nullptr;
-		other.bHasOwnAlloc = false;
 		other.buffer = nullptr;
 		other.capacity = 0;
 		other.count = 0;
@@ -261,15 +282,12 @@ public:
 	{
 		// Destroy first
 		destroy();
-
-		bHasOwnAlloc = other.bHasOwnAlloc;
-		allocator = other.allocator;
+		
+		malloc = move(other.malloc);
 		buffer = other.buffer;
 		capacity = other.capacity;
 		count = other.count;
 
-		other.bHasOwnAlloc = false;
-		other.allocator = nullptr;
 		other.buffer = nullptr;
 		other.capacity = other.count = 0;
 
@@ -502,7 +520,7 @@ public:
 		empty();
 
 		// Deallocate storage
-		allocator->free(buffer);
+		malloc.free(buffer);
 		buffer = nullptr;
 		capacity = 0;
 	}

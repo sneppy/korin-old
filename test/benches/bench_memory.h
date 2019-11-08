@@ -5,6 +5,7 @@
 #include <core_types.h>
 #include <hal/malloc_ansi.h>
 #include <hal/malloc_pool.h>
+#include <hal/malloc_binned.h>
 
 #ifndef DO_NOT_OPTIMIZE_AWAY_IMPL
 #define DO_NOT_OPTIMIZE_AWAY_IMPL
@@ -32,15 +33,21 @@ FORCE_INLINE MallocBase * createAllocator<MallocAnsi>(uint32 n, sizet size, size
 }
 
 template<>
+FORCE_INLINE MallocBase * createAllocator<MallocPool>(uint32 n, sizet size, sizet align)
+{
+	return new MallocPool{n, size, align};
+}
+
+template<>
 FORCE_INLINE MallocBase * createAllocator<MallocPooled>(uint32 n, sizet size, sizet align)
 {
 	return new MallocPooled{n / 8, size, align};
 }
 
 template<>
-FORCE_INLINE MallocBase * createAllocator<MallocPool>(uint32 n, sizet size, sizet align)
+FORCE_INLINE MallocBase * createAllocator<MallocBinned>(uint32 n, sizet size, sizet align)
 {
-	return new MallocPool{n, size, align};
+	return new MallocBinned;
 }
 
 template<typename MallocT>
@@ -71,3 +78,4 @@ void uniformAlloc(benchmark::State & state)
 BENCHMARK_TEMPLATE(uniformAlloc, MallocAnsi)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
 BENCHMARK_TEMPLATE(uniformAlloc, MallocPool)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
 BENCHMARK_TEMPLATE(uniformAlloc, MallocPooled)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
+BENCHMARK_TEMPLATE(uniformAlloc, MallocBinned)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
