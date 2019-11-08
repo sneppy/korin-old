@@ -37,111 +37,6 @@ protected:
 
 protected:
 	/**
-	 * Default constructs elements in range
-	 * 
-	 * @param [in] begin,end array range
-	 */
-	FORCE_INLINE void constructDefaultElements(T * begin, T * end)
-	{
-		for (; begin != end; ++begin)
-			new (begin) T();
-	}
-	
-	/**
-	 * Copy elements to empty storage
-	 * 
-	 * @param [in] dst,src destination and source
-	 * @param [in] n number of elements to copy
-	 * @{
-	 */
-	template<typename TT>
-	FORCE_INLINE typename EnableIf<!IsTriviallyConstructible<TT>::value>::Type constructCopyElements(TT * RESTRICT dst, const TT * RESTRICT src, uint64 n)
-	{
-		for (uint32 i = 0; i < n; ++i)
-			new (dst + i) TT(src[i]);
-	}
-
-	template<typename TT>
-	FORCE_INLINE typename EnableIf<IsTriviallyConstructible<TT>::value>::Type constructCopyElements(TT * RESTRICT dst, const TT * RESTRICT src, uint64 n)
-	{
-		Memory::memcpy(dst, src, n * sizeof(TT));
-	}
-	///@}
-
-	/**
-	 * Copy elements from source to destination
-	 * Source and destination buffer cannot be
-	 * overlapped
-	 * 
-	 * @param [in] dst destination buffer
-	 * @param [in] src source buffer
-	 * @param [in] n number of elements
-	 * @{
-	 */
-	template<typename TT>
-	FORCE_INLINE typename EnableIf<!IsTriviallyCopyable<TT>::value>::Type copyElements(TT * RESTRICT dst, const TT * RESTRICT src, uint64 n)
-	{
-		for (uint64 i = 0; i < n; ++n, ++dst, ++src)
-			// Non overlapping required
-			*dst = *src;
-	}
-
-	template<typename TT>
-	FORCE_INLINE typename EnableIf<IsTriviallyCopyable<TT>::value>::Type copyElements(TT * RESTRICT dst, const TT * RESTRICT src, uint64 n)
-	{
-		Memory::memcpy(dst, src, n * sizeof(TT));
-	}
-	/// @}
-
-	/**
-	 * Move elements from source to destination
-	 * Source and destination buffers can overlap
-	 * 
-	 * @param [in] dst destination buffer
-	 * @param [in] src source buffer
-	 * @param [in] n number of elements
-	 * @{
-	 */
-	template<typename TT>
-	FORCE_INLINE typename EnableIf<!IsTriviallyCopyable<TT>::value>::Type moveElements(TT * dst, TT * src, uint64 n)
-	{
-		if (LIKELY(dst < src))
-		{
-			// Copy left to right
-			for (uint64 i = 0; i < n; ++i, ++dst, ++src)
-				// Move rather than copy
-				*dst = move(*src);
-		}
-		else if (LIKELY(src > dst))
-		{
-			// Copy right to left
-			for (uint64 i = 0, j = n - 1; i < n; ++i, --j)
-				// Move rather than copy
-				dst[j] = move(src[j]);
-		}
-		else
-			; // Source and destination are the same
-	}
-
-	template<typename TT>
-	FORCE_INLINE typename EnableIf<IsTriviallyCopyable<TT>::value>::Type moveElements(TT * dst, TT * src, uint64 n)
-	{
-		memmove(dst, src, n * sizeof(TT));
-	}
-	/// @}
-
-	/**
-	 * Destroy elements in range
-	 * 
-	 * @param [in] begin,end array range
-	 */
-	FORCE_INLINE void destroyElements(T * begin, T * end)
-	{
-		for (; begin != end; ++begin)
-			begin->~T();
-	}
-
-	/**
 	 * Destroy array, also deallocates
 	 * managed allocator
 	 */
@@ -150,7 +45,7 @@ protected:
 		if (buffer)
 		{
 			// Destroy elements and deallocate buffer
-			destroyElements(buffer, buffer + count);
+			Memory::destroyElements(buffer, buffer + count);
 			allocator->free(buffer);
 			
 			buffer = nullptr;
@@ -189,7 +84,7 @@ protected:
 			// Copy elements and free old buffer
 			if (buffer)
 			{
-				constructCopyElements(inBuffer, buffer, count);
+				Memory::constructCopyElements(inBuffer, buffer, count);
 				allocator->free(buffer);
 			}
 
@@ -225,7 +120,7 @@ public:
 
 		// Default construct elements
 		if (count > 0)
-			constructDefaultElements(buffer, buffer + count);
+			Memory::constructDefaultElements(buffer, buffer + count);
 	}
 
 	/**
@@ -251,8 +146,7 @@ public:
 		CHECK(buffer != nullptr)
 
 		// Copy source buffer to destination
-		if (count)
-			constructCopyElements(buffer, src, count);
+		if (count) Memory::constructCopyElements(buffer, src, count);
 	}
 
 	/**
@@ -316,14 +210,14 @@ public:
 		if (other.count < count)
 		{
 			// Copy elements and destroy the extra elements
-			copyElements(buffer, other.buffer, other.count);
-			destroyElements(buffer + other.count, buffer + count);
+			Memory::copyElements(buffer, other.buffer, other.count);
+			Memory::destroyElements(buffer + other.count, buffer + count);
 		}
 		else
 		{
 			// Copy elements and construct the extra elements
-			copyElements(buffer, other.buffer, count);
-			constructCopyElements(buffer + count, other.buffer + count, other.count - count);
+			Memory::copyElements(buffer, other.buffer, count);
+			Memory::constructCopyElements(buffer + count, other.buffer + count, other.count - count);
 		}
 
 		// Set new count
@@ -344,14 +238,14 @@ public:
 		if (other.count < count)
 		{
 			// Copy elements and destroy the extra elements
-			copyElements(buffer, other.buffer, other.count);
-			destroyElements(buffer + other.count, buffer + count);
+			Memory::copyElements(buffer, other.buffer, other.count);
+			Memory::destroyElements(buffer + other.count, buffer + count);
 		}
 		else
 		{
 			// Copy elements and construct the extra elements
-			copyElements(buffer, other.buffer, count);
-			constructCopyElements(buffer + count, other.buffer + count, other.count - count);
+			Memory::copyElements(buffer, other.buffer, count);
+			Memory::constructCopyElements(buffer + count, other.buffer + count, other.count - count);
 		}
 
 		// Set new count
@@ -463,7 +357,7 @@ public:
 			resizeIfNecessary(count + 1);
 
 			// Move elements up to accomodate
-			moveElements(buffer + j, buffer + idx, count - j);
+			Memory::moveElements(buffer + j, buffer + idx, count - j);
 			++count;
 		}
 		else
@@ -486,7 +380,7 @@ public:
 		resizeIfNecessary(count + 1);
 
 		// Move elements up
-		moveElements(buffer + 1, buffer, count);
+		Memory::moveElements(buffer + 1, buffer, count);
 		++count;
 
 		// Copy construct element
@@ -520,10 +414,10 @@ public:
 	void removeAt(uint64 idx)
 	{
 		// Destroy element
-		destroyElements(buffer + idx, buffer + idx);
+		Memory::destroyElements(buffer + idx, buffer + idx);
 
 		// Move elements to the left
-		moveElements(buffer + idx, buffer + idx + 1, (count - 1) - idx);
+		Memory::moveElements(buffer + idx, buffer + idx + 1, (count - 1) - idx);
 
 		// Decrement count
 		--count;
@@ -546,7 +440,7 @@ public:
 		--count;
 
 		// Destroy element
-		destroyElements(buffer + count, buffer + count);
+		Memory::destroyElements(buffer + count, buffer + count);
 	}
 
 	/**
@@ -591,7 +485,7 @@ public:
 	FORCE_INLINE void empty()
 	{
 		// Destroy all elements
-		destroyElements(buffer, buffer + count);
+		Memory::destroyElements(buffer, buffer + count);
 		count = 0;
 	}
 	METHOD_ALIAS(wipe, empty)
