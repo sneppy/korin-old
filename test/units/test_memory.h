@@ -1,11 +1,12 @@
 #pragma once
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
-#include "hal/platform_memory.h"
-#include "hal/malloc_ansi.h"
-#include "hal/malloc_pool.h"
-#include "hal/malloc_object.h"
+#include <hal/platform_memory.h>
+#include <hal/malloc_ansi.h>
+#include <hal/malloc_pool.h>
+#include <hal/malloc_binned.h>
+#include <hal/malloc_object.h>
 
 TEST(memory, malloc_ansi)
 {
@@ -106,6 +107,33 @@ TEST(memory, malloc_pooled)
 	}
 	
 	ASSERT_EQ(malloc->getNumPools(), 16);
+
+	SUCCEED();
+}
+
+TEST(memory, malloc_binned)
+{
+	struct Foo
+	{
+		float32 vec[4];
+		void * next;
+	} * foo;
+
+	MallocBinned * malloc = new MallocBinned;
+
+	foo = reinterpret_cast<Foo*>(malloc->alloc(sizeof(Foo), alignof(Foo)));
+	foo->next = foo;
+	foo->vec[0] = 3.14f;
+
+	ASSERT_TRUE(foo != nullptr);
+
+	for (uint32 i = 0; i < 65536 * 15; ++i)
+	{
+		foo = reinterpret_cast<Foo*>(malloc->alloc(sizeof(Foo), alignof(Foo)));
+		foo->vec[0] = (float32)i;
+	}
+
+	delete malloc;
 
 	SUCCEED();
 }

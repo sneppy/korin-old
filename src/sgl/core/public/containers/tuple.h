@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core_types.h"
+#include "../hal/platform_memory.h"
 #include "../templates/types.h"
 #include "../templates/utility.h"
 #include "containers_types.h"
@@ -57,7 +58,7 @@ public:
 	 * List constructor.
 	 */
 	template<typename ... Values> 
-	constexpr FORCE_INLINE Tuple(Values && ... inValues)
+	explicit constexpr FORCE_INLINE Tuple(Values && ... inValues)
 		: values{forward<Values>(inValues) ...}
 	{
 		//
@@ -161,9 +162,9 @@ constexpr sizet Tuple<T, n>::len;
  * 	of first element
  */
 template<typename T, typename ... Args>
-constexpr FORCE_INLINE Tuple<typename RemoveReference<T>::Type, sizeof ... (Args) + 1> __make_tuple(T && a, Args && ... args)
+constexpr FORCE_INLINE Tuple<typename NakedType<T>::Type, 1 + sizeof ... (Args)> __make_tuple(T && a, Args && ... args)
 {
-	return Tuple<typename RemoveReference<T>::Type, sizeof ... (Args) + 1>{forward<T>(a), forward<Args>(args) ...};
+	return Tuple<typename NakedType<T>::Type, 1 + sizeof ... (Args)>{forward<T>(a), forward<Args>(args) ...};
 }
 
 /**

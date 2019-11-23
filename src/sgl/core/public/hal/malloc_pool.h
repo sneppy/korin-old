@@ -371,6 +371,15 @@ public:
 	MallocPooled(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockAlignment = DEFAULT_ALIGNMENT, uint32 initialNumPools = 1);
 
 	/**
+	 * Default constructor
+	 */
+	FORCE_INLINE MallocPooled()
+		: MallocPooled{1024, 512, 16, 1}
+	{
+		//
+	}
+
+	/**
 	 * Returns number of pools created.
 	 */
 	FORCE_INLINE uint32 getNumPools() const

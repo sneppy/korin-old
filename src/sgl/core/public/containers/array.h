@@ -108,6 +108,19 @@ public:
 	}
 
 	/**
+	 * List constructor
+	 * 
+	 * @param a, b, c list items
+	 */
+	/* template<typename TT, typename ... TTT>
+	Array(TT && a, typename EnableIf<IsSameType<TT, T>::value, TT>::Type && b, TTT && ... c)
+		: Array{2 + sizeof ... (c), 2 + sizeof ... (c), nullptr}
+	{
+		// Insert elements
+		insertNoResize(0, forward<TT>(a), forward<TT>(b), forward<TTT>(c) ...);
+	} */
+
+	/**
 	 * Init constructor with malloc arguments
 	 * 
 	 * @param inCapacity initial array capacity
@@ -359,6 +372,35 @@ public:
 	METHOD_ALIAS_CONST(getAt, operator[])
 	/// @}
 
+protected:
+	/**
+	 * Insert element without resizing.
+	 * 
+	 * @param idx position in which to insert
+	 * @param t element to insert
+	 * @return ref to inserted element
+	 */
+	template<typename TT>
+	FORCE_INLINE T & insertNoResize(uint64 idx, TT && t)
+	{
+		return *(new (buffer + idx) T{forward<TT>(t)});
+	}
+
+	/**
+	 * Insert multiple elements without
+	 * resizing container.
+	 * 
+	 * @param idx position in which to insert
+	 * @param a, b, c elements to insert
+	 */
+	template<typename TT, typename ... TTT>
+	FORCE_INLINE void insertNoResize(uint64 idx, TT && a, TT && b, TTT && ... c)
+	{
+		new (buffer + idx) T{forward<TT>(a)};
+		insertNoResize(idx + 1, forward<TT>(b), forward<TTT>(c) ...);
+	}
+
+public:
 	/**
 	 * Insert element at position
 	 * 
@@ -391,6 +433,7 @@ public:
 	 * 
 	 * @param [in] inT element to insert
 	 * @return reference to element
+	 * @{
 	 */
 	template<typename TT>
 	T & insertFirst(TT && inT)
@@ -405,6 +448,20 @@ public:
 		return *(new (buffer) T{forward<TT>(inT)});
 	}
 
+	template<typename TT, typename ... TTT>
+	void insertFirst(TT && a, TT && b, TTT && ... c)
+	{
+		constexpr uint64 numArgs = 2 + sizeof ... (c);
+
+		// Resize and move elements up
+		resizeIfNecessary(count + numArgs);
+		Memory::moveElements(buffer + numArgs, buffer, count);
+		count += numArgs;
+
+		insertNoResize(0, forward<TT>(a), forward<TT>(b), forward<TTT>(c) ...);
+	}
+	/// @}
+
 	/**
 	 * Insert a new element at the end of the
 	 * array
@@ -417,7 +474,19 @@ public:
 	T & insertLast(TT && inT)
 	{
 		resizeIfNecessary(count + 1);
-		return *(new (buffer + count++) T{forward<TT>(inT)});
+		return insertNoResize(count++, forward<TT>(inT));
+	}
+
+	template<typename TT, typename ... TTT>
+	void insertLast(TT && a, TT && b, TTT && ... c)
+	{
+		constexpr uint64 numArgs = 2 + sizeof ... (c);
+
+		// Resize and copy construct elements
+		resizeIfNecessary(count + numArgs);
+		insertNoResize(count, forward<TT>(a), forward<TT>(b), forward<TTT>(c) ...);
+
+		count += numArgs;
 	}
 	METHOD_ALIAS(add, insertLast)
 	METHOD_ALIAS(push, insertLast)

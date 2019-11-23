@@ -6,6 +6,7 @@
 #include "math_types.h"
 #include "vec3.h"
 #include "vec4.h"
+#include "../containers/tuple.h"
 
 /**
  * A 4 component vector that describes a rotation
@@ -128,6 +129,20 @@ public:
 		const Vec3<float32> q{this->x, this->y, this->z};
 		const Vec3<float32> t = 2.f * (q ^ v);
 		return v + (this->w * t) + (q ^ t);
+	}
+
+	/**
+	 * Returns rotated axes
+	 * 
+	 * @return tuple with x, y, z axes
+	 */
+	FORCE_INLINE Tuple<Vec3<float32>, 3> getAxes() const
+	{
+		const vec3 x = *this * Vec3<float32>::right;
+		const vec3 y = *this * Vec3<float32>::up;
+		const vec3 z = x ^ y;
+
+		return T(x, y, z);
 	}
 
 	/**

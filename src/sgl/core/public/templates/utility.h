@@ -12,7 +12,7 @@
 template<typename T>
 FORCE_INLINE void swap(T & a, T & b)
 {
-	T t(a); a = b, b = t;
+	T t{a}; a = b, b = t;
 }
 
 /**

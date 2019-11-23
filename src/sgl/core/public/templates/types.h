@@ -187,3 +187,13 @@ template<typename T> struct RemoveConst<const T>	{ using Type = T; };
 template<typename T> struct RemoveConst<const T*>	{ using Type = T*; };
 template<typename T> struct RemoveConst<const T&>	{ using Type = T&; };
 /// @}
+
+/**
+ * Get base type, which can include
+ * pointers as well.
+ */
+template<typename T>
+struct NakedType
+{
+	using Type = typename RemoveConst<typename RemoveReference<T>::Type>::Type;
+};

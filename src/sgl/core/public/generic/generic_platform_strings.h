@@ -54,8 +54,7 @@ struct GenericPlatformStrings
 			// All characters before the termination are equal
 			if (*s1 == '\0') return 0;
 		
-		// TODO: what should we return
-		// ?
+		// TODO: what should we return?
 		return *s1 - *s2;
 	}
 

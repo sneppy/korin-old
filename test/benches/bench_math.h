@@ -723,6 +723,21 @@ void vec4f_mul_vec_loop(float * __restrict__ a, float * __restrict__ b)
         a[i] *= b[i];
 }
 
+static void benchVec4MulS(benchmark::State & state)
+{
+	alignas(16) float a[4] = {1.f, 2.f, 0.5f, 3.f};
+	alignas(16) float b[4] = {15.f, 1.f, 0.2f, 2.5f};
+
+	for (auto _ : state)
+	{
+		for (uint32 i = 0; i < 10; ++i)
+			vec4f_mul_vec_loop(a, b);
+	}
+
+	doNotOptimizeAway(a);
+}
+BENCHMARK(benchVec4MulS);
+
 static void benchVec4Mul(benchmark::State & state)
 {
 	alignas(16) float a[4] = {1.f, 2.f, 0.5f, 3.f};
@@ -730,25 +745,29 @@ static void benchVec4Mul(benchmark::State & state)
 
 	for (auto _ : state)
 	{
-		for (int i = 0; i < 100; ++i)
-			vec4f_mul_vec_loop(a, b);
+		__m128 _a = _mm_load_ps(a), _b = _mm_load_ps(b);
+
+		for (uint32 i = 0; i < 10; ++i)
+			_a = _mm_mul_ps(_a, _b);
+
+		_mm_store_ps(a, _a);
 	}
 
 	doNotOptimizeAway(a);
 }
 BENCHMARK(benchVec4Mul);
 
-static void benchVec3Mul(benchmark::State & state)
+static void benchVec3MulS(benchmark::State & state)
 {
 	alignas(16) float a[3] = {1.f, 2.f, 0.5f};
 	alignas(16) float b[3] = {15.f, 1.f, 0.2f};
 
 	for (auto _ : state)
 	{
-		for (int i = 0; i < 100; ++i)
+		for (uint32 i = 0; i < 10; ++i)
 			vec3f_mul_vec_loop(a, b);
 	}
 
 	doNotOptimizeAway(a);
 }
-BENCHMARK(benchVec3Mul);
+BENCHMARK(benchVec3MulS);
