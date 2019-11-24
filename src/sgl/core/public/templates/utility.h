@@ -1,19 +1,8 @@
 #pragma once
 
-#include "core_types.h"
+#include "../core_types.h"
 #include "enable_if.h"
 #include "types.h"
-
-/**
- * Swap two values
- * 
- * @param [in] a,b values to swap
- */
-template<typename T>
-FORCE_INLINE void swap(T & a, T & b)
-{
-	T t{a}; a = b, b = t;
-}
 
 /**
  * Forces move semantics by casting to rvalue reference
@@ -44,3 +33,14 @@ constexpr FORCE_INLINE T && forward(typename RemoveReference<T>::Type && t)
 	return static_cast<T&&>(t);
 }
 /// @}
+
+/**
+ * Swap two values
+ * 
+ * @param [in] a,b values to swap
+ */
+template<typename T>
+FORCE_INLINE void swap(T & a, T & b)
+{
+	T t{move(a)}; a = move(b), b = move(t);
+}

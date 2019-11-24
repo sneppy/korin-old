@@ -46,7 +46,7 @@ void sglArray(benchmark::State & state)
 }
 
 /**
- * SGL dynamic array implementation
+ * Stdlib dynamic array implementation
  */
 void stdArray(benchmark::State & state)
 {

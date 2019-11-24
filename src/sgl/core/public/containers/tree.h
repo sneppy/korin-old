@@ -19,6 +19,9 @@ enum class BinaryNodeColor : ubyte
 template<typename T, typename CompareT>
 struct BinaryNode
 {
+	template<typename, typename, typename>
+	friend class Map;
+
 	/// Parent node
 	BinaryNode * parent;
 
@@ -116,6 +119,25 @@ struct BinaryNode
 	FORCE_INLINE const BinaryNode * getMax() const
 	{
 		return right ? right->getMax() : this;
+	}
+	/// @}
+
+	/**
+	 * Returns tree size (number of nodes)
+	 * 
+	 * @param root tree root node
+	 * @return number of nodes in tree
+	 * 	spawning from root node
+	 * @{
+	 */
+	static uint64 getTreeSize(BinaryNode * root)
+	{
+		return root ? 1 + getTreeSize(root->right) + getTreeSize(root->left) : 0;
+	}
+
+	uint64 getNumNodes()
+	{
+		return getTreeSize(this);
 	}
 	/// @}
 
@@ -219,17 +241,13 @@ protected:
 	 */
 	FORCE_INLINE BinaryNode * setLeftChild(BinaryNode * node)
 	{
-		if (left = node)
-			left->parent = this;
-
+		if ((left = node)) left->parent = this;
 		return left;
 	}
 
 	FORCE_INLINE BinaryNode * setRightChild(BinaryNode * node)
 	{
-		if (right = node)
-			right->parent = this;
-
+		if ((right = node)) right->parent = this;
 		return right;
 	}
 	/// @}
@@ -269,6 +287,39 @@ protected:
 		next->prev = this;
 
 		return node;
+	}
+	/// @}
+
+	/**
+	 * Replace node with left[right] subtree
+	 * @{
+	 */
+	FORCE_INLINE void collapseRight()
+	{
+		// Replace parent child
+		if (parent) (parent->left == this)
+			? parent->setLeftChild(right)
+			: parent->setRightChild(right)
+			;
+		else if (right) right->parent = nullptr;
+
+		// Replace next and prev
+		if (prev) prev->next = next;
+		if (next) next->prev = prev;
+	}
+
+	FORCE_INLINE void collapseLeft()
+	{
+		// Replace parent child
+		if (parent) (parent->left == this)
+			? parent->setLeftChild(left)
+			: parent->setRightChild(left)
+			;
+		else if (left) left->parent = nullptr;
+
+		// Replace next and prev
+		if (prev) prev->next = next;
+		if (next) next->prev = prev;
 	}
 	/// @}
 	
@@ -318,6 +369,20 @@ protected:
 			pivot->parent = nullptr;
 	}
 	/// @}
+
+	/**
+	 * Swap two nodes
+	 * 
+	 * @param a, b nodes to swap
+	 */
+	static void swapNodes(BinaryNode * a, BinaryNode * b)
+	{
+		swap(a->parent, b->parent);
+		swap(a->left, b->left);
+		swap(a->right, b->right);
+		swap(a->prev, b->prev);
+		swap(a->next, b->next);
+	}
 
 	/**
 	 * Repair inserted node
@@ -417,9 +482,9 @@ protected:
 		// Case -1: node is null and parent is null
 		if (node == nullptr && parent == nullptr)
 			; // Do nothing
-
+		
 		// Case 0: node is red or is root
-		else if (node && (isRed(node) || parent == nullptr))
+		else if (node && (node->color == BinaryNodeColor::RED || parent == nullptr))
 			node->color = BinaryNodeColor::BLACK;
 		
 		// Left child
@@ -439,11 +504,7 @@ protected:
 			}
 
 			// Case 2: sibling is black with black children
-			if (
-				isBlack(sibling) &&
-				(sibling->left == nullptr || isBlack(sibling->left)) &&
-				(sibling->right == nullptr || isBlack(sibling->right))
-			)
+			if (isBlack(sibling) && isBlack(sibling->left) && isBlack(sibling->right))
 			{
 				sibling->color = BinaryNodeColor::RED;
 				// Recursive call
@@ -452,7 +513,7 @@ protected:
 			else
 			{
 				// Case 3: sibling is black and inner child is red
-				if (sibling->left != nullptr && isRed(sibling->left))
+				if (isRed(sibling->left))
 				{
 					sibling->color			= BinaryNodeColor::RED;
 					sibling->left->color	= BinaryNodeColor::BLACK;
@@ -489,11 +550,7 @@ protected:
 				sibling = parent->left;
 			}
 			
-			if (
-				isBlack(sibling) &&
-				(sibling->left == nullptr || isBlack(sibling->left)) &&
-				(sibling->right == nullptr || isBlack(sibling->right))
-			)
+			if (isBlack(sibling->left) &&isBlack(sibling->right))
 			{
 				sibling->color = BinaryNodeColor::RED;
 				// Recursive call
@@ -502,7 +559,7 @@ protected:
 			else
 			{
 				// Case 3: sibling is black and inner child is red
-				if (sibling->right != nullptr && isRed(sibling->right))
+				if (isRed(sibling->right))
 				{
 					sibling->color			= BinaryNodeColor::RED;
 					sibling->right->color	= BinaryNodeColor::BLACK;
@@ -618,49 +675,47 @@ public:
 	 */
 	BinaryNode * remove()
 	{
-		// Proceed with normal bt deleteion, then repair
+		// Proceed with normal bt deletion, then repair
 		// @ref http://www.mathcs.emory.edu/~cheung/Courses/171/Syllabus/9-BinTree/BST-delete2.html
+		// @ref https://www.programiz.com/deletion-from-a-red-black-tree
 		
-		BinaryNode * succ = this;
+		BinaryNode * u = this;
+		BinaryNode * v = nullptr;
 
 		// Get actual successor
 		if (left != nullptr && right != nullptr)
-			data = move((succ = right->getMin())->data);
+		{
+			swapNodes(this, (u = next));
+			swap(color, u->color);
+		}
 		
 		// Remove left or right child of successor
-		BinaryNode * repl = nullptr;
-		if (succ->left != nullptr)
-		{
-			if (((repl = succ->left)->next = succ->next) != nullptr)
-				repl->next->prev = repl;
-		}
-		else if (succ->right != nullptr)
-		{
-			if (((repl = succ->right)->prev = succ->prev) != nullptr)
-				repl->prev->next = repl;
-		}
+		if (u->left != nullptr)
+			if (((v = u->left)->next = u->next) != nullptr)
+				v->next->prev = v;
+		else if (u->right != nullptr)
+			if (((v = u->right)->prev = u->prev) != nullptr)
+				v->prev->next = v;
 		else
 		{
-			if (succ->prev) succ->prev->next = succ->next;
-			if (succ->next) succ->next->prev = succ->prev;
+			if (u->prev) u->prev->next = u->next;
+			if (u->next) u->next->prev = u->prev;
 		}
 
 		// Replace successor
 		// If we had only one subtree then left may be non-null
-		if (succ->parent != nullptr)
-			(succ->parent->left == succ)
+		if (u->parent != nullptr) (u->parent->left == u)
 				// Set*Child also checks if repl is null
-				? succ->parent->setLeftChild(repl)
-				: succ->parent->setRightChild(repl);
-		else if (repl != nullptr)
-			repl->parent = nullptr;
+				? u->parent->setLeftChild(v)
+				: u->parent->setRightChild(v);
+		else if (v != nullptr)
+			v->parent = nullptr;
 
 		
-		if (isBlack(succ))
-			// Repair rb structure
-			repairRemoved(repl, repl ? repl->parent : succ->parent);
+		// Repair rb structure
+		if (isBlack(u)) repairRemoved(v, v ? v->parent : u->parent);
 		
-		return succ;
+		return u;
 	}
 
 	/**

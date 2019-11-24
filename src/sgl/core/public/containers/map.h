@@ -34,7 +34,7 @@ protected:
 	 * Allocate node
 	 */
 	template<typename PairU>
-	NodeT * createNode(PairU && pair) const
+	FORCE_INLINE NodeT * createNode(PairU && pair) const
 	{
 		return new (reinterpret_cast<NodeT*>(malloc->alloc(sizeof(NodeT), alignof(NodeT)))) NodeT{forward<PairU>(pair)};
 	}
@@ -63,70 +63,62 @@ public:
 	}
 
 	/**
+	 * Use custom allocator
+	 */
+	FORCE_INLINE Map(MallocBase * inMalloc)
+		: malloc{inMalloc}
+		, bHasOwnMalloc{false}
+		, root{nullptr}
+		, numNodes{0ull}
+	{
+		//
+	}
+
+protected:
+	/**
+	 * Destroy tree
+	 */
+	void destroyTree(NodeT * node)
+	{
+		if (node->left) destroyTree(node->left);
+		if (node->right) destroyTree(node->right);
+		destroyNode(node);
+	}
+
+public:
+	/**
+	 * Destructor
+	 */
+	FORCE_INLINE ~Map()
+	{
+		numNodes = 0;
+
+		if (root)
+		{
+			destroyTree(root);
+			root = nullptr;
+		}
+		
+		if (bHasOwnMalloc)
+		{
+			delete malloc;
+			malloc = nullptr;
+		}
+	}
+
+	/**
 	 * Returns number of nodes
 	 * @{
 	 */
 	FORCE_INLINE uint64 getNumNodes() const
 	{
+		CHECK(numNodes == root->getNumNodes())
 		return numNodes;
 	}
 
 	METHOD_ALIAS_CONST(getCount, getNumNodes)
 	METHOD_ALIAS_CONST(getSize, getNumNodes)
 	/// @}
-
-	/**
-	 * Insert in map, replace value if
-	 * key already exists
-	 * 
-	 * @param key pair key
-	 * @param val pair value
-	 * @return ref to value
-	 */
-	template<typename KeyU, typename ValU>
-	ValT & insert(KeyU && key, ValU && val)
-	{
-		if (UNLIKELY(root == nullptr))
-		{
-			numNodes = 1;
-
-			root = createNode(PairT{forward<KeyU>(key), forward<ValU>(val)});
-			root->color = BinaryNodeColor::BLACK;
-			return root->data.second;
-		}
-		else
-		{
-			// Traverse tree
-			NodeT * next = root, * prev = nullptr;
-			while (next)
-			{
-				prev = next;
-
-				const int32 cmp = typename PairT::FindPair()(key, next->data);
-				if (cmp < 0)
-					next = next->left;
-				else if (cmp > 0)
-					next = next->right;
-				else break;
-			}
-
-			if (next)
-			{
-				// Key already exists,
-				// don't create new node but replace
-				return (prev->data.second = forward<ValU>(val));
-			}
-			else
-			{
-				numNodes++;
-
-				NodeT * node = createNode(PairT{forward<KeyU>(key), forward<ValU>(val)});
-				prev->insert(node);
-
-				return node->data.second;
-			}
-		}
-	}
 
 	/**
 	 * Returns reference to a pair
@@ -150,40 +142,64 @@ public:
 
 			root = createNode(PairT{forward<KeyU>(key), ValT{}});
 			root->color = BinaryNodeColor::BLACK;
+			
 			return root->data.second;
 		}
 		else
 		{
 			// Traverse tree
+			int32 cmp;
 			NodeT * next = root, * prev = nullptr;
 			while (next)
 			{
 				prev = next;
 
-				const int32 cmp = typename PairT::FindPair()(key, next->data);
+				cmp = typename PairT::FindPair()(key, next->data);
 				if (cmp < 0)
 					next = next->left;
 				else if (cmp > 0)
 					next = next->right;
-				else break;
+				else
+					// Node exists, return ref
+					return next->data.second;
 			}
+			
+			numNodes++;
 
-			if (next)
+			// Create and insert node
+			NodeT * node = createNode(PairT{forward<KeyU>(key), ValT{}});
+			if (cmp < 0)
 			{
-				// Node exists, return ref
-				return next->data.second;
+				prev->setPrevNode(node);
+				prev->setLeftChild(node);
+				NodeT::repairInserted(node);
 			}
 			else
 			{
-				// Create and insert node
-				numNodes++;
-
-				NodeT * node = createNode(PairT{forward<KeyU>(key), ValT{}});
-				prev->insert(node);
-
-				return node->data.second;
+				prev->setNextNode(node);
+				prev->setRightChild(node);
+				NodeT::repairInserted(node);
 			}
+			
+			// Root may be changed
+			root = root->getRoot();
+
+			return node->data.second;
 		}
+	}
+
+	/**
+	 * Insert in map, replace value if
+	 * key already exists
+	 * 
+	 * @param key pair key
+	 * @param val pair value
+	 * @return ref to value
+	 */
+	template<typename KeyU, typename ValU>
+	ValT & insert(KeyU && key, ValU && val)
+	{
+		return (operator[](forward<KeyU>(key)) = forward<ValU>(val));
 	}
 
 	/**
@@ -255,7 +271,44 @@ public:
 	}
 
 	/**
-	 * Remove element from map and
+	 * Remove node from map. Note that
+	 * this operation may invalidate
+	 * pointers to map nodes
+	 * 
+	 * @param node node to remove
+	 */
+	void remove(NodeT * node)
+	{
+		CHECKF(find(node->data.first) == node, "node %p is not part of this map", node)
+
+		// Root may have changed
+		if (node->remove() == root) root = root->right;
+		if (root) root = root->getRoot();
+
+		numNodes--;
+	}
+
+	/**
+	 * Remove pair from map. Note that
+	 * this operation may invalidate
+	 * pointers to map nodes
+	 * 
+	 * @param key pair key
+	 * @return true if pair exists
+	 */
+	FORCE_INLINE bool remove(const KeyT & key)
+	{
+		// Retrieve node
+		NodeT * node = find(key);
+		if (!node) return false;
+
+		// Remove node
+		remove(node);
+		return true;
+	}
+
+	/**
+	 * Remove pair from map and
 	 * return its value. Note that
 	 * this operation may invalidate
 	 * pointers to map nodes
@@ -274,15 +327,7 @@ public:
 		val = move(node->data.second);
 
 		// Remove node
-		NodeT * removed = node->remove();
-		numNodes--;
-
-		// Update root
-		if (removed == node)
-			root = root->getRoot();
-		else
-			root = node->getRoot();
-		
+		remove(node);
 		return true;
 	}
 };

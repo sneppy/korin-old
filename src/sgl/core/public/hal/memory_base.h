@@ -18,6 +18,14 @@ class MallocBase
 {
 public:
 	/**
+	 * Virtual destructor
+	 */
+	virtual ~MallocBase()
+	{
+		//
+	}
+
+	/**
 	 * Memory allocation
 	 * 
 	 * @param [in] size size to allocate (in Bytes)

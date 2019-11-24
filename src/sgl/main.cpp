@@ -8,6 +8,32 @@
 
 #include <string>
 
+/**
+ * SGL ordered map implementation
+ */
+void sglMap()
+{
+	struct LessThan
+	{
+		FORCE_INLINE int32 operator()(uint32 a, uint32 b) const
+		{
+			return int32(a > b) - int32(a < b);
+		}
+	};
+
+	const uint32 numNodes = 1u << 16;
+	Map<uint32, uint32, LessThan> map;
+
+	for (uint32 i = 0; i < numNodes; ++i)
+		map[i] = i << 1;
+	
+	for (uint32 i = 0; i < numNodes; ++i)
+		map[i] = map[(numNodes - i) - 1];
+	
+	for (uint32 i = 0; i < numNodes; ++i)
+		map.remove(i);
+}
+
 int32 main()
 {
 	struct FindString
@@ -18,19 +44,15 @@ int32 main()
 		}
 	};
 
-	Map<String, String, FindString> nameMap;
-	nameMap.insert("hello", "world");
-	nameMap.insert("sneppy", "Andrea Mecchia");
+	Map<String, String, FindString> user;
+	user["email"] = "sneppy13@gmail.com";
+	user["username"] = "sneppy";
 
-	printf("%s\n", *nameMap["sneppy"]);
+	printf("count: %llu\n", user.getNumNodes());
 
-	String name;
-	if (nameMap.pop("sneppy", name))
-	{
-		printf("%s\n", *name);
-	}
+	user.remove("email");
 
-	printf("%llu", nameMap.getCount());
+	sglMap();
 
 	return 0;
 }

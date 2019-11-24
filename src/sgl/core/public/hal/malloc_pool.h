@@ -345,15 +345,15 @@ protected:
 		Node * node = reinterpret_cast<Node*>(pool + 1);
 		Link * link = reinterpret_cast<Link*>(node + 1);
 
-		// Remove from list
-		// TODO
-		link->~Link();
-
 		// Remove from tree
-		if (node->remove() == root)
-			root = root->right;
-		
+		if (node->remove() == root) root = root->right;
+		if (root) root = root->getRoot();
 		node->~Node();
+
+		// Remove from list
+		if (link->next == link) head = nullptr;
+		else link->prev->next = link->next, link->next->prev = link->prev;
+		link->~Link();
 		
 		// Destroy pool
 		pool->~MemoryPool();
@@ -378,6 +378,11 @@ public:
 	{
 		//
 	}
+
+	/**
+	 * Destructor
+	 */
+	virtual ~MallocPooled();
 
 	/**
 	 * Returns number of pools created.

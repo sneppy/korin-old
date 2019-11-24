@@ -157,6 +157,20 @@ MallocPooled::MallocPooled(uint32 inNumBlocks, sizet inBlockSize, sizet inBlockA
 	CHECK(head != nullptr && root != nullptr)
 }
 
+MallocPooled::~MallocPooled()
+{
+	Node * next = root->getMin(), * prev = nullptr;
+	while (next)
+	{
+		prev = next;
+		next = next->next;
+
+		// Destroy pool
+		MemoryPool * pool = prev->data;
+		destroyPool(pool);
+	}
+}
+
 bool MallocPooled::hasBlock(void * orig)
 {
 	CHECK(orig != nullptr)
