@@ -6,8 +6,9 @@
 #include <containers/string.h>
 #include <containers/list.h>
 #include <containers/tuple.h>
-#include <containers/pair.h>
 #include <containers/tree.h>
+#include <containers/pair.h>
+#include <containers/map.h>
 
 #include <hal/malloc_ansi.h>
 #include <hal/malloc_pool.h>
@@ -272,6 +273,66 @@ TEST(containers, list)
 	SUCCEED();
 }
 
+TEST(containers, tuple)
+{
+	auto tup0 = Tuple<int, 5>{4, 5, 1, 8, 8};
+
+	ASSERT_EQ(tup0.len, 5);
+	ASSERT_EQ(tup0[0], 4);
+	ASSERT_EQ(tup0[1], 5);
+	ASSERT_EQ(tup0[2], 1);
+	ASSERT_EQ(tup0[3], 8);
+	ASSERT_EQ(tup0[4], 8);
+	ASSERT_EQ(tup0[0], tup0[-5]);
+	ASSERT_EQ(tup0[1], tup0[-4]);
+	ASSERT_EQ(tup0[2], tup0[-3]);
+	ASSERT_EQ(tup0[3], tup0[-2]);
+	ASSERT_EQ(tup0[4], tup0[-1]);
+
+	auto tup1 = T(4, 5, 1);
+
+	ASSERT_TRUE((IsSameType<decltype(tup1[0]), int&>::value));
+	ASSERT_EQ(tup1.len, 3);
+	ASSERT_EQ(tup1[0], 4);
+	ASSERT_EQ(tup1[1], 5);
+	ASSERT_EQ(tup1[2], 1);
+
+	auto tup2 = T(T(1.f, 2.f), T(4.f, 2.f));
+
+	ASSERT_TRUE((IsSameType<decltype(tup2[0]), Tuple<float32, 2>&>::value));
+
+	auto tup3 = T(tup1[1], tup1[0], 0);
+
+	ASSERT_EQ(tup3.len, 3);
+	ASSERT_EQ(tup3[0], tup1[1]);
+	ASSERT_EQ(tup3[1], tup1[0]);
+	ASSERT_EQ(tup3[2], 0);
+
+	auto tup4 = tup3 + 1;
+
+	ASSERT_EQ(tup4.len, 4);
+	ASSERT_EQ(tup3[0], tup3[0]);
+	ASSERT_EQ(tup3[1], tup3[1]);
+	ASSERT_EQ(tup3[2], tup3[2]);
+	ASSERT_EQ(tup4[3], 1);
+
+	auto tup5 = tup3 + tup4;
+
+	ASSERT_EQ(tup5.len, tup3.len + tup4.len);
+	ASSERT_EQ(tup5[0], tup3[0]);
+	ASSERT_EQ(tup5[1], tup3[1]);
+	ASSERT_EQ(tup5[2], tup3[2]);
+	ASSERT_EQ(tup5[3], tup4[0]);
+	ASSERT_EQ(tup5[4], tup4[1]);
+	ASSERT_EQ(tup5[5], tup4[2]);
+	ASSERT_EQ(tup5[6], tup4[3]);
+
+	auto tup6 = tup5.slice<4, -1>();
+	ASSERT_EQ(tup6.len, 2);
+	ASSERT_EQ(tup6[0], tup5[4]);
+	ASSERT_EQ(tup6[1], tup5[5]);
+}
+
 template<typename T>
 struct LessThan
 {
@@ -362,100 +423,74 @@ TEST(containers, tree)
 	SUCCEED();
 }
 
+struct FindString
+{
+	FORCE_INLINE int32 operator()(const String & a, const String & b)
+	{
+		return a.cmp(b);
+	}
+};
+
 TEST(containers, map)
 {
-	using PairT = Pair<uint32, uint32, LessThan<uint32>>;
-	PairT pair{8u, 3u};
+	Map<uint32, String, LessThan<uint32>> a;
 	
-	ASSERT_EQ(pair.getKey(), 8);
-	ASSERT_EQ(pair.getVal(), 3);
+	ASSERT_EQ(a.getCount(), 0);
+	ASSERT_EQ(a.find(8u), nullptr);
 
-	pair = PairT(4u);
+	a.insert(4u, "sneppy");
 
-	ASSERT_EQ(pair.getKey(), 4);
-	ASSERT_EQ(pair.getVal(), 0);
+	ASSERT_EQ(a.getCount(), 1);
+	ASSERT_EQ(a.find(8u), nullptr);
+	ASSERT_NE(a.find(4u), nullptr);
+	ASSERT_EQ(a.find(4u)->data.second, "sneppy");
 
-	using Node = BinaryNode<PairT, PairT::FindPair>;
+	a.insert(2u, "two");
+	a.insert(8u, "eight");
 
-	Node * root = new Node(PairT{8u, 3u});
-	root->color = BinaryNodeColor::BLACK;
+	ASSERT_EQ(a.getCount(), 3);
+	ASSERT_EQ(a.find(8u)->data.second, "eight");
+	ASSERT_EQ(a.find(2u)->data.second, "two");
+
+	String str;
 	
-	ASSERT_EQ(root->data.first, 8);
-	ASSERT_EQ(root->data.second, 3);
+	ASSERT_TRUE(a.find(2u, str));
+	ASSERT_EQ(str, "two");
+	ASSERT_TRUE(a.find(8u, str));
+	printf("%s == %s\n", *str, "eight");
+	printf("%u\n", str == "eight");
+	ASSERT_EQ(str, "eight");
+	ASSERT_TRUE(a.find(4u, str));
+	ASSERT_EQ(str, "sneppy");
+	ASSERT_FALSE(a.find(1u, str));
+	ASSERT_EQ(str, "sneppy");
 
-	ASSERT_EQ(root->find(PairT{8u}), root);
-	ASSERT_TRUE(root->find(PairT{4u}) == nullptr);
+	ASSERT_TRUE(a.pop(2u, str));
+	ASSERT_EQ(a.getCount(), 2);
+	ASSERT_EQ(str, "two");
+	ASSERT_TRUE(a.pop(4u, str));
+	ASSERT_EQ(a.getCount(), 1);
+	ASSERT_EQ(str, "sneppy");
+	ASSERT_FALSE(a.pop(13u, str));
+	ASSERT_EQ(a.getCount(), 1);
+	ASSERT_EQ(str, "sneppy");
 
-	root->insertUnique(new Node(PairT{4u, 9u}));
-	root = root->getRoot();
-	root->insertUnique(new Node(PairT{7u, 2u}));
-	root = root->getRoot();
-	root->insertUnique(new Node(PairT{8u, 11u}));
-	root = root->getRoot();
+	Map<String, String, FindString> b;
+	b.insert("username", "sneppy");
+	b.insert("email", "sneppy13@gmail.com");
+	
+	ASSERT_EQ(b.getCount(), 2);
+	ASSERT_EQ(b["email"], "sneppy13@gmail.com");
 
-	ASSERT_EQ(root->find(PairT{4u})->data.second, 9u);
-	ASSERT_EQ(root->find(PairT{7u})->data.second, 2u);
-	ASSERT_EQ(root->find(PairT{8u})->data.second, 3u);
+	ASSERT_TRUE(b.pop("username", str));
+	ASSERT_EQ(b.getCount(), 1);
+	ASSERT_EQ(str, "sneppy");
+	ASSERT_TRUE(b.pop("email", str));
+	ASSERT_EQ(b.getCount(), 0);
+	ASSERT_EQ(str, "sneppy13@gmail.com");
+	ASSERT_FALSE(b.pop("password", str));
+	ASSERT_EQ(b.getCount(), 0);
+	ASSERT_EQ(str, "sneppy13@gmail.com");
 
 	SUCCEED();
-}
-
-TEST(containers, tuple)
-{
-	auto tup0 = Tuple<int, 5>{4, 5, 1, 8, 8};
-
-	ASSERT_EQ(tup0.len, 5);
-	ASSERT_EQ(tup0[0], 4);
-	ASSERT_EQ(tup0[1], 5);
-	ASSERT_EQ(tup0[2], 1);
-	ASSERT_EQ(tup0[3], 8);
-	ASSERT_EQ(tup0[4], 8);
-	ASSERT_EQ(tup0[0], tup0[-5]);
-	ASSERT_EQ(tup0[1], tup0[-4]);
-	ASSERT_EQ(tup0[2], tup0[-3]);
-	ASSERT_EQ(tup0[3], tup0[-2]);
-	ASSERT_EQ(tup0[4], tup0[-1]);
-
-	auto tup1 = T(4, 5, 1);
-
-	ASSERT_TRUE((IsSameType<decltype(tup1[0]), int&>::value));
-	ASSERT_EQ(tup1.len, 3);
-	ASSERT_EQ(tup1[0], 4);
-	ASSERT_EQ(tup1[1], 5);
-	ASSERT_EQ(tup1[2], 1);
-
-	auto tup2 = T(T(1.f, 2.f), T(4.f, 2.f));
-
-	ASSERT_TRUE((IsSameType<decltype(tup2[0]), Tuple<float32, 2>&>::value));
-
-	auto tup3 = T(tup1[1], tup1[0], 0);
-
-	ASSERT_EQ(tup3.len, 3);
-	ASSERT_EQ(tup3[0], tup1[1]);
-	ASSERT_EQ(tup3[1], tup1[0]);
-	ASSERT_EQ(tup3[2], 0);
-
-	auto tup4 = tup3 + 1;
-
-	ASSERT_EQ(tup4.len, 4);
-	ASSERT_EQ(tup3[0], tup3[0]);
-	ASSERT_EQ(tup3[1], tup3[1]);
-	ASSERT_EQ(tup3[2], tup3[2]);
-	ASSERT_EQ(tup4[3], 1);
-
-	auto tup5 = tup3 + tup4;
-
-	ASSERT_EQ(tup5.len, tup3.len + tup4.len);
-	ASSERT_EQ(tup5[0], tup3[0]);
-	ASSERT_EQ(tup5[1], tup3[1]);
-	ASSERT_EQ(tup5[2], tup3[2]);
-	ASSERT_EQ(tup5[3], tup4[0]);
-	ASSERT_EQ(tup5[4], tup4[1]);
-	ASSERT_EQ(tup5[5], tup4[2]);
-	ASSERT_EQ(tup5[6], tup4[3]);
-
-	auto tup6 = tup5.slice<4, -1>();
-	ASSERT_EQ(tup6.len, 2);
-	ASSERT_EQ(tup6[0], tup5[4]);
-	ASSERT_EQ(tup6[1], tup5[5]);
 }

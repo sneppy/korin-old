@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core_types.h"
-#include "misc/assert.h"
-#include "templates/utility.h"
+#include "../core_types.h"
+#include "../misc/assert.h"
+#include "../templates/utility.h"
 #include "containers_types.h"
 #include "string.h"
 
@@ -122,11 +122,14 @@ struct BinaryNode
 	/**
 	 * Find node with search key
 	 * 
-	 * @param [in] key search key
+	 * @param key search key
+	 * @return ptr to node, nullptr
+	 * 	otherwise
+	 * @{
 	 */
 	const BinaryNode * find(const T & key) const
 	{
-		int32 cmp = CompareT()(key, this->data);
+		const int32 cmp = CompareT()(key, this->data);
 
 		if (cmp < 0)
 			return left ? left->find(key) : nullptr;
@@ -137,6 +140,68 @@ struct BinaryNode
 	}
 	
 	FORCE_INLINE BinaryNode * find(const T & key)
+	{
+		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).find(key));
+	}
+	/// @}
+
+	/**
+	 * Find leftmost node that matches
+	 * search key
+	 * 
+	 * @param key search key
+	 * @return ptr to node, nullptr
+	 * 	otherwise
+	 * @{
+	 */
+	const BinaryNode * findMin(const T & key) const
+	{
+		// Find matching node
+		BinaryNode * next = find(key);
+
+		// Now find leftmost
+		BinaryNode * prev = next;
+		do
+		{
+			prev = next;
+			next = next->left;
+		} while (next && CompareT()(key, next->data));	
+
+		return prev;	
+	}
+
+	FORCE_INLINE BinaryNode * findMin(const T & key)
+	{
+		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).find(key));
+	}
+	/// @}
+
+	/**
+	 * Find rightmost node that matches
+	 * search key
+	 * 
+	 * @param key search key
+	 * @return ptr to node, nullptr
+	 * 	otherwise
+	 * @{
+	 */
+	const BinaryNode * findMax(const T & key) const
+	{
+		// Find matching node
+		BinaryNode * next = find(key);
+
+		// Now find rightmost
+		BinaryNode * prev = next;
+		do
+		{
+			prev = next;
+			next = next->right;
+		} while (next && CompareT()(key, next->data));	
+
+		return prev;	
+	}
+
+	FORCE_INLINE BinaryNode * findMax(const T & key)
 	{
 		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).find(key));
 	}

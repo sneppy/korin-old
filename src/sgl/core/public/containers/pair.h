@@ -5,7 +5,12 @@
 
 /**
  * A struct with two elements (conceptually
- * key and value or simply first and second)
+ * key and value or simply first and second).
+ * 
+ * @param A key type
+ * @param B value type
+ * @param CompareT compare class, overloads
+ * 	operator()(const A&, const B&)
  */
 template<typename A, typename B, typename CompareT>
 struct Pair
@@ -16,13 +21,43 @@ struct Pair
 	/// @}
 
 	/**
-	 * 
+	 * Encapsulate compare class
 	 */
 	struct FindPair
 	{
+		/**
+		 * Compare two pairs
+		 * 
+		 * @param a, b two pairs to compare
+		 * @return a GT b (1), a EQ b (0), a LT b (-1)
+		 */
 		FORCE_INLINE int32 operator()(const Pair & a, const Pair & b) const
 		{
 			return CompareT()(a.first, b.first);
+		}
+
+		/**
+		 * Compare pair and key
+		 * 
+		 * @param a pair
+		 * @param b key-only
+		 * @return a GT b (1), a EQ b (0), a LT b (-1)
+		 */
+		FORCE_INLINE int32 operator()(const Pair & a, const A & b) const
+		{
+			return CompareT()(a.first, b);
+		}
+
+		/**
+		 * Compare key and pair
+		 * 
+		 * @param a key-only
+		 * @param b pair
+		 * @return a GT b (1), a EQ b (0), a LT b (-1)
+		 */
+		FORCE_INLINE int32 operator()(const A & a, const Pair & b) const
+		{
+			return CompareT()(a, b.first);
 		}
 	};
 
@@ -32,16 +67,15 @@ struct Pair
 	/// Value
 	B second;
 
-public:
 	/**
 	 * Default constructor, zero initialize both
 	 */
-	FORCE_INLINE Pair()
+	/* FORCE_INLINE Pair()
 		: first{}
 		, second{}
 	{
 		//
-	}
+	} */
 
 	/**
 	 * Key constructor, zero initialize value
@@ -49,7 +83,7 @@ public:
 	 * @param [in] key pair key
 	 * @{
 	 */
-	FORCE_INLINE Pair(const A & key)
+	/* FORCE_INLINE Pair(const A & key)
 		: first{key}
 		, second{}
 	{
@@ -61,7 +95,7 @@ public:
 		, second{}
 	{
 		//
-	}
+	} */
 	/// @}
 
 	/**
@@ -70,10 +104,10 @@ public:
 	 * @param [in] key pair key
 	 * @param [in] val pair value
 	 */
-	template<typename _A, typename _B>
-	FORCE_INLINE Pair(_A && key, _B && val)
-		: first{forward<_A>(key)}
-		, second{forward<_B>(val)}
+	template<typename AA, typename BB>
+	FORCE_INLINE Pair(AA && key, BB && val)
+		: first{forward<AA>(key)}
+		, second{forward<BB>(val)}
 	{
 		//
 	}
