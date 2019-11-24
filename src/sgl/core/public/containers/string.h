@@ -116,7 +116,10 @@ public:
 	FORCE_INLINE String & operator=(const String & other)
 	{
 		// Copy array
-		array = other.array;
+		array.resizeIfNecessary(other.array.count + 1);
+		array.count = other.array.count;
+		PlatformMemory::memcpy(array.buffer, other.array.buffer, array.count + 1);
+
 		return *this;
 	}
 
