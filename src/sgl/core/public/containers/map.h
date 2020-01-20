@@ -282,7 +282,7 @@ public:
 		CHECKF(find(node->data.first) == node, "node %p is not part of this map", node)
 
 		// Root may have changed
-		if (node->remove() == root) root = root->right;
+		if (node->remove() == root) root = root->left ? root->left : root->right;
 		if (root) root = root->getRoot();
 
 		numNodes--;

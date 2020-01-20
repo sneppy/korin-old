@@ -19,8 +19,7 @@ enum class BinaryNodeColor : ubyte
 template<typename T, typename CompareT>
 struct BinaryNode
 {
-	template<typename, typename, typename>
-	friend class Map;
+	template<typename, typename, typename> friend class Map;
 
 	/// Parent node
 	BinaryNode * parent;
@@ -691,11 +690,15 @@ public:
 		
 		// Remove left or right child of successor
 		if (u->left != nullptr)
+		{
 			if (((v = u->left)->next = u->next) != nullptr)
 				v->next->prev = v;
+		}
 		else if (u->right != nullptr)
+		{
 			if (((v = u->right)->prev = u->prev) != nullptr)
 				v->prev->next = v;
+		}
 		else
 		{
 			if (u->prev) u->prev->next = u->next;
@@ -711,7 +714,6 @@ public:
 		else if (v != nullptr)
 			v->parent = nullptr;
 
-		
 		// Repair rb structure
 		if (isBlack(u)) repairRemoved(v, v ? v->parent : u->parent);
 		

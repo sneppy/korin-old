@@ -300,7 +300,7 @@ protected:
 		++numPools;
 
 		// Create pool structure after buffer
-		MemoryPool * pool = new (reinterpret_cast<MemoryPool*>(reinterpret_cast<uintp>(buffer) + poolInfo.bufferSize)) MemoryPool{poolInfo.numBlocks, poolInfo.blockSize, poolInfo.blockAlignment, buffer};
+		MemoryPool * pool = new (reinterpret_cast<char*>(buffer) + poolInfo.bufferSize) MemoryPool{poolInfo.numBlocks, poolInfo.blockSize, poolInfo.blockAlignment, buffer};
 
 		// Add to tree
 		Node * node = new (reinterpret_cast<Node*>(pool + 1)) Node{pool};
@@ -341,12 +341,14 @@ protected:
 	 */
 	FORCE_INLINE void destroyPool(MemoryPool * pool)
 	{
+		--numPools;
+
 		void * buffer = pool->buffer;
 		Node * node = reinterpret_cast<Node*>(pool + 1);
 		Link * link = reinterpret_cast<Link*>(node + 1);
 
 		// Remove from tree
-		if (node->remove() == root) root = root->right;
+		if (node->remove() == root) root = root->left ? root->left : root->right;
 		if (root) root = root->getRoot();
 		node->~Node();
 
