@@ -4,6 +4,7 @@
 #include "hal/platform_crt.h"
 #include "templates/enable_if.h"
 #include "templates/types.h"
+#include "templates/utility.h"
 
 /**
  * Platform independent math utilities
@@ -41,20 +42,33 @@ struct GenericPlatformMath
 	/**
 	 * Returns min[max] of two values
 	 * 
-	 * @param [in] a,b, values to compare
-	 * @return min[max] of a and b
+	 * @param [in] a,b,c values to compare
+	 * @return min[max] of a and b or list
+	 * 	of values
 	 * @{
 	 */
-	template<typename A, typename B = A>
-	static constexpr FORCE_INLINE A min(A a, B b)
+	template<typename T, typename U>
+	static constexpr FORCE_INLINE T min(const T & a, const U & b)
 	{
-		return a < static_cast<A>(b) ? a : static_cast<A>(b);
+		return a < b ? a : b;
 	}
 
-	template<typename A, typename B = A>
-	static constexpr FORCE_INLINE A max(A a, B b)
+	template<typename T, typename U, typename ... Args>
+	static constexpr FORCE_INLINE T min(const T & a, const U & b, Args && ... c)
 	{
-		return a > static_cast<A>(b) ? a : static_cast<A>(b);
+		return a < b ? min(a, forward<Args>(c)...) : min(b, forward<Args>(c)...);
+	}
+
+	template<typename T, typename U>
+	static constexpr FORCE_INLINE T max(const T & a, const U & b)
+	{
+		return a > b ? a : b;
+	}
+
+	template<typename T, typename U, typename ... Args>
+	static constexpr FORCE_INLINE T max(const T & a, const U & b, Args && ... c)
+	{
+		return a > b ? max(a, forward<Args>(c)...) : max(b, forward<Args>(c)...);
 	}
 	/// @}
 

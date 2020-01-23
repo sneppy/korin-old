@@ -443,14 +443,14 @@ TEST(containers, map)
 	ASSERT_EQ(a.getCount(), 1);
 	ASSERT_EQ(a.find(8u), nullptr);
 	ASSERT_NE(a.find(4u), nullptr);
-	ASSERT_EQ(a.find(4u)->data.second, "sneppy");
+	ASSERT_EQ(a.find(4u)->second, "sneppy");
 
 	a.insert(2u, "two");
 	a.insert(8u, "eight");
 
 	ASSERT_EQ(a.getCount(), 3);
-	ASSERT_EQ(a.find(8u)->data.second, "eight");
-	ASSERT_EQ(a.find(2u)->data.second, "two");
+	ASSERT_EQ(a.find(8u)->second, "eight");
+	ASSERT_EQ(a.find(2u)->second, "two");
 
 	String str;
 	

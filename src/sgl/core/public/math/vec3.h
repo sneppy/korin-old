@@ -326,32 +326,32 @@ struct Vec3
 	 * @return comparison mask
 	 * @{
 	 */
-	FORCE_INLINE int32 cmpeq(const Vec3 & other) const
+	constexpr FORCE_INLINE int32 cmpeq(const Vec3 & other) const
 	{
 		return (x == other.x) | (y == other.y) << 1 | (z == other.z) << 2;
 	}
 
-	FORCE_INLINE int32 cmpne(const Vec3 & other) const
+	constexpr FORCE_INLINE int32 cmpne(const Vec3 & other) const
 	{
 		return (x != other.x) | (y != other.y) << 1 | (z != other.z) << 2;
 	}
 
-	FORCE_INLINE int32 cmplt(const Vec3 & other) const
+	constexpr FORCE_INLINE int32 cmplt(const Vec3 & other) const
 	{
 		return (x < other.x) | (y < other.y) << 1 | (z < other.z) << 2;
 	}
 
-	FORCE_INLINE int32 cmpgt(const Vec3 & other) const
+	constexpr FORCE_INLINE int32 cmpgt(const Vec3 & other) const
 	{
 		return (x > other.x) | (y > other.y) << 1 | (z > other.z) << 2;
 	}
 
-	FORCE_INLINE int32 cmple(const Vec3 & other) const
+	constexpr FORCE_INLINE int32 cmple(const Vec3 & other) const
 	{
 		return (x <= other.x) | (y <= other.y) << 1 | (z <= other.z) << 2;
 	}
 
-	FORCE_INLINE int32 cmpge(const Vec3 & other) const
+	constexpr FORCE_INLINE int32 cmpge(const Vec3 & other) const
 	{
 		return (x >= other.x) | (y >= other.y) << 1 | (z >= other.z) << 2;
 	}
@@ -364,32 +364,32 @@ struct Vec3
 	 * @return true if true for all components
 	 * @{
 	 */
-	FORCE_INLINE bool operator==(const Vec3 & other) const
+	constexpr FORCE_INLINE bool operator==(const Vec3 & other) const
 	{
 		return cmpeq(other) == 0x7;
 	}
 
-	FORCE_INLINE bool operator!=(const Vec3 & other) const
+	constexpr FORCE_INLINE bool operator!=(const Vec3 & other) const
 	{
 		return cmpne(other) == 0x7;
 	}
 
-	FORCE_INLINE bool operator<(const Vec3 & other) const
+	constexpr FORCE_INLINE bool operator<(const Vec3 & other) const
 	{
 		return cmplt(other) == 0x7;
 	}
 
-	FORCE_INLINE bool operator>(const Vec3 & other) const
+	constexpr FORCE_INLINE bool operator>(const Vec3 & other) const
 	{
 		return cmpgt(other) == 0x7;
 	}
 
-	FORCE_INLINE bool operator<=(const Vec3 & other) const
+	constexpr FORCE_INLINE bool operator<=(const Vec3 & other) const
 	{
 		return cmple(other) == 0x7;
 	}
 
-	FORCE_INLINE bool operator>=(const Vec3 & other) const
+	constexpr FORCE_INLINE bool operator>=(const Vec3 & other) const
 	{
 		return cmpge(other) == 0x7;
 	}

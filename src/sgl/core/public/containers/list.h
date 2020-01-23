@@ -1,8 +1,9 @@
 #pragma once
 
-#include "core_types.h"
-#include "templates/utility.h"
-#include "hal/malloc_ansi.h"
+#include "../core_types.h"
+#include "../templates/utility.h"
+#include "../hal/malloc_ansi.h"
+#include "containers_types.h"
 
 /**
  * A link with a double link to the next
@@ -39,6 +40,203 @@ public:
 //////////////////////////////////////////////////
 
 /**
+ * 
+ */
+template<typename T>
+struct ListIterator
+{
+	template<typename> friend struct ListConstIterator;
+
+	//////////////////////////////////////////////////
+	// Iterator types
+	//////////////////////////////////////////////////
+	
+	using RefT = T&;
+	using PtrT = T*;
+
+	/**
+	 * Default constructor
+	 */
+	FORCE_INLINE ListIterator()
+		: link{nullptr}
+	{
+		//
+	}
+
+	/**
+	 * Initialize link
+	 */
+	FORCE_INLINE ListIterator(Link<T> * inLink)
+		: link{inLink}
+	{
+		//
+	}
+
+	//////////////////////////////////////////////////
+	// BaseIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE RefT operator*() const
+	{
+		return link->data;
+	}
+
+	FORCE_INLINE PtrT operator->() const
+	{
+		return &operator*();
+	}
+
+	FORCE_INLINE bool operator==(const ListIterator & other) const
+	{
+		return link == other.link;
+	}
+
+	FORCE_INLINE bool operator!=(const ListIterator & other) const
+	{
+		return !(*this == other);
+	}
+
+	//////////////////////////////////////////////////
+	// ForwardIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE ListIterator & operator++()
+	{
+		link = link->next;
+		return *this;
+	}
+
+	FORCE_INLINE ListIterator operator++(int)
+	{
+		auto other = ListIterator{link->next};
+		link = link->next;
+		return other;
+	}
+
+	//////////////////////////////////////////////////
+	// BidirectionalIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE ListIterator & operator--()
+	{
+		link = link->prev;
+		return *this;
+	}
+
+	FORCE_INLINE ListIterator operator--(int) const
+	{
+		return ListIterator{link->prev};
+	}
+
+protected:
+	/// Current link
+	Link<T> * link;
+};
+
+/**
+ * 
+ */
+template<typename T>
+struct ListConstIterator
+{
+	template<typename, typename> friend class List;
+
+	//////////////////////////////////////////////////
+	// Iterator types
+	//////////////////////////////////////////////////
+	
+	using RefT = const T&;
+	using PtrT = const T*;
+
+	/**
+	 * Default constructor
+	 */
+	FORCE_INLINE ListConstIterator()
+		: link{nullptr}
+	{
+		//
+	}
+
+	/**
+	 * Initialize with link
+	 */
+	FORCE_INLINE ListConstIterator(Link<T> * inLink)
+		: link{inLink}
+	{
+		//
+	}
+
+	/**
+	 * Cast iterator to const iterator
+	 */
+	FORCE_INLINE ListConstIterator(const ListIterator<T> & other)
+		: link{other.link}
+	{
+		//
+	}
+
+	//////////////////////////////////////////////////
+	// BaseIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE RefT operator*() const
+	{
+		return link->data;
+	}
+
+	FORCE_INLINE PtrT operator->() const
+	{
+		return &operator*();
+	}
+
+	FORCE_INLINE bool operator==(const ListConstIterator & other) const
+	{
+		return link == other.link;
+	}
+
+	FORCE_INLINE bool operator!=(const ListConstIterator & other) const
+	{
+		return !(*this == other);
+	}
+
+	//////////////////////////////////////////////////
+	// ForwardIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE ListConstIterator & operator++()
+	{
+		link = link->next;
+		return *this;
+	}
+
+	FORCE_INLINE ListConstIterator operator++(int)
+	{
+		auto other = ListConstIterator{link->next};
+		link = link->next;
+		return other;
+	}
+
+	//////////////////////////////////////////////////
+	// BidirectionalIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE ListConstIterator & operator--()
+	{
+		link = link->prev;
+		return *this;
+	}
+
+	FORCE_INLINE ListConstIterator operator--(int) const
+	{
+		return ListConstIterator{link->prev};
+	}
+
+protected:
+	/// Current link
+	Link<T> * link;
+};
+
+/**
  * A doubly-linked list
  */
 template<typename T, typename AllocT = MallocAnsi>
@@ -47,6 +245,12 @@ class List
 public:
 	/// Link type
 	using Link = ::Link<T>;
+
+	/// Iterator type
+	using Iterator = ListIterator<T>;
+
+	/// Const iterator type
+	using ConstIterator = ListConstIterator<T>;
 
 protected:
 	/// Used allocator
@@ -125,6 +329,38 @@ public:
 	/// @}
 
 	/**
+	 * Returns a new iterator that points
+	 * to the first element of the list
+	 * @{
+	 */
+	FORCE_INLINE ConstIterator begin() const
+	{
+		return ConstIterator{head};
+	}
+
+	FORCE_INLINE Iterator begin()
+	{
+		return Iterator{head};
+	}
+	/// @}
+
+	/**
+	 * Returns a new iterator that points
+	 * to the end of the list
+	 * @{
+	 */
+	FORCE_INLINE ConstIterator end() const
+	{
+		return ConstIterator{nullptr};
+	}
+
+	FORCE_INLINE Iterator end()
+	{
+		return Iterator{nullptr};
+	}
+	/// @}
+
+	/**
 	 * Returns list head
 	 * @{
 	 */
@@ -155,18 +391,19 @@ public:
 	/// @}
 
 	/**
-	 * Push element to the front of the list
+	 * Push element(s) to the front of the list
 	 * 
-	 * @param [in] data inserted element
+	 * @param [in] arg,args inserted element(s)
 	 * @return reference to inserted data
+	 * @{
 	 */
 	template<typename TT>
-	T & pushFront(TT && data)
+	T & pushFront(TT && arg)
 	{
 		++length;
 		
 		// Create link
-		Link * link = createLink(forward<TT>(data));
+		Link * link = createLink(forward<TT>(arg));
 
 		if (head)
 		{
@@ -179,19 +416,43 @@ public:
 			return (head = tail = link)->data;
 	}
 
-	/**
-	 * Push element to the back of the list
-	 * 
-	 * @param [in] data inserted element
-	 * @return reference to inserted data
-	 */
-	template<typename TT>
-	T & pushBack(TT && data)
+	template<typename TT, typename ... TTT>
+	void pushFront(TT && arg, TTT && ... args)
 	{
 		++length;
 		
 		// Create link
-		Link * link = createLink(forward<TT>(data));
+		Link * link = createLink(forward<TT>(arg));
+
+		if (head)
+		{
+			link->next = head;
+			head->prev = link;
+			head = link;
+		}
+		else head = tail = link;
+
+		// Push back other elements
+		// TODO: not what we expect, we should
+		// TODO: push the last one first
+		pushFront(forward<TTT>(args) ...);
+	}
+	/// @}
+
+	/**
+	 * Push element(s) to the back of the list
+	 * 
+	 * @param [in] arg,args inserted element(s)
+	 * @return reference to inserted data
+	 * @{
+	 */
+	template<typename TT>
+	T & pushBack(TT && arg)
+	{
+		++length;
+		
+		// Create link
+		Link * link = createLink(forward<TT>(arg));
 
 		if (tail)
 		{
@@ -203,11 +464,34 @@ public:
 		else
 			return (tail = head = link)->data;
 	}
+
+	template<typename TT, typename ... TTT>
+	void pushBack(TT && arg, TTT && ... args)
+	{
+		++length;
+		
+		// Create link
+		Link * link = createLink(forward<TT>(arg));
+
+		if (tail)
+		{
+			link->prev = tail;
+			tail->next = link;
+			tail = link;
+		}
+		else tail = head = link;
+
+		// Push back other elements
+		pushBack(forward<TTT>(args) ...);
+	}
+	/// @}
 	
 	/**
 	 * Remove element from list
 	 * 
+	 * @param [in] it iterator position
 	 * @param [in] link link of the element
+	 * @{
 	 */
 	void remove(Link * link)
 	{
@@ -236,6 +520,12 @@ public:
 		// Destroy link and dealloc
 		destroyLink(link);
 	}
+
+	FORCE_INLINE void remove(const ConstIterator & it)
+	{
+		if (it.link) remove(it.link);
+	}
+	/// @}
 
 	/**
 	 * Pop front element of list and return

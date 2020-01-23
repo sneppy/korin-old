@@ -21,6 +21,9 @@ struct BinaryNode
 {
 	template<typename, typename, typename> friend class Map;
 
+	/// Data type
+	using DataT = T;
+
 	/// Parent node
 	BinaryNode * parent;
 
@@ -739,4 +742,203 @@ public:
 
 		return out;
 	}
+};
+
+/**
+ * 
+ */
+template<typename NodeT>
+struct NodeIterator
+{
+	template<typename> friend struct NodeConstIterator;
+
+	//////////////////////////////////////////////////
+	// Iterator types
+	//////////////////////////////////////////////////
+	
+	using DataT = typename NodeT::DataT;
+	using RefT = DataT&;
+	using PtrT = DataT*;
+
+	/**
+	 * Default constructor
+	 */
+	FORCE_INLINE NodeIterator()
+		: node{nullptr}
+	{
+		//
+	}
+
+	/**
+	 * Initialize current node
+	 */
+	FORCE_INLINE NodeIterator(NodeT * inNode)
+		: node{inNode}
+	{
+		//
+	}
+
+	//////////////////////////////////////////////////
+	// BaseIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE RefT operator*() const
+	{
+		return node->data;
+	}
+
+	FORCE_INLINE PtrT operator->() const
+	{
+		return &operator*();
+	}
+
+	FORCE_INLINE bool operator==(const NodeIterator & other) const
+	{
+		return node == other.node;
+	}
+
+	FORCE_INLINE bool operator!=(const NodeIterator & other) const
+	{
+		return !(*this == other);
+	}
+
+	//////////////////////////////////////////////////
+	// ForwardIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE NodeIterator & operator++()
+	{
+		node = node->next;
+		return *this;
+	}
+
+	FORCE_INLINE NodeIterator operator++(int)
+	{
+		auto other = NodeIterator{node->next};
+		node = node->next;
+		return other;
+	}
+
+	//////////////////////////////////////////////////
+	// BidirectionalIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE NodeIterator & operator--()
+	{
+		node = node->prev;
+		return *this;
+	}
+
+	FORCE_INLINE NodeIterator operator--(int) const
+	{
+		return NodeIterator{node->prev};
+	}
+
+protected:
+	/// Current node
+	NodeT * node;
+};
+
+/**
+ * 
+ */
+template<typename NodeT>
+struct NodeConstIterator
+{
+	template<typename, typename, typename> friend class Map;
+
+	//////////////////////////////////////////////////
+	// Iterator types
+	//////////////////////////////////////////////////
+	
+	using DataT = typename NodeT::DataT;
+	using RefT = const DataT&;
+	using PtrT = const DataT*;
+
+	/**
+	 * Default constructor
+	 */
+	FORCE_INLINE NodeConstIterator()
+		: node{nullptr}
+	{
+		//
+	}
+
+	/**
+	 * Initialize current node
+	 */
+	FORCE_INLINE NodeConstIterator(const NodeT * inNode)
+		: node{inNode}
+	{
+		//
+	}
+
+	/**
+	 * Cast non-const to const iterator
+	 */
+	FORCE_INLINE NodeConstIterator(const NodeIterator<NodeT> & other)
+		: node{other.node}
+	{
+		//
+	}
+
+	//////////////////////////////////////////////////
+	// BaseIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE RefT operator*() const
+	{
+		return node->data;
+	}
+
+	FORCE_INLINE PtrT operator->() const
+	{
+		return &operator*();
+	}
+
+	FORCE_INLINE bool operator==(const NodeConstIterator & other) const
+	{
+		return node == other.node;
+	}
+
+	FORCE_INLINE bool operator!=(const NodeConstIterator & other) const
+	{
+		return !(*this == other);
+	}
+
+	//////////////////////////////////////////////////
+	// ForwardIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE NodeConstIterator & operator++()
+	{
+		node = node->next;
+		return *this;
+	}
+
+	FORCE_INLINE NodeConstIterator operator++(int)
+	{
+		auto other = NodeConstIterator{node->next};
+		node = node->next;
+		return other;
+	}
+
+	//////////////////////////////////////////////////
+	// BidirectionalIterator interface
+	//////////////////////////////////////////////////
+	
+	FORCE_INLINE NodeConstIterator & operator--()
+	{
+		node = node->prev;
+		return *this;
+	}
+
+	FORCE_INLINE NodeConstIterator operator--(int) const
+	{
+		return NodeConstIterator{node->prev};
+	}
+
+protected:
+	/// Current node
+	NodeT * node;
 };

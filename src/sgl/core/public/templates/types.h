@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core_types.h"
+#include "../core_types.h"
 
 /**
  * Sets value to true if types are the same

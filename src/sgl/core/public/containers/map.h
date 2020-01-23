@@ -14,8 +14,17 @@ template<typename KeyT, typename ValT, typename CompareT>
 class Map
 {
 public:
+	/// Pair type
 	using PairT = Pair<KeyT, ValT, CompareT>;
+
+	/// Binary node type
 	using NodeT = BinaryNode<PairT, typename PairT::FindPair>;
+
+	/// Iterator type
+	using Iterator = NodeIterator<NodeT>;
+
+	/// Const iterator type
+	using ConstIterator = NodeConstIterator<NodeT>;
 
 protected:
 	/// Node allocator
@@ -121,6 +130,30 @@ public:
 	/// @}
 
 	/**
+	 * Returns a new iterator that points
+	 * to the element with the minimum key
+	 * in the map (i.e. the first, leftmost
+	 * element)
+	 * @{
+	 */
+	Iterator begin()
+	{
+		return Iterator{root->getMin()};
+	}
+	/// @}
+
+	/**
+	 * Returns a new iterator that points
+	 * to the end of the map
+	 * @{
+	 */
+	Iterator end()
+	{
+		return Iterator{nullptr};
+	}
+	/// @}
+
+	/**
 	 * Returns reference to a pair
 	 * identified by the provided
 	 * key. If such pair does not
@@ -199,9 +232,61 @@ public:
 	template<typename KeyU, typename ValU>
 	ValT & insert(KeyU && key, ValU && val)
 	{
-		return (operator[](forward<KeyU>(key)) = forward<ValU>(val));
+		if (UNLIKELY(root == nullptr))
+		{
+			// Pair surely does not exists.
+			// Create a new pair
+			numNodes = 1;
+
+			root = createNode(PairT{forward<KeyU>(key), forward<ValU>(val)});
+			root->color = BinaryNodeColor::BLACK;
+			
+			return root->data.second;
+		}
+		else
+		{
+			// Traverse tree
+			int32 cmp;
+			NodeT * next = root, * prev = nullptr;
+			while (next)
+			{
+				prev = next;
+
+				cmp = typename PairT::FindPair()(key, next->data);
+				if (cmp < 0)
+					next = next->left;
+				else if (cmp > 0)
+					next = next->right;
+				else
+					// Node exists, return ref
+					return (next->data.second = forward<ValU>(val));
+			}
+			
+			numNodes++;
+
+			// Create and insert node
+			NodeT * node = createNode(PairT{forward<KeyU>(key), forward<ValU>(val)});
+			if (cmp < 0)
+			{
+				prev->setPrevNode(node);
+				prev->setLeftChild(node);
+				NodeT::repairInserted(node);
+			}
+			else
+			{
+				prev->setNextNode(node);
+				prev->setRightChild(node);
+				NodeT::repairInserted(node);
+			}
+			
+			// Root may be changed
+			root = root->getRoot();
+
+			return node->data.second;
+		}
 	}
 
+protected:
 	/**
 	 * Returns pointer to map node
 	 * 
@@ -209,7 +294,7 @@ public:
 	 * @return node ptr, otherwise nullptr
 	 * @{
 	 */
-	const NodeT * find(const KeyT & key) const
+	const NodeT * findNode(const KeyT & key) const
 	{
 		if (UNLIKELY(root == nullptr))
 			return nullptr;
@@ -230,9 +315,30 @@ public:
 		}
 	}
 
-	NodeT * find(const KeyT & key)
+	NodeT * findNode(const KeyT & key)
 	{
-		return const_cast<NodeT*>(static_cast<const Map&>(*this).find(key));
+		return const_cast<NodeT*>(static_cast<const Map&>(*this).findNode(key));
+	}
+	/// @}
+
+public:
+	/**
+	 * Returns a new iterator pointing
+	 * to the found element or the end
+	 * of the array otherwise
+	 * 
+	 * @param key pair key
+	 * @return new iterator
+	 * @{
+	 */
+	FORCE_INLINE ConstIterator find(const KeyT & key) const
+	{
+		return ConstIterator{findNode(key)};
+	}
+
+	FORCE_INLINE Iterator find(const KeyT & key)
+	{
+		return Iterator{findNode(key)};
 	}
 	/// @}
 
@@ -251,7 +357,7 @@ public:
 	 */
 	FORCE_INLINE bool find(const KeyT & key, ValT & val) const
 	{
-		const NodeT * node = find(key);
+		const NodeT * node = findNode(key);
 
 		if (node)
 		{
@@ -267,9 +373,10 @@ public:
 	 */
 	FORCE_INLINE bool has(const KeyT & key) const
 	{
-		return find(key) != nullptr;
+		return findNode(key) != nullptr;
 	}
 
+protected:
 	/**
 	 * Remove node from map. Note that
 	 * this operation may invalidate
@@ -277,7 +384,7 @@ public:
 	 * 
 	 * @param node node to remove
 	 */
-	void remove(NodeT * node)
+	void removeNode(NodeT * node)
 	{
 		CHECKF(find(node->data.first) == node, "node %p is not part of this map", node)
 
@@ -287,6 +394,22 @@ public:
 
 		numNodes--;
 	}
+	
+public:
+	/**
+	 * Remove element pointed by
+	 * iterator
+	 * 
+	 * @param it iterator
+	 * @return next iterator
+	 * @{
+	 */
+	FORCE_INLINE void remove(const ConstIterator & it)
+	{
+		if (LIKELY(it.node != nullptr))
+			removeNode(it.node);
+	}
+	/// @}
 
 	/**
 	 * Remove pair from map. Note that
@@ -299,11 +422,11 @@ public:
 	FORCE_INLINE bool remove(const KeyT & key)
 	{
 		// Retrieve node
-		NodeT * node = find(key);
+		NodeT * node = findNode(key);
 		if (!node) return false;
 
 		// Remove node
-		remove(node);
+		removeNode(node);
 		return true;
 	}
 
@@ -320,14 +443,14 @@ public:
 	FORCE_INLINE bool pop(const KeyT & key, ValT & val)
 	{
 		// Retrieve node
-		NodeT * node = find(key);
+		NodeT * node = findNode(key);
 		if (!node) return false;
 
 		// Copy out value
 		val = move(node->data.second);
 
 		// Remove node
-		remove(node);
+		removeNode(node);
 		return true;
 	}
 };

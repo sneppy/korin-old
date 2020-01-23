@@ -4,55 +4,60 @@
 #include <containers/tuple.h>
 #include <containers/map.h>
 #include <math/mat4.h>
+#include <math/vec3.h>
 #include <stdio.h>
+#include <algorithm/sort.h>
 
 #include <string>
 
-/**
- * SGL ordered map implementation
- */
-void sglMap()
+struct LessThan
 {
-	struct LessThan
+	FORCE_INLINE int32 operator()(uint32 a, uint32 b) const
 	{
-		FORCE_INLINE int32 operator()(uint32 a, uint32 b) const
+		return int32(a > b) - int32(a < b);
+	}
+};
+
+struct Chunk
+{
+	/**
+	 * 
+	 */
+	struct Find
+	{
+		FORCE_INLINE constexpr int32 operator()(const Chunk & a, const Chunk & b) const
 		{
-			return int32(a > b) - int32(a < b);
+			return int32(a.origin.cmpgt(b.origin)) - int32(a.origin.cmplt(b.origin));
 		}
 	};
 
-	const uint32 numNodes = 1u << 16;
-	Map<uint32, uint32, LessThan> map;
+public:
+	/// Chunk origin
+	int3 origin;
 
-	for (uint32 i = 0; i < numNodes; ++i)
-		map[i] = i << 1;
-	
-	for (uint32 i = 0; i < numNodes; ++i)
-		map[i] = map[(numNodes - i) - 1];
-	
-	for (uint32 i = 0; i < numNodes; ++i)
-		map.remove(i);
-}
+	/// Chunk extent
+	int3 extent;
+
+	/// Number of samples per chunk side
+	int3 density;
+
+	/// Num of triangles
+	uint32 numTriangles;
+};
 
 int32 main()
 {
-	struct FindString
+	struct FindInt3
 	{
-		FORCE_INLINE int32 operator()(const String & a, const String & b) const
+		FORCE_INLINE constexpr int32 operator()(const int3 & a, const int3 & b) const
 		{
-			return a.cmp(b);
+			return int32(a.cmpgt(b)) - int32(a.cmplt(b));
 		}
 	};
 
-	Map<String, String, FindString> user;
-	user["email"] = "sneppy13@gmail.com";
-	user["username"] = "sneppy";
-
-	printf("count: %llu\n", user.getNumNodes());
-
-	user.remove("email");
-
-	sglMap();
+	Map<int3, uint32, FindInt3> chunkTriangles;
+	for (uint32 i = 0; i < 40; ++i)
+		chunkTriangles.insert(int3{rand() & 0xf, rand() & 0xf, rand() & 0xf}, (uint32)rand() & 0xf);
 
 	return 0;
 }
