@@ -89,15 +89,15 @@ foreach(MODULE ${MODULES})
 endforeach()
 
 ## Create global library
-add_library(${PROJECT_NAME}-lib)
-set_target_properties(${PROJECT_NAME}-lib
+add_library(${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME}
 
 	PROPERTIES
 		OUTPUT_NAME ${PROJECT_NAME}
 )
 	
 ## Link all dependency libraries
-target_link_libraries(${PROJECT_NAME}-lib ${MODULE_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${MODULE_LIBRARIES})
 
 ## Create global application
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
@@ -118,19 +118,19 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 endif(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
-add_executable(${PROJECT_NAME}
+add_executable(${PROJECT_NAME}_test
 
 	"./main.cpp"
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME}_test
 
-	${PROJECT_NAME}-lib
+	${PROJECT_NAME}
 )
 
 ## Set target properties
 set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/bin)
-set_target_properties(${PROJECT_NAME}
+set_target_properties(${PROJECT_NAME}_test
 
 	PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
@@ -139,7 +139,7 @@ set_target_properties(${PROJECT_NAME}
 ## Create run target
 add_custom_target(run
 
-	COMMAND				$<TARGET_FILE:${PROJECT_NAME}>
+	COMMAND				$<TARGET_FILE:${PROJECT_NAME}_test>
 	DEPENDS				${PROJECT_NAME}
 	WORKING_DIRECTORY	${PROJECT_SOURCE_DIR}
 )

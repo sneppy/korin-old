@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 ## Project setup
-project(sgl
+project(korin
 
 	C
 	CXX

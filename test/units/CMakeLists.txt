@@ -47,7 +47,7 @@ foreach(UNIT ${UNITS})
 	endif(NOT EXISTS ${PUBLIC_FILE})
 
 	## Create executable
-	set(TARGET_NAME ${PROJECT_NAME}-test_${UNIT})
+	set(TARGET_NAME ${PROJECT_NAME}_test-${UNIT})
 	add_executable(${TARGET_NAME}
 	
 		${PUBLIC_FILE}
@@ -57,7 +57,7 @@ foreach(UNIT ${UNITS})
 	## Link SGL library
 	target_link_libraries(${TARGET_NAME}
 
-		${PROJECT_NAME}-lib
+		${PROJECT_NAME}
 		gtest_main
 		${CMAKE_THREAD_LIBS_INIT}
 	)
@@ -120,7 +120,7 @@ foreach(UNIT ${UNITS})
 endforeach()
 
 ## Create executable for all units
-set(TARGET_NAME ${PROJECT_NAME}-test_all)
+set(TARGET_NAME ${PROJECT_NAME}_test-all)
 add_executable(${TARGET_NAME}
 
 	${PRIVATE_FILE}
@@ -131,7 +131,7 @@ add_executable(${TARGET_NAME}
 ## Link SGL library
 target_link_libraries(${TARGET_NAME}
 
-	${PROJECT_NAME}-lib
+	${PROJECT_NAME}
 	gtest_main
 	${CMAKE_THREAD_LIBS_INIT}
 )

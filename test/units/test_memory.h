@@ -1,12 +1,12 @@
 #pragma once
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 
-#include <hal/platform_memory.h>
-#include <hal/malloc_ansi.h>
-#include <hal/malloc_pool.h>
-#include <hal/malloc_binned.h>
-#include <hal/malloc_object.h>
+#include "hal/platform_memory.h"
+#include "hal/malloc_ansi.h"
+#include "hal/malloc_pool.h"
+#include "hal/malloc_binned.h"
+#include "hal/malloc_object.h"
 
 TEST(memory, malloc_ansi)
 {

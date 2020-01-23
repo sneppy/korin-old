@@ -37,7 +37,7 @@ foreach(BENCH ${BENCHES})
 		
 			"#pragma once\n"
 			"\n"
-			"#include <benchmark/benchmark.h>\n"
+			"#include \"benchmark/benchmark.h\"\n"
 		)
 		
 	endif()
@@ -53,7 +53,7 @@ foreach(BENCH ${BENCHES})
 	## Link main library
 	target_link_libraries(${TARGET_NAME}
 
-		${PROJECT_NAME}-lib
+		${PROJECT_NAME}
 		benchmark
 	)
 
@@ -123,7 +123,7 @@ add_executable(${TARGET_NAME}
 ## Link SGL library
 target_link_libraries(${TARGET_NAME}
 
-	${PROJECT_NAME}-lib
+	${PROJECT_NAME}
 	benchmark
 )
 
