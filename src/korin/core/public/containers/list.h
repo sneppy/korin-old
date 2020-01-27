@@ -394,6 +394,9 @@ public:
 		// Remove all
 		empty();
 
+		// Delete allocator
+		if (bHasOwnMalloc) delete malloc;
+
 		// Take from other
 		malloc = other.malloc;
 		bHasOwnMalloc = other.bHasOwnMalloc;
@@ -430,6 +433,14 @@ public:
 	FORCE_INLINE ~List()
 	{
 		empty();
+
+		if (bHasOwnMalloc)
+		{
+			delete malloc;
+
+			malloc = nullptr;
+			bHasOwnMalloc = false;
+		}
 	}
 
 	/**

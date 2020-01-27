@@ -436,6 +436,77 @@ TEST(containers, tree)
 
 	ASSERT_EQ(root->getMin()->data, 1u);
 
+	//////////////////////////////////////////////////
+	// BinaryTree
+	//////////////////////////////////////////////////
+
+	using PairT = Pair<int32, String, LessThan<int32>>;
+	BinaryTree<PairT, PairT::FindPair> tree;
+
+	tree.insert(PairT{5, "five"});
+	tree.insert(PairT{0, "zero"});
+	tree.insert(PairT{6, "six"});
+
+	ASSERT_EQ(tree.getNumNodes(), 3ull);
+	
+	tree.insert(
+		PairT{1, "one"},
+		PairT{2, "two"},
+		PairT{3, "three"},
+		PairT{4, "four"}
+	);
+
+	{
+		uint32 i = 0;
+		for (auto & p : tree) ASSERT_EQ(p.first, i++);
+		ASSERT_EQ(i, 7);
+	}
+
+	tree.insertUnique(PairT{0, "nil"});
+	
+	ASSERT_TRUE(tree.find(0)->second == "zero");
+
+	tree.replace(PairT{0, "nil"});
+
+	ASSERT_TRUE(tree.find(0)->second == "nil");
+
+	decltype(tree) treeA{tree}, treeB{decltype(tree){}};
+
+	{
+		uint32 i = 0;
+		for (auto & p : treeA) ASSERT_EQ(p.first, i++);
+		ASSERT_EQ(i, 7);
+	}
+
+	treeA.insert(
+		PairT{7, "seven"},
+		PairT{8, "eight"},
+		PairT{9, "nine"}
+	);
+
+	{
+		uint32 i = 0;
+		for (auto & p : treeA) ASSERT_EQ(p.first, i++);
+		ASSERT_EQ(i, 10);
+	}
+
+	tree = treeA;
+
+	{
+		uint32 i = 0;
+		for (auto & p : tree) ASSERT_EQ(p.first, i++);
+		ASSERT_EQ(i, 10);
+	}
+
+	treeA = treeB;
+	/* treeB = move(tree);
+
+	{
+		uint32 i = 0;
+		for (auto & p : treeB) ASSERT_EQ(p.first, i++);
+		ASSERT_EQ(i, 10);
+	} */
+
 	SUCCEED();
 }
 
@@ -473,8 +544,6 @@ TEST(containers, map)
 	ASSERT_TRUE(a.find(2u, str));
 	ASSERT_EQ(str, "two");
 	ASSERT_TRUE(a.find(8u, str));
-	printf("%s == %s\n", *str, "eight");
-	printf("%u\n", str == "eight");
 	ASSERT_EQ(str, "eight");
 	ASSERT_TRUE(a.find(4u, str));
 	ASSERT_EQ(str, "sneppy");

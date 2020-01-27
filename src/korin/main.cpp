@@ -27,21 +27,11 @@ FORCE_INLINE int32 LessThan::operator()(const String & a, const String & b) cons
 
 int32 main()
 {
-	BinaryTree<uint32, LessThan> tree;
-	tree.insert(3u);
-	tree.insert(4u);
-	tree.insert(2u);
+	BinaryTree<int32, LessThan> tree;
 
-	tree.insertUnique(2u);
-	tree.replace(3u);
-	tree.insert(4u);
-
-	for (auto v : tree) printf("%d\n", v);
-
-	for (auto begin = tree.begin(3u), end = tree.end(4u); begin != end; ++begin)
-	{
-		printf("%d\n", *begin);
-	}
+	tree.insertUnique(3);
+	tree.insertUnique(4);
+	tree.insertUnique(0);
 
 	return 0;
 }

@@ -19,6 +19,7 @@ enum class BinaryNodeColor : ubyte
 template<typename T, typename CompareT>
 struct BinaryNode
 {
+	template<typename, typename> friend class BinaryTree;
 	template<typename, typename, typename> friend class Map;
 
 	/// Data type
@@ -151,7 +152,8 @@ struct BinaryNode
 	 * 	otherwise
 	 * @{
 	 */
-	const BinaryNode * find(const T & key) const
+	template<typename U>
+	const BinaryNode * find(const U & key) const
 	{
 		const int32 cmp = CompareT()(key, this->data);
 
@@ -163,7 +165,8 @@ struct BinaryNode
 			return this;
 	}
 	
-	FORCE_INLINE BinaryNode * find(const T & key)
+	template<typename U>
+	FORCE_INLINE BinaryNode * find(const U & key)
 	{
 		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).find(key));
 	}
@@ -178,7 +181,8 @@ struct BinaryNode
 	 * 	otherwise
 	 * @{
 	 */
-	const BinaryNode * findMin(const T & key) const
+	template<typename U>
+	const BinaryNode * findMin(const U & key) const
 	{
 		// Find matching node
 		const BinaryNode * it = find(key), * jt;
@@ -194,7 +198,8 @@ struct BinaryNode
 		return jt;	
 	}
 
-	FORCE_INLINE BinaryNode * findMin(const T & key)
+	template<typename U>
+	FORCE_INLINE BinaryNode * findMin(const U & key)
 	{
 		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).findMin(key));
 	}
@@ -209,7 +214,8 @@ struct BinaryNode
 	 * 	otherwise
 	 * @{
 	 */
-	const BinaryNode * findMax(const T & key) const
+	template<typename U>
+	const BinaryNode * findMax(const U & key) const
 	{
 		// Find matching node
 		const BinaryNode * it = find(key), * jt;
@@ -225,7 +231,8 @@ struct BinaryNode
 		return jt;	
 	}
 
-	FORCE_INLINE BinaryNode * findMax(const T & key)
+	template<typename U>
+	FORCE_INLINE BinaryNode * findMax(const U & key)
 	{
 		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).findMax(key));
 	}
@@ -969,7 +976,7 @@ protected:
 	mutable MallocBase * malloc;
 
 	/// Has own allocator flag
-	bool bHasOwnAllocator;
+	bool bHasOwnMalloc;
 
 	/// Tree root node
 	NodeT * root;
@@ -983,7 +990,7 @@ public:
 	 */
 	FORCE_INLINE BinaryTree()
 		: malloc{nullptr}
-		, bHasOwnAllocator{true}
+		, bHasOwnMalloc{true}
 		, root{nullptr}
 		, numNodes{0ull}
 	{
@@ -996,7 +1003,7 @@ public:
 	 */
 	FORCE_INLINE BinaryTree(MallocBase * inMalloc)
 		: malloc{inMalloc}
-		, bHasOwnAllocator{false}
+		, bHasOwnMalloc{false}
 		, root{nullptr}
 		, numNodes{0ull}
 	{
@@ -1021,13 +1028,212 @@ protected:
 	 * 
 	 * @param node pointer to node
 	 */
-	FORCE_INLINE void destroyNode(NodeT * node)
+	FORCE_INLINE void destroyNode(NodeT * node) const
 	{
 		node->~NodeT();
 		malloc->free(node);
 	}
 
+	/**
+	 * Delete subtree spawning from
+	 * node. Root cannot be null
+	 * 
+	 * @param root subtree root
+	 */
+	void destroySubtree(NodeT * root)
+	{
+		if (root->left) destroySubtree(root->left);
+		if (root->right) destroySubtree(root->right);
+
+		destroyNode(root);
+	}
+
+	/**
+	 * Copy construct subtree and
+	 * return root
+	 * 
+	 * @param src source subtree root
+	 * @return new subtree root
+	 */
+	NodeT * cloneSubtree(const NodeT * src)
+	{
+		// Copy data and color
+		NodeT * dst = createNode(src->data);
+		dst->color = src->color;
+		
+		// Copy left subtree
+		if (src->left)
+		{
+			NodeT * left = cloneSubtree(src->left);
+			NodeT * prev = left->getMax();
+
+			(dst->left = left)->parent = dst;
+			(dst->prev = prev)->next = dst;
+		}
+
+		// Copy right subtree
+		if (src->right)
+		{
+			NodeT * right = cloneSubtree(src->right);
+			NodeT * next = right->getMin();
+			
+			(dst->right = right)->parent = dst;
+			(dst->next = next)->prev = dst;
+		}
+
+		return dst;
+	}
+
+	/**
+	 * Copy subtree and return root.
+	 * If dst is null a new subtree
+	 * is created
+	 * 
+	 * @param dst existing subtree root
+	 * @param src source subtree root
+	 * @return subtree root
+	 */
+	NodeT * cloneSubtree(NodeT * dst, const NodeT * src)
+	{
+		// Copy data and color
+		dst->data = src->data;
+		dst->color = src->color;
+
+		if (src->left)
+		{
+			NodeT * left = dst->left ? cloneSubtree(dst->left, src->left) : cloneSubtree(src->left);
+			NodeT * prev = left->getMax();
+
+			(dst->left = left)->parent = dst;
+			(dst->prev = prev)->next = dst;
+		}
+		else if (dst->left)
+		{
+			destroySubtree(dst->left);
+			dst->left = nullptr;
+			dst->prev = nullptr;
+		}
+
+		if (src->right)
+		{
+			NodeT * right = dst->right ? cloneSubtree(dst->right, src->right) : cloneSubtree(src->right);
+			NodeT * next = right->getMin();
+
+			(dst->right = right)->parent = dst;
+			(dst->next = next)->prev = dst;
+		}
+		else if (dst->right)
+		{
+			destroySubtree(dst->right);
+			dst->right = nullptr;
+			dst->next = nullptr;
+		}
+
+		return dst;
+	}
+
 public:
+	/**
+	 * Copy constructor
+	 */
+	FORCE_INLINE BinaryTree(const BinaryTree & other)
+		: BinaryTree{}
+	{
+		root = cloneSubtree(other.root);
+		numNodes = other.numNodes;
+	}	
+	
+	/**
+	 * Move constructor
+	 */
+	FORCE_INLINE BinaryTree(BinaryTree && other)
+		: malloc{other.malloc}
+		, bHasOwnMalloc{other.bHasOwnMalloc}
+		, root{other.root}
+		, numNodes{other.numNodes}
+	{
+		other.malloc = nullptr;
+		other.bHasOwnMalloc = false;
+		other.root = nullptr;
+		other.numNodes = 0ull;
+	}
+
+	/**
+	 * Copy assignment
+	 */
+	FORCE_INLINE BinaryTree & operator=(const BinaryTree & other)
+	{
+		// Empty tree
+		if (!other.root) empty();
+		// Clone subtree starting from existing root
+		else if (root) cloneSubtree(root, other.root);
+		// Clòne subtree from zero
+		else root = cloneSubtree(other.root);
+
+		numNodes = other.numNodes;
+
+		return *this;
+	}
+
+	/**
+	 * Move assignment
+	 */
+	FORCE_INLINE BinaryTree & operator=(BinaryTree && other)
+	{
+		// Destroy subtree
+		destroySubtree(root);
+
+		// Delete allocator
+		if (bHasOwnMalloc) delete malloc;
+
+		malloc = other.malloc;
+		bHasOwnMalloc = other.bHasOwnMalloc;
+		root = other.root;
+		numNodes = other.numNodes;
+
+		other.malloc = nullptr;
+		other.bHasOwnMalloc = false;
+		other.root = nullptr;
+		other.numNodes = 0ull;
+	}
+
+	/**
+	 * Delete all nodes
+	 */
+	FORCE_INLINE void empty()
+	{
+		if (root) destroySubtree(root);
+
+		// Reset tree
+		root = nullptr;
+		numNodes = 0;
+	}
+
+	/**
+	 * Tree destructor
+	 */
+	FORCE_INLINE ~BinaryTree()
+	{
+		empty();
+
+		if (bHasOwnMalloc)
+		{
+			delete malloc;
+
+			malloc = nullptr;
+			bHasOwnMalloc = false;
+		}
+	}
+
+	/**
+	 * Returns tree size (i.e. number
+	 * of nodes)
+	 */
+	FORCE_INLINE uint64 getNumNodes() const
+	{
+		return numNodes;
+	}
+
 	/**
 	 * Returns a new iterator pointing
 	 * to the min element of the tree
@@ -1050,11 +1256,13 @@ public:
 		return Iterator{root->getMin()};
 	}
 
-	FORCE_INLINE ConstIterator begin(const T & arg) const
+	template<typename U>
+	FORCE_INLINE ConstIterator begin(const U & arg) const
 	{
 		return ConstIterator{root->findMin(arg)};
 	}
 
+	template<typename U>
 	FORCE_INLINE Iterator begin(const T & arg)
 	{
 		return Iterator{root->findMin(arg)};
@@ -1082,13 +1290,15 @@ public:
 		return Iterator{nullptr};
 	}
 
-	FORCE_INLINE ConstIterator end(const T & arg) const
+	template<typename U>
+	FORCE_INLINE ConstIterator end(const U & arg) const
 	{
 		NodeT * last = root->findMax(arg);
 		return ConstIterator{last ? last->next : nullptr};
 	}
 
-	FORCE_INLINE Iterator end(const T & arg)
+	template<typename U>
+	FORCE_INLINE Iterator end(const U & arg)
 	{
 		NodeT * last = root->findMax(arg);
 		return Iterator{last ? last->next : nullptr};
@@ -1105,12 +1315,14 @@ public:
 	 * 	matching node (if found)
 	 * @{
 	 */
-	FORCE_INLINE ConstIterator find(const T & arg) const
+	template<typename U>
+	FORCE_INLINE ConstIterator find(const U & arg) const
 	{
 		return ConstIterator{root->find(arg)};
 	}
 	
-	FORCE_INLINE Iterator find(const T & arg)
+	template<typename U>
+	FORCE_INLINE Iterator find(const U & arg)
 	{
 		return Iterator{root->find(arg)};
 	}
@@ -1154,7 +1366,7 @@ public:
 	}
 
 	template<typename TT, typename ... TTT>
-	T & insert(TT && arg, TTT && ... args)
+	void insert(TT && arg, TTT && ... args)
 	{
 		insert(forward<TT>(arg));
 		insert(forward<TTT>(args)...);
@@ -1212,7 +1424,7 @@ public:
 	}
 
 	template<typename TT, typename ... TTT>
-	T & insertUnique(TT && arg, TTT && ... args)
+	void insertUnique(TT && arg, TTT && ... args)
 	{
 		insertUnique(forward<TT>(arg));
 		insertUnique(forward<TTT>(args)...);
@@ -1269,7 +1481,7 @@ public:
 	}
 
 	template<typename TT, typename ... TTT>
-	T & replace(TT && arg, TTT && ... args)
+	void replace(TT && arg, TTT && ... args)
 	{
 		replace(forward<TT>(arg));
 		replace(forward<TTT>(args)...);
