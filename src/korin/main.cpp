@@ -20,19 +20,15 @@ struct LessThan
 
 int32 main()
 {
-	struct FindInt3
-	{
-		FORCE_INLINE constexpr int32 operator()(const int3 & a, const int3 & b) const
-		{
-			return int32(a.cmpgt(b)) - int32(a.cmplt(b));
-		}
-	};
+	List<int> l;
+	l.pushBack(1, 5);
+	l.pushFront(5, 6, 1, 1, 10, 9, 4);
 
-	Map<int3, uint32, FindInt3> chunkTriangles;
-	for (uint32 i = 0; i < 40; ++i)
-		chunkTriangles.insert(int3{rand() & 0xf, rand() & 0xf, rand() & 0xf}, (uint32)rand() & 0xf);
-	
-	
+	for (auto v : l) printf("%d\n", v);
+
+	Sort::quicksort(l.begin(), l.end(), LessThan{});
+
+	for (auto v : l) printf("%d\n", v);
 
 	return 0;
 }

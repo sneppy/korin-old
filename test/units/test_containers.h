@@ -270,6 +270,22 @@ TEST(containers, list)
 
 	ASSERT_FALSE(bNotEmpty);
 
+	/// General test
+
+	List<uint32> a;
+
+	for (uint32 i = 0; i < 0x1000; ++i)
+		a.pushBack(i);
+	
+	List<uint32> b{a};
+
+	for (uint32 i = 0; i < 0x800; ++i)
+		a.removeBack();
+	
+	List<uint32> c{a}, d{List<uint32>{}};
+	a = b;
+	c = d;
+
 	SUCCEED();
 }
 

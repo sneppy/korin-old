@@ -28,6 +28,18 @@ struct GenericPlatformMath
 	/// @}
 
 	/**
+	 * Integer power
+	 */
+	template<typename T, typename U>
+	static FORCE_INLINE typename EnableIf<IsIntegral<U>::value, T>::Type pow(const T & x, const U & y)
+	{
+		if (y == 0) return T{1};
+		T z = pow(x, y >> 1);
+		return y & 0x1 ? z * z * x : z * z;
+	}
+	/// @}
+
+	/**
 	 * Remove sign
 	 * 
 	 * @param [in] v math value

@@ -63,12 +63,12 @@ public:
 	 * Default constructor
 	 */
 	FORCE_INLINE Map()
-		: malloc{new MallocPooled(1024, sizeof(NodeT), alignof(NodeT))}
+		: malloc{nullptr}
 		, bHasOwnMalloc{true}
 		, root{nullptr}
 		, numNodes{0ull}
 	{
-		//
+		malloc = new MallocAnsi;
 	}
 
 	/**
