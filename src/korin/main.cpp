@@ -12,23 +12,36 @@
 
 struct LessThan
 {
-	FORCE_INLINE int32 operator()(uint32 a, uint32 b) const
+	template<typename T>
+	FORCE_INLINE int32 operator()(const T & a, const T & b) const
 	{
 		return int32(a > b) - int32(a < b);
 	}
 };
 
+template<>
+FORCE_INLINE int32 LessThan::operator()(const String & a, const String & b) const
+{
+	return a.cmp(b);
+}
+
 int32 main()
 {
-	List<int> l;
-	l.pushBack(1, 5);
-	l.pushFront(5, 6, 1, 1, 10, 9, 4);
+	BinaryTree<uint32, LessThan> tree;
+	tree.insert(3u);
+	tree.insert(4u);
+	tree.insert(2u);
 
-	for (auto v : l) printf("%d\n", v);
+	tree.insertUnique(2u);
+	tree.replace(3u);
+	tree.insert(4u);
 
-	Sort::quicksort(l.begin(), l.end(), LessThan{});
+	for (auto v : tree) printf("%d\n", v);
 
-	for (auto v : l) printf("%d\n", v);
+	for (auto begin = tree.begin(3u), end = tree.end(4u); begin != end; ++begin)
+	{
+		printf("%d\n", *begin);
+	}
 
 	return 0;
 }

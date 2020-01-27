@@ -181,22 +181,22 @@ struct BinaryNode
 	const BinaryNode * findMin(const T & key) const
 	{
 		// Find matching node
-		BinaryNode * next = find(key);
+		const BinaryNode * it = find(key), * jt;
+		if (!it) return nullptr;
 
 		// Now find leftmost
-		BinaryNode * prev = next;
 		do
 		{
-			prev = next;
-			next = next->left;
-		} while (next && CompareT()(key, next->data));	
+			jt = it;
+			it = it->prev;
+		} while (it && CompareT{}(key, it->data) == 0);	
 
-		return prev;	
+		return jt;	
 	}
 
 	FORCE_INLINE BinaryNode * findMin(const T & key)
 	{
-		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).find(key));
+		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).findMin(key));
 	}
 	/// @}
 
@@ -212,22 +212,22 @@ struct BinaryNode
 	const BinaryNode * findMax(const T & key) const
 	{
 		// Find matching node
-		BinaryNode * next = find(key);
+		const BinaryNode * it = find(key), * jt;
+		if (!it) return nullptr;
 
 		// Now find rightmost
-		BinaryNode * prev = next;
 		do
 		{
-			prev = next;
-			next = next->right;
-		} while (next && CompareT()(key, next->data));	
+			jt = it;
+			it = it->next;
+		} while (it && CompareT{}(key, it->data) == 0);		
 
-		return prev;	
+		return jt;	
 	}
 
 	FORCE_INLINE BinaryNode * findMax(const T & key)
 	{
-		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).find(key));
+		return const_cast<BinaryNode*>(static_cast<const BinaryNode&>(*this).findMax(key));
 	}
 	/// @}
 
@@ -941,4 +941,338 @@ struct NodeConstIterator
 protected:
 	/// Current node
 	NodeT * node;
+};
+
+/**
+ * Red and black binary tree
+ * implementation, built on top
+ * of BinaryNode class
+ */
+template<typename T, typename CompareT>
+class BinaryTree
+{
+public:
+	/// Expose data type
+	using DataT = T;
+
+	/// Induced node type
+	using NodeT = BinaryNode<T, CompareT>;
+
+	/// Iterator type
+	using Iterator = NodeIterator<NodeT>;
+
+	/// Const node iterator
+	using ConstIterator = NodeConstIterator<NodeT>;
+
+protected:
+	/// Used allocator
+	mutable MallocBase * malloc;
+
+	/// Has own allocator flag
+	bool bHasOwnAllocator;
+
+	/// Tree root node
+	NodeT * root;
+
+	/// Number of nodes
+	uint64 numNodes;
+
+public:
+	/**
+	 * Default constructor
+	 */
+	FORCE_INLINE BinaryTree()
+		: malloc{nullptr}
+		, bHasOwnAllocator{true}
+		, root{nullptr}
+		, numNodes{0ull}
+	{
+		// Create allocator
+		malloc = new MallocAnsi;
+	}
+
+	/**
+	 * Initialize allocator
+	 */
+	FORCE_INLINE BinaryTree(MallocBase * inMalloc)
+		: malloc{inMalloc}
+		, bHasOwnAllocator{false}
+		, root{nullptr}
+		, numNodes{0ull}
+	{
+		//
+	}
+
+protected:
+	/**
+	 * Create node using allocation policy
+	 * 
+	 * @param data node data
+	 * @return pointer to created node
+	 */
+	template<typename TT>
+	FORCE_INLINE NodeT * createNode(TT && data) const
+	{
+		return new (malloc->alloc(sizeof(NodeT), alignof(NodeT))) NodeT{forward<TT>(data)};
+	}
+
+	/**
+	 * Destroy node
+	 * 
+	 * @param node pointer to node
+	 */
+	FORCE_INLINE void destroyNode(NodeT * node)
+	{
+		node->~NodeT();
+		malloc->free(node);
+	}
+
+public:
+	/**
+	 * Returns a new iterator pointing
+	 * to the min element of the tree
+	 * (i.e. leftmost element) or the
+	 * first element that matches the
+	 * provided argument (if any)
+	 * 
+	 * @param arg search criteria
+	 * @return Iterator pointing to the
+	 * 	beginning of the search
+	 * @{
+	 */
+	FORCE_INLINE ConstIterator begin() const
+	{
+		return ConstIterator{root->getMin()};
+	}
+
+	FORCE_INLINE Iterator begin()
+	{
+		return Iterator{root->getMin()};
+	}
+
+	FORCE_INLINE ConstIterator begin(const T & arg) const
+	{
+		return ConstIterator{root->findMin(arg)};
+	}
+
+	FORCE_INLINE Iterator begin(const T & arg)
+	{
+		return Iterator{root->findMin(arg)};
+	}
+	/// @}
+
+	/**
+	 * Returns a new iterator pointing
+	 * to the element right before the
+	 * last element matching the datum
+	 * or to the end of the tree if no
+	 * argument is provided
+	 * 
+	 * @param arg search criteria
+	 * @return Iterator pointing to the
+	 * 	end of the search
+	 */
+	FORCE_INLINE ConstIterator end() const
+	{
+		return ConstIterator{nullptr};
+	}
+
+	FORCE_INLINE Iterator end()
+	{
+		return Iterator{nullptr};
+	}
+
+	FORCE_INLINE ConstIterator end(const T & arg) const
+	{
+		NodeT * last = root->findMax(arg);
+		return ConstIterator{last ? last->next : nullptr};
+	}
+
+	FORCE_INLINE Iterator end(const T & arg)
+	{
+		NodeT * last = root->findMax(arg);
+		return Iterator{last ? last->next : nullptr};
+	}
+	/// @}
+
+	/**
+	 * Returns a new iterator that
+	 * points to the first node
+	 * that matches criteria
+	 * 
+	 * @param arg search criteria
+	 * @return iterator that points
+	 * 	matching node (if found)
+	 * @{
+	 */
+	FORCE_INLINE ConstIterator find(const T & arg) const
+	{
+		return ConstIterator{root->find(arg)};
+	}
+	
+	FORCE_INLINE Iterator find(const T & arg)
+	{
+		return Iterator{root->find(arg)};
+	}
+	/// @}
+
+	/**
+	 * Insert node, possible duplicate.
+	 * If multiple datums are provided
+	 * they are inserted in the order
+	 * in which they are presented (left
+	 * to right)
+	 * 
+	 * @param arg,args data to insert
+	 * @return reference to inserted data
+	 * @{
+	 */
+	template<typename TT>
+	T & insert(TT && arg)
+	{
+		if (root)
+		{
+			// Insert node
+			NodeT * node = createNode(forward<TT>(arg));
+			root->insert(node);
+			root = root->getRoot();
+
+			++numNodes;
+
+			return node->data;
+		}
+		else
+		{
+			// Insert as root
+			root = createNode(forward<TT>(arg));
+			root->color = BinaryNodeColor::BLACK;
+
+			numNodes = 1;
+
+			return root->data;
+		}
+	}
+
+	template<typename TT, typename ... TTT>
+	T & insert(TT && arg, TTT && ... args)
+	{
+		insert(forward<TT>(arg));
+		insert(forward<TTT>(args)...);
+	}
+	/// @}
+
+	/**
+	 * Insert node, without overriding
+	 * existing duplicate node. If such
+	 * a node exists, the new node is
+	 * not inserted and a reference to
+	 * the existing data is returned
+	 * 
+	 * @param arg,args data to insert
+	 * @return reference to matching data
+	 * @{
+	 */
+	template<typename TT>
+	T & insertUnique(TT && arg)
+	{
+		if (root)
+		{
+			// Find node
+			NodeT * it = root, * parent = nullptr;
+			while (it)
+			{
+				parent = it;
+
+				int32 cmp = CompareT{}(arg, it->data);
+				if (cmp < 0)
+					it = it->left;
+				else if (cmp > 0)
+					it = it->right;
+				else /* cmp == 0 */
+					// Return without inserting node
+					return it->data;
+			}
+			
+			// Insert node
+			NodeT * node = parent->insert(createNode(forward<TT>(arg)));
+
+			++numNodes;
+			return node->data;
+		}
+		else
+		{
+			// Insert as root
+			root = createNode(forward<TT>(arg));
+			root->color = BinaryNodeColor::BLACK;
+
+			numNodes = 1;
+
+			return root->data;
+		}
+	}
+
+	template<typename TT, typename ... TTT>
+	T & insertUnique(TT && arg, TTT && ... args)
+	{
+		insertUnique(forward<TT>(arg));
+		insertUnique(forward<TTT>(args)...);
+	}
+	/// @}
+
+	/**
+	 * Insert node, overriding duplicate
+	 * nodes if necessary. if more duplicate
+	 * node exists, the first one encountered
+	 * is replaced
+	 * 
+	 * @param arg,args data to insert
+	 * @return reference to inserted data
+	 * @{
+	 */
+	template<typename TT>
+	T & replace(TT && arg)
+	{
+		if (root)
+		{
+			// Find node
+			NodeT * it = root, * parent = nullptr;
+			while (it)
+			{
+				parent = it;
+
+				int32 cmp = CompareT{}(arg, it->data);
+				if (cmp < 0)
+					it = it->left;
+				else if (cmp > 0)
+					it = it->right;
+				else
+					// Replacing existing data
+					return (it->data = forward<TT>(arg));
+			}
+			
+			// Insert new node
+			NodeT * node = parent->insert(createNode(forward<TT>(arg)));
+
+			++numNodes;
+			return node->data;
+		}
+		else
+		{
+			// Insert as root
+			root = createNode(forward<TT>(arg));
+			root->color = BinaryNodeColor::BLACK;
+
+			numNodes = 1;
+
+			return root->data;
+		}
+	}
+
+	template<typename TT, typename ... TTT>
+	T & replace(TT && arg, TTT && ... args)
+	{
+		replace(forward<TT>(arg));
+		replace(forward<TTT>(args)...);
+	}
+	/// @}
 };

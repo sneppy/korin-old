@@ -232,10 +232,13 @@ public:
 	/// @}
 
 	/**
-	 * Returns true[false] if two strings are equal, case sensitive
+	 * Returns true[false] if two
+	 * strings are equal, case
+	 * sensitive
 	 * 
 	 * @param [in] other other string
-	 * @return true[false] if strings are equal
+	 * @return true[false] if strings
+	 * 	are equal
 	 * @{
 	 */
 	FORCE_INLINE bool operator==(const String & other) const
@@ -256,6 +259,56 @@ public:
 	FORCE_INLINE bool operator!=(const char * other) const
 	{
 		return cmp(other) != 0;
+	}
+	/// @}
+
+	/**
+	 * Return true if string is
+	 * first[last] in lexicographic
+	 * order
+	 * 
+	 * @param other other string
+	 * @return true[false]
+	 * @{
+	 */
+	FORCE_INLINE bool operator<(const String & other) const
+	{
+		return cmp(other) < 0;
+	}
+
+	FORCE_INLINE bool operator<(const char * other) const
+	{
+		return cmp(other) < 0;
+	}
+
+	FORCE_INLINE bool operator>(const String & other) const
+	{
+		return cmp(other) > 0;
+	}
+
+	FORCE_INLINE bool operator>(const char * other) const
+	{
+		return cmp(other) > 0;
+	}
+
+	FORCE_INLINE bool operator<=(const String & other) const
+	{
+		return cmp(other) <= 0;
+	}
+
+	FORCE_INLINE bool operator<=(const char * other) const
+	{
+		return cmp(other) <= 0;
+	}
+
+	FORCE_INLINE bool operator>=(const String & other) const
+	{
+		return cmp(other) >= 0;
+	}
+
+	FORCE_INLINE bool operator>=(const char * other) const
+	{
+		return cmp(other) >= 0;
 	}
 	/// @}
 
