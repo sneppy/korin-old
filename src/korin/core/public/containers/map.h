@@ -17,102 +17,39 @@ public:
 	/// Pair type
 	using PairT = Pair<KeyT, ValT, CompareT>;
 
-	/// Binary node type
-	using NodeT = BinaryNode<PairT, typename PairT::FindPair>;
+	/// Binary tree type
+	using TreeT = BinaryTree<PairT, typename PairT::FindPair>;
+
+	/// Binary node type, induced by tree type
+	using NodeT = typename TreeT::NodeT;
 
 	/// Iterator type
-	using Iterator = NodeIterator<NodeT>;
+	using Iterator = typename TreeT::Iterator;
 
 	/// Const iterator type
-	using ConstIterator = NodeConstIterator<NodeT>;
+	using ConstIterator = typename TreeT::ConstIterator;
 
 protected:
-	/// Node allocator
-	mutable MallocBase * malloc;
-
-	/// Has own allocator flag
-	bool bHasOwnMalloc;
-
-	/// Map root node
-	NodeT * root;
-
-	/// Number of nodes
-	uint64 numNodes;
-
-	/**
-	 * Allocate node
-	 */
-	template<typename PairU>
-	FORCE_INLINE NodeT * createNode(PairU && pair) const
-	{
-		return new (reinterpret_cast<NodeT*>(malloc->alloc(sizeof(NodeT), alignof(NodeT)))) NodeT{forward<PairU>(pair)};
-	}
-
-	/**
-	 * Deallocate node
-	 */
-	void destroyNode(NodeT * node)
-	{
-		// Destroy and deallocate
-		node->~NodeT();
-		malloc->free(node);
-	}
+	/// Binary tree
+	TreeT tree;
 
 public:
 	/**
 	 * Default constructor
 	 */
 	FORCE_INLINE Map()
-		: malloc{nullptr}
-		, bHasOwnMalloc{true}
-		, root{nullptr}
-		, numNodes{0ull}
+		: tree{}
 	{
-		malloc = new MallocAnsi;
+		//
 	}
 
 	/**
 	 * Use custom allocator
 	 */
 	FORCE_INLINE Map(MallocBase * inMalloc)
-		: malloc{inMalloc}
-		, bHasOwnMalloc{false}
-		, root{nullptr}
-		, numNodes{0ull}
+		: tree{inMalloc}
 	{
 		//
-	}
-
-protected:
-	/**
-	 * Destroy tree
-	 */
-	void destroyTree(NodeT * node)
-	{
-		if (node->left) destroyTree(node->left);
-		if (node->right) destroyTree(node->right);
-		destroyNode(node);
-	}
-
-public:
-	/**
-	 * Destructor
-	 */
-	FORCE_INLINE ~Map()
-	{
-		numNodes = 0;
-
-		if (root)
-		{
-			destroyTree(root);
-			root = nullptr;
-		}
-		
-		if (bHasOwnMalloc)
-		{
-			delete malloc;
-			malloc = nullptr;
-		}
 	}
 
 	/**
@@ -121,8 +58,7 @@ public:
 	 */
 	FORCE_INLINE uint64 getNumNodes() const
 	{
-		CHECK(numNodes == root->getNumNodes())
-		return numNodes;
+		return tree.getNumNodes();
 	}
 
 	METHOD_ALIAS_CONST(getCount, getNumNodes)
@@ -136,9 +72,14 @@ public:
 	 * element)
 	 * @{
 	 */
-	Iterator begin()
+	FORCE_INLINE ConstIterator begin() const
 	{
-		return Iterator{root->getMin()};
+		return tree.begin();
+	}
+
+	FORCE_INLINE Iterator begin()
+	{
+		return tree.begin();
 	}
 	/// @}
 
@@ -147,9 +88,14 @@ public:
 	 * to the end of the map
 	 * @{
 	 */
-	Iterator end()
+	FORCE_INLINE ConstIterator end() const
 	{
-		return Iterator{nullptr};
+		return tree.end();
+	}
+
+	FORCE_INLINE Iterator end()
+	{
+		return tree.end();
 	}
 	/// @}
 
@@ -167,22 +113,26 @@ public:
 	template<typename KeyU>
 	ValT & operator[](KeyU && key)
 	{
-		if (UNLIKELY(root == nullptr))
+		// This method is specific for
+		// maps, thus we need to craft
+		// it using node methods
+
+		if (!tree.root)
 		{
 			// Pair surely does not exists.
 			// Create a new pair
-			numNodes = 1;
+			tree.numNodes = 1;
 
-			root = createNode(PairT{forward<KeyU>(key), ValT{}});
-			root->color = BinaryNodeColor::BLACK;
+			tree.root = tree.createNode(PairT{forward<KeyU>(key), ValT{}});
+			tree.root->color = BinaryNodeColor::BLACK;
 			
-			return root->data.second;
+			return tree.root->data.second;
 		}
 		else
 		{
 			// Traverse tree
 			int32 cmp;
-			NodeT * next = root, * prev = nullptr;
+			typename TreeT::NodeT * next = tree.root, * prev;
 			while (next)
 			{
 				prev = next;
@@ -197,25 +147,13 @@ public:
 					return next->data.second;
 			}
 			
-			numNodes++;
+			tree.numNodes++;
 
 			// Create and insert node
-			NodeT * node = createNode(PairT{forward<KeyU>(key), ValT{}});
-			if (cmp < 0)
-			{
-				prev->setPrevNode(node);
-				prev->setLeftChild(node);
-				NodeT::repairInserted(node);
-			}
-			else
-			{
-				prev->setNextNode(node);
-				prev->setRightChild(node);
-				NodeT::repairInserted(node);
-			}
+			auto node = prev->insert(tree.createNode(PairT{forward<KeyU>(key), ValT{}}));
 			
 			// Root may be changed
-			root = root->getRoot();
+			tree.root = tree.root->getRoot();
 
 			return node->data.second;
 		}
@@ -230,98 +168,11 @@ public:
 	 * @return ref to value
 	 */
 	template<typename KeyU, typename ValU>
-	ValT & insert(KeyU && key, ValU && val)
+	FORCE_INLINE ValT & insert(KeyU && key, ValU && val)
 	{
-		if (UNLIKELY(root == nullptr))
-		{
-			// Pair surely does not exists.
-			// Create a new pair
-			numNodes = 1;
-
-			root = createNode(PairT{forward<KeyU>(key), forward<ValU>(val)});
-			root->color = BinaryNodeColor::BLACK;
-			
-			return root->data.second;
-		}
-		else
-		{
-			// Traverse tree
-			int32 cmp;
-			NodeT * next = root, * prev = nullptr;
-			while (next)
-			{
-				prev = next;
-
-				cmp = typename PairT::FindPair()(key, next->data);
-				if (cmp < 0)
-					next = next->left;
-				else if (cmp > 0)
-					next = next->right;
-				else
-					// Node exists, return ref
-					return (next->data.second = forward<ValU>(val));
-			}
-			
-			numNodes++;
-
-			// Create and insert node
-			NodeT * node = createNode(PairT{forward<KeyU>(key), forward<ValU>(val)});
-			if (cmp < 0)
-			{
-				prev->setPrevNode(node);
-				prev->setLeftChild(node);
-				NodeT::repairInserted(node);
-			}
-			else
-			{
-				prev->setNextNode(node);
-				prev->setRightChild(node);
-				NodeT::repairInserted(node);
-			}
-			
-			// Root may be changed
-			root = root->getRoot();
-
-			return node->data.second;
-		}
+		return tree.replace(PairT{forward<KeyU>(key), forward<ValU>(val)}).second;
 	}
 
-protected:
-	/**
-	 * Returns pointer to map node
-	 * 
-	 * @param key pair key
-	 * @return node ptr, otherwise nullptr
-	 * @{
-	 */
-	const NodeT * findNode(const KeyT & key) const
-	{
-		if (UNLIKELY(root == nullptr))
-			return nullptr;
-		else
-		{
-			NodeT * next = root;
-			while (next)
-			{
-				const int32 cmp = typename PairT::FindPair()(key, next->data);
-				if (cmp < 0)
-					next = next->left;
-				else if (cmp > 0)
-					next = next->right;
-				else break;
-			}
-			
-			return next;
-		}
-	}
-
-	NodeT * findNode(const KeyT & key)
-	{
-		return const_cast<NodeT*>(static_cast<const Map&>(*this).findNode(key));
-	}
-	/// @}
-
-public:
 	/**
 	 * Returns a new iterator pointing
 	 * to the found element or the end
@@ -333,18 +184,18 @@ public:
 	 */
 	FORCE_INLINE ConstIterator find(const KeyT & key) const
 	{
-		return ConstIterator{findNode(key)};
+		return tree.find(key);
 	}
 
 	FORCE_INLINE Iterator find(const KeyT & key)
 	{
-		return Iterator{findNode(key)};
+		return tree.find(key);
 	}
 	/// @}
 
 	/**
 	 * Returns pair value and true if
-	 * andy pair matches key. Not the
+	 * any pair matches key. Note the
 	 * value is copied, this method
 	 * may not be suitable for complex
 	 * types. See Map::find overloads
@@ -357,7 +208,7 @@ public:
 	 */
 	FORCE_INLINE bool find(const KeyT & key, ValT & val) const
 	{
-		const NodeT * node = findNode(key);
+		const auto * node = tree.findNode(key);
 
 		if (node)
 		{
@@ -373,26 +224,7 @@ public:
 	 */
 	FORCE_INLINE bool has(const KeyT & key) const
 	{
-		return findNode(key) != nullptr;
-	}
-
-protected:
-	/**
-	 * Remove node from map. Note that
-	 * this operation may invalidate
-	 * pointers to map nodes
-	 * 
-	 * @param node node to remove
-	 */
-	void removeNode(NodeT * node)
-	{
-		CHECKF(find(node->data.first) == node, "node %p is not part of this map", node)
-
-		// Root may have changed
-		if (node->remove() == root) root = root->left ? root->left : root->right;
-		if (root) root = root->getRoot();
-
-		numNodes--;
+		return tree.findNode(key) != nullptr;
 	}
 	
 public:
@@ -406,8 +238,7 @@ public:
 	 */
 	FORCE_INLINE void remove(const ConstIterator & it)
 	{
-		if (LIKELY(it.node != nullptr))
-			removeNode(it.node);
+		tree.remove(it);
 	}
 	/// @}
 
@@ -422,11 +253,11 @@ public:
 	FORCE_INLINE bool remove(const KeyT & key)
 	{
 		// Retrieve node
-		NodeT * node = findNode(key);
+		auto node = tree.findNode(key);
 		if (!node) return false;
 
 		// Remove node
-		removeNode(node);
+		tree.removeNode(node);
 		return true;
 	}
 
@@ -443,14 +274,14 @@ public:
 	FORCE_INLINE bool pop(const KeyT & key, ValT & val)
 	{
 		// Retrieve node
-		NodeT * node = findNode(key);
+		auto node = tree.findNode(key);
 		if (!node) return false;
 
 		// Copy out value
 		val = move(node->data.second);
 
 		// Remove node
-		removeNode(node);
+		tree.removeNode(node);
 		return true;
 	}
 };

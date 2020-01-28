@@ -956,6 +956,8 @@ protected:
 template<typename T, typename CompareT>
 class BinaryTree
 {
+	template<typename, typename, typename> friend class Map;
+
 public:
 	/// Expose data type
 	using DataT = T;
@@ -1228,11 +1230,16 @@ public:
 	/**
 	 * Returns tree size (i.e. number
 	 * of nodes)
+	 * @{
 	 */
 	FORCE_INLINE uint64 getNumNodes() const
 	{
 		return numNodes;
 	}
+
+	METHOD_ALIAS_CONST(getCount, getNumNodes)
+	METHOD_ALIAS_CONST(getSize, getNumNodes)
+	/// @}
 
 	/**
 	 * Returns a new iterator pointing
@@ -1313,6 +1320,30 @@ public:
 	}
 	/// @}
 
+protected:
+	/**
+	 * Returns pointer to node that
+	 * matches search criteria or
+	 * null if no such node exists
+	 * 
+	 * @param arg search criteria
+	 * @return Pointer to node
+	 * @{
+	 */
+	template<typename U>
+	FORCE_INLINE const NodeT * findNode(const U & arg) const
+	{
+		return root ? root->find(arg) : nullptr;
+	}
+
+	template<typename U>
+	FORCE_INLINE NodeT * findNode(const U & arg)
+	{
+		return root ? root->find(arg) : nullptr;
+	}
+	/// @}
+public:
+
 	/**
 	 * Returns a new iterator that
 	 * points to the first node
@@ -1326,13 +1357,13 @@ public:
 	template<typename U>
 	FORCE_INLINE ConstIterator find(const U & arg) const
 	{
-		return ConstIterator{root->find(arg)};
+		return ConstIterator{findNode(arg)};
 	}
 	
 	template<typename U>
 	FORCE_INLINE Iterator find(const U & arg)
 	{
-		return Iterator{root->find(arg)};
+		return Iterator{findNode(arg)};
 	}
 	/// @}
 

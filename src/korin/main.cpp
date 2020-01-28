@@ -27,5 +27,6 @@ FORCE_INLINE int32 LessThan::operator()(const String & a, const String & b) cons
 
 int32 main()
 {
+	
 	return 0;
 }

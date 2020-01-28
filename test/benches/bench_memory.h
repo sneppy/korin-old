@@ -75,7 +75,38 @@ void uniformAlloc(benchmark::State & state)
 	destroyAllocator(malloc);
 }
 
+template<typename MallocT>
+void ListAlloc(benchmark::State & state)
+{
+	const uint32 numElements = state.range(0);
+
+	struct Object
+	{
+		float32 data[16];
+	};
+
+	// Create allocator
+	MallocBase * malloc = createAllocator<MallocT>(numElements, sizeof(Object));
+	List<Object> list;
+
+	for (auto _ : state)
+	{
+		for (uint32 i = 0; i < numElements; ++i)
+			list.pushBack(Object{});
+		
+		while (list.removeBack()); // Remove all		
+	}
+
+	// Destroy allocator
+	destroyAllocator(malloc);
+}
+
 BENCHMARK_TEMPLATE(uniformAlloc, MallocAnsi)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
 BENCHMARK_TEMPLATE(uniformAlloc, MallocPool)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
 BENCHMARK_TEMPLATE(uniformAlloc, MallocPooled)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
 BENCHMARK_TEMPLATE(uniformAlloc, MallocBinned)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
+
+BENCHMARK_TEMPLATE(ListAlloc, MallocAnsi)->Ranges({{1u << 3, 1u << 15}});
+BENCHMARK_TEMPLATE(ListAlloc, MallocPool)->Ranges({{1u << 3, 1u << 15}});
+BENCHMARK_TEMPLATE(ListAlloc, MallocPooled)->Ranges({{1u << 3, 1u << 15}});
+BENCHMARK_TEMPLATE(ListAlloc, MallocBinned)->Ranges({{1u << 3, 1u << 15}});
