@@ -27,11 +27,5 @@ FORCE_INLINE int32 LessThan::operator()(const String & a, const String & b) cons
 
 int32 main()
 {
-	BinaryTree<int32, LessThan> tree;
-
-	tree.insertUnique(3);
-	tree.insertUnique(4);
-	tree.insertUnique(0);
-
 	return 0;
 }

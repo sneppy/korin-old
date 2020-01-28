@@ -499,13 +499,35 @@ TEST(containers, tree)
 	}
 
 	treeA = treeB;
-	/* treeB = move(tree);
+	treeB = move(tree);
 
 	{
 		uint32 i = 0;
 		for (auto & p : treeB) ASSERT_EQ(p.first, i++);
 		ASSERT_EQ(i, 10);
-	} */
+	}
+	
+	ASSERT_EQ(treeB.find(10), treeB.end());
+	ASSERT_EQ(treeB.find(9)->first, 9);
+	
+	treeB.remove(treeB.find(9));
+
+	ASSERT_EQ(treeB.find(9), treeB.end());
+
+	for (int32 i = 0; i < 9; ++i)
+		treeB.remove(treeB.find(i));
+	
+	ASSERT_EQ(treeB.getNumNodes(), 0ull);
+	ASSERT_EQ(treeB.begin(), treeB.end());
+
+	treeB.insert(
+		PairT{0, "zero"},
+		PairT{1, "one"},
+		PairT{2, "two"}
+	);
+
+	ASSERT_EQ(treeB.begin(0)->second, "zero");
+	ASSERT_EQ(treeB.end(0)->first, 1);
 
 	SUCCEED();
 }

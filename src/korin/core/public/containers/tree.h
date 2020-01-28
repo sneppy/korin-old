@@ -693,10 +693,7 @@ public:
 
 		// Get actual successor
 		if (left != nullptr && right != nullptr)
-		{
-			swapNodes(this, (u = next));
-			swap(color, u->color);
-		}
+			swap(this->data, (u = next)->data);
 		
 		// Remove left or right child of successor
 		if (u->left != nullptr)
@@ -852,6 +849,7 @@ protected:
 template<typename NodeT>
 struct NodeConstIterator
 {
+	template<typename, typename> friend class BinaryTree;
 	template<typename, typename, typename> friend class Map;
 
 	//////////////////////////////////////////////////
@@ -1181,7 +1179,7 @@ public:
 	FORCE_INLINE BinaryTree & operator=(BinaryTree && other)
 	{
 		// Destroy subtree
-		destroySubtree(root);
+		if (root) destroySubtree(root);
 
 		// Delete allocator
 		if (bHasOwnMalloc) delete malloc;
@@ -1195,6 +1193,8 @@ public:
 		other.bHasOwnMalloc = false;
 		other.root = nullptr;
 		other.numNodes = 0ull;
+
+		return *this;
 	}
 
 	/**
@@ -1248,24 +1248,24 @@ public:
 	 */
 	FORCE_INLINE ConstIterator begin() const
 	{
-		return ConstIterator{root->getMin()};
+		return ConstIterator{root ? root->getMin() : nullptr};
 	}
 
 	FORCE_INLINE Iterator begin()
 	{
-		return Iterator{root->getMin()};
+		return Iterator{root ? root->getMin() : nullptr};
 	}
 
 	template<typename U>
 	FORCE_INLINE ConstIterator begin(const U & arg) const
 	{
-		return ConstIterator{root->findMin(arg)};
+		return ConstIterator{root ? root->findMin(arg) : nullptr};
 	}
 
 	template<typename U>
-	FORCE_INLINE Iterator begin(const T & arg)
+	FORCE_INLINE Iterator begin(const U & arg)
 	{
-		return Iterator{root->findMin(arg)};
+		return Iterator{root ? root->findMin(arg) : nullptr};
 	}
 	/// @}
 
@@ -1291,17 +1291,25 @@ public:
 	}
 
 	template<typename U>
-	FORCE_INLINE ConstIterator end(const U & arg) const
+	ConstIterator end(const U & arg) const
 	{
-		NodeT * last = root->findMax(arg);
-		return ConstIterator{last ? last->next : nullptr};
+		if (root)
+		{
+			NodeT * last = root->findMax(arg);
+			return ConstIterator{last ? last->next : nullptr};
+		}
+		else return nullptr;
 	}
 
 	template<typename U>
-	FORCE_INLINE Iterator end(const U & arg)
+	Iterator end(const U & arg)
 	{
-		NodeT * last = root->findMax(arg);
-		return Iterator{last ? last->next : nullptr};
+		if (root)
+		{
+			NodeT * last = root->findMax(arg);
+			return Iterator{last ? last->next : nullptr};
+		}
+		else return nullptr;
 	}
 	/// @}
 
@@ -1487,4 +1495,35 @@ public:
 		replace(forward<TTT>(args)...);
 	}
 	/// @}
+
+protected:
+	/**
+	 * Remove node from tree
+	 * 
+	 * @param node node to remove
+	 */
+	FORCE_INLINE void removeNode(NodeT * node)
+	{
+		// Remove and ensure root is valid
+		if (node->remove() == root) root = root->left ? root->left : root->right;
+		if (root) root = root->getRoot();
+
+		--numNodes;
+
+		// Destroy node
+		destroyNode(node);
+	}
+
+public:
+	/**
+	 * Remove node pointed by
+	 * iterator
+	 * 
+	 * @param it iterator that points
+	 * 	to the node to remove
+	 */
+	FORCE_INLINE void remove(const ConstIterator & it)
+	{
+		if (it.node) removeNode(it.node);
+	}
 };
