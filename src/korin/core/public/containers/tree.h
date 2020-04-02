@@ -1535,14 +1535,16 @@ protected:
 	 */
 	FORCE_INLINE void removeNode(NodeT * node)
 	{
+		NodeT * removed = nullptr;
+
 		// Remove and ensure root is valid
-		if (node->remove() == root) root = root->left ? root->left : root->right;
+		if ((removed = node->remove()) == root) root = root->left ? root->left : root->right;
 		if (root) root = root->getRoot();
 
 		--numNodes;
 
 		// Destroy node
-		destroyNode(node);
+		destroyNode(removed);
 	}
 
 public:

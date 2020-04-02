@@ -7,6 +7,7 @@ set(BENCHES
 	"array"
 	"memory"
 	"map"
+	"sort"
 )
 
 ## Create and build all benches
