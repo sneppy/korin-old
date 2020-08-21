@@ -65,12 +65,20 @@ struct Vec4
 	 * 
 	 * @param [in] other Vec3 vector
 	 * @param [in] inW in w component
+	 * @{
 	 */
+	FORCE_INLINE Vec4(const Vec3<T> & other)
+		: array{other.x, other.y, other.z}
+	{
+		//
+	}
+
 	FORCE_INLINE Vec4(const Vec3<T> & other, T inW)
 		: array{other.x, other.y, other.z, inW}
 	{
 		//
 	}
+	/// @}
 
 	/**
 	 * Returns i-th component
@@ -369,6 +377,16 @@ struct Vec4
 	FORCE_INLINE operator Vec4<U>() const
 	{
 		return Vec4<U>{static_cast<U>(x), static_cast<U>(y), static_cast<U>(z), static_cast<U>(w)};
+	}
+
+	/**
+	 * Drop 4th component
+	 * 
+	 * @return new Vec3
+	 */
+	FORCE_INLINE operator Vec3<T>() const
+	{
+		return Vec3<T>{x, y, z};
 	}
 };
 

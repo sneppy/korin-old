@@ -12,7 +12,6 @@
 template<typename T>
 struct Mat4
 {
-public:
 	union
 	{
 		/// Flatten data
@@ -25,7 +24,6 @@ public:
 		struct { T a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p; };
 	};
 
-public:
 	/**
 	 * Default constructor
 	 */

@@ -1,18 +1,18 @@
 ### Include unit tests
 
-option(CREATE_TEST_TARGET "If true create and build the test target" ON)
+option(KORIN_BUILD_UNITS "If true create and build the test target" ON)
 
-if(CREATE_TEST_TARGET)
+if(KORIN_BUILD_UNITS)
 
 	add_subdirectory(units)
 
-endif()
+endif(KORIN_BUILD_UNITS)
 
 ### Include benchmarks
 
-option(BUILD_BENCHMARKS "If true build all benchmark targets" ON)
+option(KORIN_BUILD_BENCHES "If true build all benchmark targets" ON)
 
-if(BUILD_BENCHMARKS)
+if(KORIN_BUILD_BENCHES)
 
 	add_subdirectory(benches)
 

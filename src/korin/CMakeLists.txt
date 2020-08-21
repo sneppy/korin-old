@@ -89,57 +89,69 @@ foreach(MODULE ${MODULES})
 endforeach()
 
 ## Create global library
-add_library(${PROJECT_NAME})
-set_target_properties(${PROJECT_NAME}
+option(KORIN_BUILD_MODULES_ONLY "Prevents library creation, and builds only separate modules" OFF)
 
-	PROPERTIES
-		OUTPUT_NAME ${PROJECT_NAME}
-)
-	
-## Link all dependency libraries
-target_link_libraries(${PROJECT_NAME} ${MODULE_LIBRARIES})
+if (NOT KORIN_BUILD_MODULES_ONLY)
+
+	add_library(${PROJECT_NAME})
+	set_target_properties(${PROJECT_NAME}
+
+		PROPERTIES
+			OUTPUT_NAME ${PROJECT_NAME}
+	)
+		
+	## Link all dependency libraries
+	target_link_libraries(${PROJECT_NAME} ${MODULE_LIBRARIES})
+
+endif(NOT KORIN_BUILD_MODULES_ONLY)
 
 ## Create global application
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
-	
-	file(WRITE "./main.cpp"
-	
-		"#include \"core_types.h\"\n"
-		"\n"
-		"#include <stdio.h>\n"
-		"\n"
-		"int32 main()\n"
-		"{\n"
-		"	printf(\"hello ${PROJECT_NAME}!\\n\");\n"
+option(KORIN_BUILD_APPLICATION "If false, prevents creation of test application" ON)
 
-		"	return 0;\n"
-		"}\n"
+if (KORIN_BUILD_APPLICATION)
+
+	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
+		
+		file(WRITE "./main.cpp"
+		
+			"#include \"core_types.h\"\n"
+			"\n"
+			"#include <stdio.h>\n"
+			"\n"
+			"int32 main()\n"
+			"{\n"
+			"	printf(\"hello ${PROJECT_NAME}!\\n\");\n"
+
+			"	return 0;\n"
+			"}\n"
+		)
+
+	endif(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
+
+	add_executable(${PROJECT_NAME}_test
+
+		"./main.cpp"
 	)
 
-endif(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
+	target_link_libraries(${PROJECT_NAME}_test
 
-add_executable(${PROJECT_NAME}_test
+		${PROJECT_NAME}
+	)
 
-	"./main.cpp"
-)
+	## Set target properties
+	set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/bin)
+	set_target_properties(${PROJECT_NAME}_test
 
-target_link_libraries(${PROJECT_NAME}_test
+		PROPERTIES
+			RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	)
 
-	${PROJECT_NAME}
-)
+	## Create run target
+	add_custom_target(run
 
-## Set target properties
-set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/bin)
-set_target_properties(${PROJECT_NAME}_test
+		COMMAND				$<TARGET_FILE:${PROJECT_NAME}_test>
+		DEPENDS				${PROJECT_NAME}
+		WORKING_DIRECTORY	${PROJECT_SOURCE_DIR}
+	)
 
-	PROPERTIES
-		RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-)
-
-## Create run target
-add_custom_target(run
-
-	COMMAND				$<TARGET_FILE:${PROJECT_NAME}_test>
-	DEPENDS				${PROJECT_NAME}
-	WORKING_DIRECTORY	${PROJECT_SOURCE_DIR}
-)
+endif(KORIN_BUILD_APPLICATION)
