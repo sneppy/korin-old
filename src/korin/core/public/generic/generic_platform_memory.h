@@ -41,6 +41,22 @@ struct GenericPlatformMemory
 	}
 
 	/**
+	 * Compare two chunks of memory.
+	 * 
+	 * @param mem0,mem1 pointers to the memory
+	 * 	chunks
+	 * @param size size of the memory chunk
+	 * @return zero if all bytes are equal,
+	 * 	positive if first differing byte in
+	 * 	mem0 is greater than the corresponding
+	 * 	byte in mem1
+	 */
+	static FORCE_INLINE bool memcmp(const void * mem0, const void * mem1, sizet size)
+	{
+		return ::memcmp(mem0, mem1, size);
+	}
+
+	/**
 	 * Default constructs elements in range
 	 * 
 	 * @param begin, end array range
@@ -117,16 +133,18 @@ struct GenericPlatformMemory
 		if (LIKELY(dst < src))
 		{
 			// Copy left to right
-			for (uint64 i = 0; i < n; ++i, ++dst, ++src)
-				// Move rather than copy
-				*dst = move(*src);
+			for (uint64 i = 0; i < n; ++i)
+			{
+				dst[i] = move(src[i]);
+			}
 		}
 		else if (LIKELY(src > dst))
 		{
 			// Copy right to left
-			for (uint64 i = 0, j = n - 1; i < n; ++i, --j)
-				// Move rather than copy
-				dst[j] = move(src[j]);
+			for (uint64 i = 1; i <= n; ++i)
+			{
+				dst[n - i] = move(src[n - i]);
+			}
 		}
 		else
 			; // Source and destination are the same
@@ -135,7 +153,7 @@ struct GenericPlatformMemory
 	template<typename TT>
 	static FORCE_INLINE typename EnableIf<IsTriviallyCopyable<TT>::value>::Type moveElements(TT * dst, TT * src, uint64 n)
 	{
-		memmove(dst, src, n * sizeof(TT));
+		memmov(dst, src, n * sizeof(TT));
 	}
 	/// @}
 
@@ -143,11 +161,18 @@ struct GenericPlatformMemory
 	 * Destroy elements in range
 	 * 
 	 * @param [in] begin,end array range
+	 * @{
 	 */
 	template<typename T>
-	static FORCE_INLINE void destroyElements(T * begin, T * end)
+	static FORCE_INLINE typename EnableIf<!IsTriviallyDestructible<T>::value>::Type destroyElements(T * begin, T * end)
 	{
-		for (; begin != end; ++begin)
-			begin->~T();
+		for (; begin != end; ++begin) begin->~T();
 	}
+
+	template<typename T>
+	static FORCE_INLINE typename EnableIf<IsTriviallyDestructible<T>::value>::Type destroyElements(T * begin, T * end)
+	{
+		// Do nothing
+	}
+	/// @}
 };
