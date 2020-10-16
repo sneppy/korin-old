@@ -192,23 +192,59 @@ TEST(containers, string)
 	a <<= 3u;
 	b.printFormat("%.2f", 3.14f);
 
-	ASSERT_EQ(a, "3");
-	ASSERT_EQ(b, "3.14");
+	ASSERT_STREQ(*a, "3");
+	ASSERT_STREQ(*b, "3.14");
 
 	c = a << 4u;
 	d = b << 4.5f;
 
-	ASSERT_TRUE(c == "4");
-	ASSERT_TRUE(d == "4.500000");
+	ASSERT_STREQ(*c, "4");
+	ASSERT_STREQ(*d, "4.500000");
 
 	e = a + ", " + b + ", " + c + ", " + d;
 
-	ASSERT_TRUE(e == "3, 3.14, 4, 4.500000");
+	ASSERT_STREQ(*e, "3, 3.14, 4, 4.500000");
 
 	e += ", ";
 	e += 12;
 
-	ASSERT_TRUE(e == "3, 3.14, 4, 4.500000, 12");
+	ASSERT_STREQ(*e, "3, 3.14, 4, 4.500000, 12");
+
+	a = "Sneppy hates python";
+
+	ASSERT_EQ(a.findIndex('p'), 3);
+	ASSERT_EQ(a.findIndex("py"), 4);
+
+	auto matches = a.findAll("py");
+
+	ASSERT_EQ(matches.getCount(), 2);
+	ASSERT_EQ(matches[0], 4);
+	ASSERT_EQ(matches[1], 13);
+
+	a = "SnEpPy HaTES pYthoN";
+	b = a.toLower();
+	c = a.toUpper();
+	
+	ASSERT_STREQ(*b, "sneppy hates python");
+	ASSERT_STREQ(*c, "SNEPPY HATES PYTHON");
+
+	a = "Sneppy hates JavaScript";
+	a.splice(0, 6, "Guglielmo");
+	printf("%s\n", *a);
+
+	ASSERT_STREQ(*a, "Guglielmo hates JavaScript");
+
+	a.splice(16, 10, "Sneppy");
+
+	ASSERT_STREQ(*a, "Guglielmo hates Sneppy");
+	
+	a = "Korin is korin";
+	a.replaceAll("Korin", "Sneppy");
+	b = "Korin is Korin";
+	b.replaceAll("Korin", "Sneppy");
+
+	ASSERT_STREQ(*a, "Sneppy is korin");
+	ASSERT_STREQ(*b, "Sneppy is Sneppy");
 
 	SUCCEED();
 }
