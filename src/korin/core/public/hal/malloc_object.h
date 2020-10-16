@@ -79,8 +79,14 @@ public:
 	 */
 	FORCE_INLINE ~MallocObject()
 	{
-		// Delete managed allocator
-		if (bHasOwnMalloc) delete malloc;
+		if (bHasOwnMalloc)
+		{
+			// Delete managed allocator
+			delete malloc;
+
+			bHasOwnMalloc = false;
+			malloc = nullptr;
+		}
 	}
 	
 	/**

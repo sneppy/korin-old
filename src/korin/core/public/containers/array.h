@@ -4,6 +4,7 @@
 #include "../misc/utility.h"
 #include "../misc/assert.h"
 #include "../hal/platform_memory.h"
+#include "../hal/platform_math.h"
 #include "../hal/malloc_ansi.h"
 #include "../hal/malloc_object.h"
 #include "../templates/utility.h"
@@ -575,7 +576,26 @@ public:
 		return buffer[idx];
 	}
 	METHOD_ALIAS_CONST(getAt, operator[])
-	/// @}
+	/** @} */
+
+	/**
+	 * @brief Returns array item at idx-th
+	 * position.
+	 * If array size is lower then `idx`,
+	 * allocate required space and return
+	 * ref to idx-th position (non constructed).
+	 * 
+	 * @param idx item position
+	 * @return ref to item or to created space
+	 */
+	FORCE_INLINE T & operator()(uint64 idx)
+	{
+		// Resize to fit idx
+		resizeIfNecessary(idx + 1);
+		count = PlatformMath::max(count, idx + 1);
+
+		return buffer[idx];
+	}
 
 	/**
 	 * Returns a new iterator that points
@@ -762,19 +782,25 @@ public:
 	 * Remove element at index (does not
 	 * check index overflow)
 	 * 
-	 * @param [in] idx element index
+	 * @param idx element index
+	 * @param [len=1] if provided, number
+	 * 	of elements to be removed
 	 */
-	void removeAt(uint64 idx)
+	void removeAt(uint64 idx, uint64 len = 1)
 	{
-		// Destroy element
-		Memory::destroyElements(buffer + idx, buffer + idx);
+		if (len > 0)
+		{
+			// Destroy element
+			Memory::destroyElements(buffer + idx, buffer + idx + len);
 
-		// Move elements to the left
-		Memory::moveElements(buffer + idx, buffer + idx + 1, (count - 1) - idx);
+			// Move elements to the left
+			Memory::moveElements(buffer + idx, buffer + idx + len, count - (idx + len));
 
-		// Decrement count
-		--count;
+			// Decrement count
+			count -= len;
+		}
 	}
+	/// @}
 
 	/**
 	 * Remove first element
