@@ -1320,7 +1320,6 @@ public:
 	}
 	/// @}
 
-protected:
 	/**
 	 * Returns pointer to node that
 	 * matches search criteria or
@@ -1328,8 +1327,8 @@ protected:
 	 * 
 	 * @param arg search criteria
 	 * @return Pointer to node
-	 * @{
 	 */
+	/// @{
 	template<typename U>
 	FORCE_INLINE const NodeT * findNode(const U & arg) const
 	{
@@ -1342,7 +1341,6 @@ protected:
 		return root ? root->find(arg) : nullptr;
 	}
 	/// @}
-public:
 
 	/**
 	 * Returns a new iterator that
@@ -1527,7 +1525,6 @@ public:
 	}
 	/// @}
 
-protected:
 	/**
 	 * Remove node from tree
 	 * 
@@ -1547,7 +1544,6 @@ protected:
 		destroyNode(removed);
 	}
 
-public:
 	/**
 	 * Remove node pointed by
 	 * iterator
@@ -1558,5 +1554,17 @@ public:
 	FORCE_INLINE void remove(const ConstIterator & it)
 	{
 		if (it.node) removeNode(it.node);
+	}
+
+	/**
+	 * @brief Remove node that matches value
+	 * 
+	 * @param value node value
+	 */
+	FORCE_INLINE void remove(const T & value)
+	{
+		// Find node and remove it
+		NodeT * node = findNode(value);
+		if (node) removeNode(node);
 	}
 };
