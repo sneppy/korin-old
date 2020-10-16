@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "hal/platform_memory.h"
 #include "hal/platform_strings.h"
 #include "array.h"
 
@@ -142,6 +143,7 @@ public:
 		return array.count;
 	}
 	METHOD_ALIAS_CONST(getSize, getLength)
+	METHOD_ALIAS_CONST(getLen, getLength)
 	/// @}
 
 	/**
@@ -584,9 +586,183 @@ public:
 	 * @param [in] pos initial position
 	 * @return new string
 	 */
-	String substr(sizet len, sizet pos = 0)
+	String substr(sizet len, sizet pos = 0) const
 	{
 		return String{array.buffer + pos, len};
+	}
+
+	/**
+	 * Replaces substr(len, pos) with inserted string.
+	 * 
+	 * @param pos position of the substring
+	 * @param len length of the substring
+	 * @param [inserted=""] replacement string
+	 * @return ref to self
+	 */
+	String & splice(sizet pos, sizet len, const String & inserted = "")
+	{
+		// Get insertion size
+		const sizet insertionLen = inserted.getLength();
+
+		if (insertionLen <= len)
+		{
+			// We have to remove a bunch of characters anyway
+			// First remove unused characters
+			array.removeAt(pos, len - insertionLen);
+
+			if (inserted.getLength())
+			{
+				// Copy inserted string in place
+				PlatformMemory::memcpy(*array + pos, inserted.getData(), insertionLen);
+			}
+		}
+		else
+		{
+			// We only have to add characters
+			// First, replace array
+			array.resizeIfNecessary(array.count += (insertionLen - len));
+
+			// Move to accomodate string
+			PlatformMemory::memmov(array.buffer + pos + insertionLen, array.buffer + pos + len, array.count - (len + pos));
+
+			// Copy inserted string in place
+			PlatformMemory::memcpy(*array + pos, inserted.getData(), insertionLen);
+		}
+
+		// Re-terminate string
+		terminateString();
+
+		return *this;
+	}
+
+	/**
+	 * Find index of first occurence in string.
+	 * Pattern can be a string, a character or
+	 * a regular expression.
+	 * 
+	 * @param pattern pattern to search for
+	 * 	in string
+	 * @param startPos start position
+	 * @param patternLen if pattern is C string,
+	 * 	length of the pattern
+	 * @return index of first occurence, or -1 if
+	 * 	none found
+	 * @{
+	 */
+	int64 findIndex(const char * pattern, sizet startPos = 0, sizet patternLen = 0) const
+	{
+		// Get length if not provided
+		patternLen = patternLen ? patternLen : PlatformStrings::getLength(pattern);
+
+		// Check pattern length doesn't exceed string length
+		if (patternLen > getLength() - startPos) return -1;
+
+		for (sizet idx = startPos, lastIdx = getLength() - patternLen; idx <= lastIdx; ++idx)
+		{
+			; // TODO: Maybe have some nice pattern-matching solution
+			if (PlatformMemory::memcmp(&array[idx], pattern, patternLen) == 0) return idx;
+		}
+
+		return -1;
+	}
+
+	FORCE_INLINE int64 findIndex(const String & pattern, sizet startPos = 0) const
+	{
+		return findIndex(*pattern, startPos, pattern.getLength());
+	}
+
+	int64 findIndex(char pattern, sizet startPos = 0) const
+	{
+		for (sizet idx = startPos, len = getLength(); idx < len; ++idx)
+		{
+			if (array[idx] == pattern) return idx;
+		}
+
+		// Pattern not found, return -1
+		return -1;
+	}
+	/// @}
+
+	/**
+	 * Utility function that return all
+	 * occurences of pattern in the
+	 * string.
+	 * 
+	 * @param pattern pattern to match.
+	 * 	Either a string, a character or
+	 * 	a regular expression.
+	 * @return array of occurences
+	 */
+	template<typename PatternT>
+	Array<sizet> findAll(PatternT && pattern) const
+	{
+		Array<sizet> idxs{};
+		int64 startPos = 0;
+
+		while ((startPos = findIndex(forward<PatternT>(pattern), startPos)) != -1)
+		{
+			// Add occurence and advance position
+			idxs.add(static_cast<sizet>(startPos++));
+		}
+
+		return idxs;
+	}
+
+	/**
+	 * Replaces occurences of text into string
+	 * 
+	 * @param pattern 
+	 */
+	String & replaceAll(const String & pattern, const String & replacement)
+	{
+		sizet patternLen = pattern.getLength();
+		sizet replacementLen = replacement.getLength();
+		int64 startPos = 0;
+
+		while ((startPos = findIndex(pattern, startPos)) != -1)
+		{
+			// Occurence found, needs replacing
+			splice(startPos, patternLen, replacement);
+
+			// Skip replacement string
+			startPos += replacementLen;
+		}
+
+		return *this;
+	}
+
+	/**
+	 * Returns a lowercase copy of the string.
+	 */
+	String toLower() const
+	{
+		String lower{*this};
+
+		// Transform each character
+		for (sizet idx = 0, len = getLength(); idx < len; ++idx)
+		{
+			// Sum the difference
+			if (lower[idx] >= 'A' && lower[idx] <= 'Z') lower[idx] += ('a' - 'A');
+		}
+
+		return lower;
+	}
+
+	/**
+	 * Returns an uppercase copy of the string.
+	 */
+	String toUpper() const
+	{
+		String upper{*this};
+
+		// Transform each character
+		for (sizet idx = 0, len = getLength(); idx < len; ++idx)
+		{
+			// Sum the difference
+			if (upper[idx] >= 'a' && upper[idx] <= 'z') upper[idx] -= ('a' - 'A');
+		}
+
+		return upper;
 	}
 };
 
