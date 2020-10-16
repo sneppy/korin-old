@@ -594,7 +594,8 @@ protected:
 
 public:
 	/**
-	 * Insert node in the subtree
+	 * Insert node in the subtree.
+	 * 
 	 * Allows duplicates
 	 * 
 	 * @param [in] node node to insert
@@ -1444,6 +1445,7 @@ public:
 			
 			// Insert node
 			NodeT * node = parent->insert(createNode(forward<TT>(arg)));
+			root = root->getRoot();
 
 			++numNodes;
 			return node->data;
