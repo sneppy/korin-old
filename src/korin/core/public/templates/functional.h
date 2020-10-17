@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "./utility.h"
 
 /**
  * Null compare type, that always returns 0.

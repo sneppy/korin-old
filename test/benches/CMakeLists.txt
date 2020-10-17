@@ -8,6 +8,7 @@ set(BENCHES
 	"memory"
 	"map"
 	"sort"
+	"set"
 )
 
 ## Create and build all benches
@@ -39,6 +40,7 @@ foreach(BENCH ${BENCHES})
 			"#pragma once\n"
 			"\n"
 			"#include \"benchmark/benchmark.h\"\n"
+			"#include \"./bench_util.h\"\n"
 		)
 		
 	endif()
