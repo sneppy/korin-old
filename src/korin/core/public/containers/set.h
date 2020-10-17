@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "misc/utility.h"
 #include "templates/functional.h"
 #include "./tree.h"
 
@@ -36,11 +37,16 @@ public:
 
 	/**
 	 * Returns count of items in set.
+	 * @{
 	 */
 	FORCE_INLINE uint64 getCount() const
 	{
 		return tree.getNumNodes();
 	}
+	
+	METHOD_ALIAS_CONST(getSize, getCount);
+	METHOD_ALIAS_CONST(getNumItems, getCount);
+	/** @} */
 
 	/**
 	 * Returns true if Set has item.
@@ -324,6 +330,24 @@ public:
 
 		return *this;
 	}
+
+	/// See equivalent compound operators
+	/// @{
+	FORCE_INLINE Set operator+(const Set & other) const
+	{
+		return Set{*this} += other;
+	}
+
+	FORCE_INLINE Set operator*(const Set & other) const
+	{
+		return Set{*this} *= other;
+	}
+
+	FORCE_INLINE Set operator-(const Set & other) const
+	{
+		return Set{*this} -= other;
+	}
+	/// @}
 
 	/**
 	 * This operator returns true if this

@@ -9,6 +9,7 @@
 #include "containers/tree.h"
 #include "containers/pair.h"
 #include "containers/map.h"
+#include "containers/set.h"
 
 #include "hal/malloc_ansi.h"
 #include "hal/malloc_pool.h"
@@ -230,7 +231,6 @@ TEST(containers, string)
 
 	a = "Sneppy hates JavaScript";
 	a.splice(0, 6, "Guglielmo");
-	printf("%s\n", *a);
 
 	ASSERT_STREQ(*a, "Guglielmo hates JavaScript");
 
@@ -636,4 +636,106 @@ TEST(containers, map)
 	ASSERT_EQ(str, "sneppy13@gmail.com");
 
 	SUCCEED();
+}
+
+TEST(containers, set)
+{
+	Set<int32> a;
+
+	ASSERT_EQ(a.getCount(), 0);
+
+	a.set(1);
+	a.set(3, 4, 6);
+
+	ASSERT_EQ(a.getCount(), 4);
+	ASSERT_TRUE(a.get(1));
+	ASSERT_FALSE(a.get(2));
+	ASSERT_TRUE(a.get(3));
+	ASSERT_TRUE(a.get(4));
+	ASSERT_FALSE(a.get(5));
+	ASSERT_TRUE(a.get(6));
+
+	int x = 0, y = 0;
+	a.get(1, x);
+	a.get(2, y);
+
+	ASSERT_EQ(x, 1);
+	ASSERT_EQ(y, 0);
+
+	a.set(10);
+	a.set(11);
+
+	ASSERT_EQ(a.getCount(), 6);
+	ASSERT_FALSE(a.any(7, 8, 9));
+	ASSERT_TRUE(a.any(8, 9, 10));
+	ASSERT_TRUE(a.all(1, 3, 4));
+	ASSERT_FALSE(a.all(1, 2, 3));
+
+	bool i = a.remove(10);
+	bool j = a.remove(11);
+	bool k = a.remove(12);
+
+	ASSERT_TRUE(i);
+	ASSERT_TRUE(j);
+	ASSERT_FALSE(k);
+	ASSERT_EQ(a.getCount(), 4);
+
+	int u = 0, v = 0;
+	a.remove(1, u);
+	a.remove(1, v);
+
+	ASSERT_EQ(a.getCount(), 3);
+	ASSERT_EQ(u, 1);
+	ASSERT_EQ(v, 0);
+
+	Set<int32> b;
+	b.set(1, 2, 3, 4);
+	a += b;
+
+	ASSERT_EQ(a.getCount(), 5);
+	ASSERT_TRUE(a.all(1, 2, 3, 4, 6));
+
+	Set<int32> c;
+	c.set(2, 4, 6, 8);
+	b *= c;
+
+	ASSERT_EQ(b.getCount(), 2);
+	ASSERT_TRUE(b.all(2, 4));
+	ASSERT_FALSE(b.any(1, 3));
+
+	Set<int32> d;
+	d.set(2, 4, 8, 16);
+	c -= d;
+
+	ASSERT_EQ(c.getCount(), 1);
+	ASSERT_FALSE(c.any(2, 4, 8, 16));
+
+	a += b;
+	b += a;
+	c -= a;
+
+	ASSERT_TRUE(a == a);
+	ASSERT_TRUE(a == b);
+	ASSERT_FALSE(a == c);
+
+	a = Set<int32>{};
+	b = Set<int32>{};
+	c = Set<int32>{};
+
+	a.set(1, 3, 5);
+	b.set(1, 2, 3, 4, 7);
+	c.set(1, 3, 4, 5);
+
+	ASSERT_FALSE(a < a);
+	ASSERT_TRUE(a < c);
+	ASSERT_FALSE(a < b);
+	ASSERT_FALSE(a > a);
+	ASSERT_TRUE(c > a);
+	ASSERT_FALSE(b > a);
+	ASSERT_TRUE(a >= a);
+	ASSERT_TRUE(a <= a);
+	ASSERT_TRUE(a <= c);
+	ASSERT_FALSE(c <= a);
+	ASSERT_TRUE(c >= a);
+	ASSERT_FALSE(a >= c);
 }
