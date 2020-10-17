@@ -10,6 +10,8 @@ class Set
 {
 	using TreeT = BinaryTree<T, CompareT>;
 	using NodeT = typename TreeT::NodeT;
+	using Iterator = typename TreeT::Iterator;
+	using ConstIterator = typename TreeT::ConstIterator;
 
 public:
 	/**
@@ -47,6 +49,79 @@ public:
 	METHOD_ALIAS_CONST(getSize, getCount);
 	METHOD_ALIAS_CONST(getNumItems, getCount);
 	/** @} */
+
+	/**
+	 * Returns iterator that points to
+	 * the beginning of the set.
+	 * @{
+	 */
+	FORCE_INLINE ConstIterator begin() const
+	{
+		return tree.begin();
+	}
+
+	FORCE_INLINE Iterator begin()
+	{
+		return tree.begin();
+	}
+	/** @} */
+
+	/**
+	 * Returns iterator that points to
+	 * the end of the set.
+	 * @{
+	 */
+	FORCE_INLINE ConstIterator end() const
+	{
+		return tree.end();
+	}
+
+	FORCE_INLINE Iterator end()
+	{
+		return tree.end();
+	}
+	/** @} */
+
+	/**
+	 * Returns iterator that starts from
+	 * the first item found.
+	 * 
+	 * @param item item to search for
+	 * @return iterator that points to
+	 * 	found item
+	 * @{
+	 */
+	FORCE_INLINE ConstIterator begin(const T & item) const
+	{
+		return tree.begin(item);
+	}
+
+	FORCE_INLINE Iterator begin(const T & item)
+	{
+		return tree.begin(item);
+	}
+	/** @} */
+
+	/**
+	 * Returns iterator that point to
+	 * the item after the searched for
+	 * item.
+	 * 
+	 * @param item item to search for
+	 * @return iterator that points to
+	 * 	the item after the found item
+	 */
+	FORCE_INLINE ConstIterator end(const T & item) const
+	{
+		// TODO: return tree.end(item);
+		return tree.end();
+	}
+
+	FORCE_INLINE Iterator end(const T & item)
+	{
+		return tree.end();
+	}
+	/// @}
 
 	/**
 	 * Returns true if Set has item.

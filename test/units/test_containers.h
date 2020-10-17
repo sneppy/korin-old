@@ -738,4 +738,28 @@ TEST(containers, set)
 	ASSERT_FALSE(c <= a);
 	ASSERT_TRUE(c >= a);
 	ASSERT_FALSE(a >= c);
+	
+	uint32 idx = 0; for (auto it = a.begin(); it != a.end(); ++it, ++idx)
+	{
+		static constexpr int32 values[] = {1, 3, 5};
+		ASSERT_EQ(*it, values[idx]);
+	}
+
+	ASSERT_EQ(idx, 3);
+	
+	uint32 jdx = 0; for (auto it = a.begin(3); it != a.end(); ++it, ++jdx)
+	{
+		static constexpr int32 values[] = {3, 5};
+		ASSERT_EQ(*it, values[jdx]);
+	}
+
+	ASSERT_EQ(jdx, 2);
+	
+	uint32 kdx = 0; for (auto it = a.begin(3); it != a.end(3); ++it, ++kdx)
+	{
+		static constexpr int32 values[] = {3};
+		ASSERT_EQ(*it, values[kdx]);
+	}
+
+	ASSERT_EQ(kdx, 1);
 }
