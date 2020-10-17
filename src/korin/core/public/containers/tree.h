@@ -380,20 +380,6 @@ protected:
 	/// @}
 
 	/**
-	 * Swap two nodes
-	 * 
-	 * @param a, b nodes to swap
-	 */
-	static void swapNodes(BinaryNode * a, BinaryNode * b)
-	{
-		swap(a->parent, b->parent);
-		swap(a->left, b->left);
-		swap(a->right, b->right);
-		swap(a->prev, b->prev);
-		swap(a->next, b->next);
-	}
-
-	/**
 	 * Repair inserted node
 	 * 
 	 * @param [in] node inserted node
@@ -682,8 +668,9 @@ public:
 	 * ! not the actual node (values are moved)
 	 * 
 	 * @return pointer to node actually evicted from tree
+	 * @{
 	 */
-	BinaryNode * remove()
+	BinaryNode * remove(BinaryNode* & outValidNode)
 	{
 		// Proceed with normal bt deletion, then repair
 		// @ref http://www.mathcs.emory.edu/~cheung/Courses/171/Syllabus/9-BinTree/BST-delete2.html
@@ -691,10 +678,13 @@ public:
 		
 		BinaryNode * u = this;
 		BinaryNode * v = nullptr;
+		BinaryNode * w = next;
 
 		// Get actual successor
 		if (left != nullptr && right != nullptr)
-			swap(this->data, (u = next)->data);
+		{
+			swap((w = this)->data, (u = next)->data);
+		}
 		
 		// Remove left or right child of successor
 		if (u->left != nullptr)
@@ -725,8 +715,15 @@ public:
 		// Repair rb structure
 		if (isBlack(u)) repairRemoved(v, v ? v->parent : u->parent);
 		
-		return u;
+		return (outValidNode = w), u;
 	}
+
+	BinaryNode * remove()
+	{
+		BinaryNode * _;
+		return remove(_);
+	}
+	/** @} */
 
 	/**
 	 * Print subtree to string
@@ -957,7 +954,8 @@ protected:
 template<typename T, typename CompareT>
 class BinaryTree
 {
-	template<typename, typename, typename> friend class Map;
+	template<typename, typename, typename>	friend class Map;
+	template<typename, typename>			friend class Set;
 
 public:
 	/// Expose data type
@@ -1241,6 +1239,53 @@ public:
 	METHOD_ALIAS_CONST(getCount, getNumNodes)
 	METHOD_ALIAS_CONST(getSize, getNumNodes)
 	/// @}
+
+	/**
+	 * Return pointer to root node
+	 * @{
+	 */
+	FORCE_INLINE const NodeT * getRoot() const
+	{
+		return root;
+	}
+
+	FORCE_INLINE NodeT * getRoot()
+	{
+		return root;
+	}
+	/** @} */
+
+	/**
+	 * Return pointer to leftmost node,
+	 * which holds the min value.
+	 * @{
+	 */
+	FORCE_INLINE const NodeT * getMin() const
+	{
+		return root ? root->getMin() : nullptr;
+	}
+
+	FORCE_INLINE NodeT * getMin()
+	{
+		return root ? root->getMin() : nullptr;
+	}
+	/** @} */
+
+	/**
+	 * Return pointer to rightmost node,
+	 * which holds the max value.
+	 * @{
+	 */
+	FORCE_INLINE const NodeT * getMax() const
+	{
+		return root ? root->getMax() : nullptr;
+	}
+
+	FORCE_INLINE NodeT * getMax()
+	{
+		return root ? root->getMax() : nullptr;
+	}
+	/** @} */
 
 	/**
 	 * Returns a new iterator pointing
@@ -1531,19 +1576,24 @@ public:
 	 * Remove node from tree
 	 * 
 	 * @param node node to remove
+	 * @return ptr to valid node afte deletion,
+	 * 	if any
 	 */
-	FORCE_INLINE void removeNode(NodeT * node)
+	NodeT * removeNode(NodeT * node)
 	{
 		NodeT * removed = nullptr;
+		NodeT * valid = nullptr;
 
 		// Remove and ensure root is valid
-		if ((removed = node->remove()) == root) root = root->left ? root->left : root->right;
+		if ((removed = node->remove(valid)) == root) root = root->left ? root->left : root->right;
 		if (root) root = root->getRoot();
 
 		--numNodes;
 
 		// Destroy node
 		destroyNode(removed);
+
+		return valid;
 	}
 
 	/**
@@ -1553,9 +1603,16 @@ public:
 	 * @param it iterator that points
 	 * 	to the node to remove
 	 */
-	FORCE_INLINE void remove(const ConstIterator & it)
+	FORCE_INLINE bool remove(const ConstIterator & it)
 	{
-		if (it.node) removeNode(it.node);
+		if (it.node)
+		{
+			// Node exists, remove it
+			removeNode(it.node);
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -1563,10 +1620,16 @@ public:
 	 * 
 	 * @param value node value
 	 */
-	FORCE_INLINE void remove(const T & value)
+	FORCE_INLINE bool remove(const T & value)
 	{
 		// Find node and remove it
-		NodeT * node = findNode(value);
-		if (node) removeNode(node);
+		if (NodeT * node = findNode(value))
+		{
+			// Node found, remove it
+			removeNode(node);
+			return true;
+		}
+
+		return false;
 	}
 };
