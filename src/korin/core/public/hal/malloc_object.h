@@ -71,7 +71,7 @@ public:
 	 * @param n num of objects
 	 * @returns pointer to allocated memory
 	 */
-	FORCE_INLINE T * alloc(uint64 n)
+	FORCE_INLINE T * alloc(uint64 n = 1)
 	{
 		return reinterpret_cast<T*>(malloc->alloc(n * allocUnitSize, allocUnitAlign));
 	}

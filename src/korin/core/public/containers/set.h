@@ -86,19 +86,21 @@ public:
 	 * Returns iterator that starts from
 	 * the first item found.
 	 * 
-	 * @param item item to search for
+	 * @param key key to search for
 	 * @return iterator that points to
 	 * 	found item
 	 * @{
 	 */
-	FORCE_INLINE ConstIterator begin(const T & item) const
+	template<typename KeyT>
+	FORCE_INLINE ConstIterator begin(const KeyT & key) const
 	{
-		return tree.begin(item);
+		return tree.begin(key);
 	}
 
-	FORCE_INLINE Iterator begin(const T & item)
+	template<typename KeyT>
+	FORCE_INLINE Iterator begin(const KeyT & key)
 	{
-		return tree.begin(item);
+		return tree.begin(key);
 	}
 	/** @} */
 
@@ -107,26 +109,27 @@ public:
 	 * the item after the searched for
 	 * item.
 	 * 
-	 * @param item item to search for
+	 * @param key key to search for
 	 * @return iterator that points to
 	 * 	the item after the found item
 	 */
-	FORCE_INLINE ConstIterator end(const T & item) const
+	template<typename KeyT>
+	FORCE_INLINE ConstIterator end(const KeyT & key) const
 	{
-		// TODO: return tree.end(item);
-		return tree.end();
+		return tree.end(key);
 	}
 
-	FORCE_INLINE Iterator end(const T & item)
+	template<typename KeyT>
+	FORCE_INLINE Iterator end(const KeyT & key)
 	{
-		return tree.end();
+		return tree.end(key);
 	}
 	/// @}
 
 	/**
 	 * Returns true if Set has item.
 	 * 
-	 * @param item item that will be
+	 * @param key key that will be
 	 * 	searched for in the set
 	 * @param outValue if provided and
 	 * 	item is found, is filled with
@@ -134,15 +137,17 @@ public:
 	 * @return true if item exists in set
 	 * @{
 	 */
-	FORCE_INLINE bool get(const T & item) const
+	template<typename KeyT>
+	FORCE_INLINE bool get(const KeyT & key) const
 	{
-		return tree.findNode(item) != nullptr;
+		return tree.findNode(key) != nullptr;
 	}
 
-	FORCE_INLINE bool get(const T & item, T const & outValue) const
+	template<typename KeyT>
+	FORCE_INLINE bool get(const KeyT & key, T const & outValue) const
 	{
 		// Get node to fetch value
-		if (NodeT * node = tree.findNode(item))
+		if (NodeT * node = tree.findNode(key))
 		{
 			outValue = node->data;
 			return true;
@@ -151,10 +156,11 @@ public:
 		return false;
 	}
 
-	FORCE_INLINE bool get(const T & item, T & outValue)
+	template<typename KeyT>
+	FORCE_INLINE bool get(const KeyT & key, T & outValue)
 	{
 		// Get node to fetch value
-		if (NodeT * node = tree.findNode(item))
+		if (NodeT * node = tree.findNode(key))
 		{
 			outValue = node->data;
 			return true;
@@ -168,20 +174,21 @@ public:
 	 * Returns true if some of the provided
 	 * items exist in the set,
 	 * 
-	 * @param item,items one or more items
+	 * @param key,keys one or more keys
 	 * 	to search
 	 * @return true if at least one item
 	 * 	exists in the set
 	 */
-	FORCE_INLINE bool any(const T & item) const
+	template<typename KeyT>
+	FORCE_INLINE bool any(const KeyT & key) const
 	{
-		return get(item);
+		return get(key);
 	}
 
-	template<typename ...ItemListT>
-	FORCE_INLINE bool any(const T & item, ItemListT && ...items) const
+	template<typename KeyT, typename ...KeyListT>
+	FORCE_INLINE bool any(const KeyT & key, KeyListT && ...keys) const
 	{
-		return get(item) || any(forward<ItemListT>(items)...);
+		return get(key) || any(forward<KeyListT>(keys)...);
 	}
 	/** @} */
 
@@ -189,21 +196,22 @@ public:
 	 * Returns true if all of the provided
 	 * items exist in the set.
 	 * 
-	 * @param item,items one or more items
+	 * @param key,keys one or more keys
 	 * 	to search
 	 * @return true if all the items exist
 	 * in the set
 	 * @{
 	 */
-	FORCE_INLINE bool all(const T & item) const
+	template<typename KeyT>
+	FORCE_INLINE bool all(const KeyT & key) const
 	{
-		return get(item);
+		return get(key);
 	}
 
-	template<typename ...ItemListT>
-	FORCE_INLINE bool all(const T & item, ItemListT && ...items) const
+	template<typename KeyT, typename ...KeyListT>
+	FORCE_INLINE bool all(const KeyT & key, KeyListT && ...keys) const
 	{
-		return get(item) && all(forward<ItemListT>(items)...);
+		return get(key) && all(forward<KeyListT>(keys)...);
 	}
 	/** @} */
 	
@@ -244,14 +252,16 @@ public:
 	 * @return true if item existed and
 	 * 	was removed
 	 */
-	FORCE_INLINE bool remove(const T & item)
+	template<typename KeyT>
+	FORCE_INLINE bool remove(const KeyT & key)
 	{
-		return tree.remove(item);
+		return tree.remove(key);
 	}
 
-	FORCE_INLINE bool remove(const T & item, T & outValue)
+	template<typename KeyT>
+	FORCE_INLINE bool remove(const KeyT & key, T & outValue)
 	{
-		if (NodeT * node = tree.findNode(item))
+		if (NodeT * node = tree.findNode(key))
 		{
 			// Set out value and return removed
 			outValue = move(node->data);
