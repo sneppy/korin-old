@@ -1,248 +1,284 @@
 #pragma once
 
-#include "../core_types.h"
-#include "../misc/utility.h"
-#include "../misc/assert.h"
-#include "../hal/platform_memory.h"
-#include "../hal/platform_math.h"
-#include "../hal/malloc_ansi.h"
-#include "../hal/malloc_object.h"
-#include "../templates/utility.h"
-#include "containers_types.h"
+#include "core_types.h"
+#include "misc/utility.h"
+#include "misc/assert.h"
+#include "templates/iterator.h"
+#include "hal/platform_memory.h"
+#include "hal/platform_math.h"
+#include "hal/malloc_ansi.h"
+#include "hal/malloc_object.h"
+#include "templates/utility.h"
+#include "./containers_types.h"
 
 /**
+ * Iterator used to iterate over the
+ * items of a dynamic array. it keeps
+ * a ref to the underlying array, which
+ * makes it non assignable.
  * 
+ * @param ArrayT type of array
+ * @param IteratorTraitsT type that
+ * 	define the iterator types
  */
-template<typename T>
-struct ArrayIterator
+template<typename ArrayT, typename IteratorTraitsT = ContiguousIterator<typename ArrayT::ItemT>>
+struct ArrayIteratorBase : public IteratorTraitsT
 {
-	template<typename, typename> class Array;
-
-	//////////////////////////////////////////////////
-	// Iterator types
-	//////////////////////////////////////////////////
-	
-	using RefT = T&;
-	using PtrT = T*;
+	using RefT = typename IteratorTraitsT::RefT;
+	using PtrT = typename IteratorTraitsT::PtrT;
 
 	/**
-	 * Default constructor, removed
+	 * Construct for array, pointing at
+	 * idx-th element.
+	 * 
+	 * @param inArray ref to array
+	 * @param [inIdx = 0] start index
 	 */
-	ArrayIterator() = delete;
-
-	/**
-	 * Initialize pointer
-	 */
-	FORCE_INLINE ArrayIterator(T * inPtr)
-		: ptr{inPtr}
+	FORCE_INLINE ArrayIteratorBase(ArrayT & inArray, uint64 inIdx = 0)
+		: array{inArray}
+		, idx{inIdx}
 	{
 		//
 	}
 
-	//////////////////////////////////////////////////
-	// BaseIterator interface
-	//////////////////////////////////////////////////
-	
+	/**
+	 * Dereference iterator, return ref to
+	 * idx-th item.
+	 */
 	FORCE_INLINE RefT operator*() const
 	{
-		return *ptr;
+		return array[idx];
 	}
 
+	/**
+	 * Dereference iterator, return pointer
+	 * to idx-th item.
+	 */
 	FORCE_INLINE PtrT operator->() const
 	{
-		return ptr;
+		return &(**this);
 	}
 
-	FORCE_INLINE bool operator==(const ArrayIterator & other) const
+	/**
+	 * Compare two iterators, they must both
+	 * point to the same item of the same
+	 * array. Returns true if they point
+	 * to the same item.
+	 * 
+	 * @param other another iterator
+	 * @return true if they point to the
+	 * 	same item
+	 */
+	FORCE_INLINE bool operator==(const ArrayIteratorBase & other) const
 	{
-		return ptr == other.ptr;
+		return &(**this) == &(*other);
 	}
 
-	FORCE_INLINE bool operator!=(const ArrayIterator & other) const
+	/**
+	 * Returns true if they don't point to
+	 * the same item.
+	 * 
+	 * @param other another iterator
+	 * @return true if they dont' point
+	 * 	to the same item
+	 */
+	FORCE_INLINE bool operator!=(const ArrayIteratorBase & other) const
 	{
 		return !(*this == other);
 	}
-
-	//////////////////////////////////////////////////
-	// ForwardIterator interface
-	//////////////////////////////////////////////////
 	
-	FORCE_INLINE ArrayIterator & operator++()
+	/**
+	 * Advances iterator to the next item and
+	 * returns a ref to the iterator.
+	 */
+	FORCE_INLINE ArrayIteratorBase & operator++()
 	{
-		++ptr;
+		++idx;
 		return *this;
 	}
 
-	FORCE_INLINE ArrayIterator operator++(int)
+	/**
+	 * Moves iterator to the next item and
+	 * returns a new iterator that points
+	 * to the current item instead.
+	 */
+	FORCE_INLINE ArrayIteratorBase operator++(int32)
 	{
-		return ArrayIterator{ptr++};
+		ArrayIteratorBase it{*this};
+
+		++idx;
+		return it;
 	}
 
-	//////////////////////////////////////////////////
-	// BidirectionalIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE ArrayIterator & operator--()
+	/**
+	 * Moves iterator to the previous item
+	 * and returns a ref to the iterator.
+	 */
+	FORCE_INLINE ArrayIteratorBase & operator--()
 	{
-		--ptr;
+		--idx;
 		return *this;
 	}
 
-	FORCE_INLINE ArrayIterator operator--(int)
+	/**
+	 * Moves iterator to the previous item
+	 * and returns a new iterator that
+	 * points to the current item instead.
+	 */
+	FORCE_INLINE ArrayIteratorBase operator--(int32)
 	{
-		return ArrayIterator{ptr--};
+		ArrayIteratorBase it{*this};
+
+		--idx;
+		return it;
 	}
 
-	//////////////////////////////////////////////////
-	// RandomAccessIterator interface
-	//////////////////////////////////////////////////
-	
-	// TODO
-	
-protected:
-	/// Array pointer
-	T * ptr;
+	/**
+	 * Increments iterator by that amount
+	 * and returns a ref to it.
+	 * 
+	 * @param n increment amount
+	 * @return ref to self
+	 */
+	FORCE_INLINE ArrayIteratorBase & operator+=(uint64 n)
+	{
+		idx += n;
+		return *this;
+	}
+
+	/**
+	 * Returns an iterator incremented by
+	 * that amount, without modifying this.
+	 * 
+	 * @param n increment amount
+	 * @return incremented iterator
+	 */
+	FORCE_INLINE ArrayIteratorBase operator+(uint64 n) const
+	{
+		ArrayIteratorBase it{*this};
+		return (it += n);
+	}
+
+	/**
+	 * Decrements iterator by that amount
+	 * and returns a ref to it.
+	 * 
+	 * @param n decrement amount
+	 * @return ref to self
+	 */
+	FORCE_INLINE ArrayIteratorBase operator-=(uint64 n)
+	{
+		idx -= n;
+		return *this;
+	}
+
+	/**
+	 * Returns an iterator decremented by
+	 * that amount, without modifying the
+	 * original iterator.
+	 * 
+	 * @param n decrement amount
+	 * @return decremented iterator
+	 */
+	FORCE_INLINE ArrayIteratorBase operator-(uint64 n) const
+	{
+		ArrayIteratorBase it{*this};
+		return (it -= n);
+	}
+
+	/**
+	 * Subscript operation, returns i-th
+	 * element realtive to this iterator.
+	 * 
+	 * @param i index relative to this
+	 * 	iterator
+	 * @return ref to i-th item
+	 */
+	FORCE_INLINE RefT operator[](uint64 i) const
+	{
+		return array[idx + i];
+	}
+
+	/**
+	 * Ordering operations.
+	 * @see https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+	 * 
+	 * Per spec, at least one of the
+	 * following comparison should be
+	 * true:
+
+	 * ```
+	 * a < b || a > b || a == b
+	 * ```
+	 * 
+	 * @param other another iterator
+	 * @return true if the comparison
+	 * 	stands
+	 * @{
+	 */
+	FORCE_INLINE bool operator<(const ArrayIteratorBase & other) const
+	{
+		// We don't care about array, otherwise
+		// we'd fail to comply to the specs
+		return &(**this) < &(*other);
+	}
+
+	FORCE_INLINE bool operator>(const ArrayIteratorBase & other) const
+	{
+		return &(**this) > &(*other);
+	}
+
+	FORCE_INLINE bool operator<=(const ArrayIteratorBase & other) const
+	{
+		return !(*this > other);
+	}
+
+	FORCE_INLINE bool operator>=(const ArrayIteratorBase & other) const
+	{
+		return !(*this < other);
+	}
+	/** @} */
+
+private:
+	/// Underlying array
+	ArrayT & array;
+
+	/// Current index
+	uint64 idx;
 };
 
-/**
- * 
- */
-template<typename T>
-struct ArrayConstIterator
-{
-	template<typename, typename> class Array;
+/// Array iterator types
+/// @{
+template<typename ArrayT>
+using ArrayConstIterator = ArrayIteratorBase<const ArrayT, ContiguousIterator<const typename ArrayT::ItemT>>;
 
-	//////////////////////////////////////////////////
-	// Iterator types
-	//////////////////////////////////////////////////
-	
-	using RefT = const T&;
-	using PtrT = const T*;
-
-	/**
-	 * Default constructor, removed
-	 */
-	ArrayConstIterator() = delete;
-
-	/**
-	 * Initialize pointer
-	 */
-	FORCE_INLINE ArrayConstIterator(const T * inPtr)
-		: ptr{inPtr}
-	{
-		//
-	}
-
-	/**
-	 * Cast non-const iterator to
-	 * const iterator
-	 */
-	FORCE_INLINE ArrayConstIterator(const ArrayIterator<T> & other)
-		: ptr{other.ptr}
-	{
-		//
-	}
-
-	//////////////////////////////////////////////////
-	// BaseIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE RefT operator*() const
-	{
-		return *ptr;
-	}
-
-	FORCE_INLINE PtrT operator->() const
-	{
-		return ptr;
-	}
-
-	FORCE_INLINE bool operator==(const ArrayConstIterator & other) const
-	{
-		return ptr == other.ptr;
-	}
-
-	FORCE_INLINE bool operator!=(const ArrayConstIterator & other) const
-	{
-		return !(*this == other);
-	}
-
-	//////////////////////////////////////////////////
-	// ForwardIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE ArrayConstIterator & operator++()
-	{
-		++ptr;
-		return *this;
-	}
-
-	FORCE_INLINE ArrayConstIterator operator++(int)
-	{
-		return ArrayConstIterator{ptr++};
-	}
-
-	//////////////////////////////////////////////////
-	// BidirectionalIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE ArrayConstIterator & operator--()
-	{
-		--ptr;
-		return *this;
-	}
-
-	FORCE_INLINE ArrayConstIterator operator--(int)
-	{
-		return ArrayConstIterator{ptr--};
-	}
-
-	//////////////////////////////////////////////////
-	// RandomAccessIterator interface
-	//////////////////////////////////////////////////
-	
-	// TODO
-	
-protected:
-	/// Array pointer
-	const T * ptr;
-};
+template<typename ArrayT>
+using ArrayIterator = ArrayIteratorBase<ArrayT, ContiguousIterator<typename ArrayT::ItemT>>;
+/// @}
 
 /**
  * An array is a collection of elements
  * of the same type T stored in a contiguos
  * memory block.
+ * 
+ * @param T type of the items of the array
  */
-template<typename T, typename MallocT = MallocAnsi>
-class Array
+template<typename T>
+class Array<T, void>
 {
 	template<typename, typename>	friend class Array;
-									friend String;
+	template<typename>				friend class StringBase;
 	
 public:
-	/// Iterator type
-	using Iterator = ArrayIterator<T>;
-	
-	/// Const iterator type
-	using ConstIterator = ArrayConstIterator<T>;
-
-protected:
-	/// Object allocator
-	MallocObject<T, MallocT> malloc;
-
-	/// Memory support
-	T * buffer;
-
-	/// Current max number of elements
-	uint64 capacity;
-
-	/// Number of elements
-	uint64 count;
+	using ArrayT = Array<T, void>;
+	using ItemT = T;
+	using ConstIterator = ArrayConstIterator<ArrayT>;
+	using Iterator = ArrayIterator<ArrayT>;
 
 protected:
 	/**
-	 * Destroy array, also deallocates
-	 * managed allocator
+	 * Destroys array, deallocates all
+	 * items.
 	 */
 	FORCE_INLINE void destroy()
 	{
@@ -250,8 +286,8 @@ protected:
 		{
 			// Destroy elements and deallocate buffer
 			Memory::destroyElements(buffer, buffer + count);
+
 			malloc.free(buffer);
-			
 			buffer = nullptr;
 		}
 
@@ -259,10 +295,10 @@ protected:
 	}
 
 	/**
-	 * Resize buffer if new capacity exceeds
-	 * current capacity
+	 * Resizes buffer if new capacity exceeds
+	 * current capacity.
 	 * 
-	 * @param [in] inCapacity required capacity
+	 * @param inCapacity required capacity
 	 * @return true if buffer was resized
 	 */
 	FORCE_INLINE bool resizeIfNecessary(uint64 inCapacity)
@@ -292,131 +328,75 @@ protected:
 
 public:
 	/**
-	 * Init constructor
-	 * 
-	 * @param inCapacity initial array capacity
-	 * @param inCount initial number of default elements
-	 * @param inAllocator allocator not owned by the array
-	 */
-	explicit Array(uint64 inCapacity, uint64 inCount = 0, MallocT * inAllocator = nullptr)
-		: malloc{inAllocator}
-		, buffer{nullptr}
-		, capacity{inCapacity}
-		, count{inCount}
-	{
-		// Create initial buffer
-		if (capacity > 0)
-			buffer = malloc.alloc(capacity);
-
-		// Default construct elements
-		if (count > 0)
-			Memory::constructDefaultElements(buffer, buffer + count);
-	}
-
-	/**
-	 * List constructor
-	 * 
-	 * @param a, b, c list items
-	 */
-	/* template<typename TT, typename ... TTT>
-	Array(TT && a, typename EnableIf<IsSameType<TT, T>::value, TT>::Type && b, TTT && ... c)
-		: Array{2 + sizeof ... (c), 2 + sizeof ... (c), nullptr}
-	{
-		// Insert elements
-		insertNoResize(0, forward<TT>(a), forward<TT>(b), forward<TTT>(c) ...);
-	} */
-
-	/**
-	 * Init constructor with malloc arguments
-	 * 
-	 * @param inCapacity initial array capacity
-	 * @param inCount initial number of default elements
-	 * @param inMalloc temporary object allocator
-	 */
-	template<typename ... MallocArgs>
-	Array(uint64 inCapacity, uint64 inCount, MallocObject<T, MallocT> && inMalloc)
-		: malloc{move(inMalloc)}
-		, buffer{nullptr}
-		, capacity{inCapacity}
-		, count{inCount}
-	{
-		// Create initial buffer
-		if (capacity > 0)
-			buffer = malloc.alloc(capacity);
-
-		// Default construct elements
-		if (count > 0)
-			Memory::constructDefaultElements(buffer, buffer + count);
-	}
-
-	/**
-	 * Tuple constructor, copies tuple values
-	 * in array. Use the conversion operator
-	 * if you don't want to specify an allocator.
-	 * 
-	 * @param tuple tuple object
-	 * @param inMalloc temporary objet allocator
-	 */
-	template<sizet n>
-	Array(const Tuple<T, n> & tuple, MallocObject<T, MallocT> && inMalloc)
-		: Array{n, n, move(inMalloc)}
-	{
-		// Copy construct elements
-		Memory::constructCopyElements(buffer, tuple.values, n);
-	}
-
-	/**
 	 * Default constructor
 	 */
 	FORCE_INLINE Array()
-		: Array{0, 0, nullptr}
+		: malloc{}
+		, buffer{nullptr}
+		, capacity{0}
+		, count{0}
 	{
 		//
+	}
+
+	/**
+	 * Initialize array capacity and count,
+	 * and default construct items.
+	 * 
+	 * @param inCapacity array max capacity
+	 */
+	FORCE_INLINE Array(uint64 inCapacity, uint64 inCount)
+		: malloc{}
+		, buffer{nullptr}
+		, capacity{inCapacity}
+		, count{inCount}
+	{
+		// Create buffer of capacity
+		buffer = malloc.alloc(inCapacity);
+		
+		if (count > 0)
+		{
+			// Default construct all items
+			Memory::constructDefaultElements(buffer, buffer + count);
+		}
+	}
+
+	/**
+	 * Initialize array capacity and count.
+	 */
+	FORCE_INLINE Array(uint64 inCapacity)
+		: Array{inCapacity, 0}
+	{
+		
 	}
 
 	/**
 	 * Buffer constructor
 	 * 
-	 * @param [in] src source buffer
-	 * @param [in] inCount elements count
-	 * @param [in] slack extra space
-	 * @param [in] inAllocator optional allocator
+	 * @param inBuffer source buffer
+	 * @param inCount elements count
+	 * @param slack extra space required
 	 */
-	FORCE_INLINE Array(const T * src, uint64 inCount, uint64 slack = 0, MallocT * inAllocator = nullptr)
-		: Array{inCount + slack, inCount, inAllocator}
+	FORCE_INLINE Array(const T * inBuffer, uint64 inCount, uint64 slack = 0)
+		: Array{inCount + slack, inCount}
 	{
 		CHECK(buffer != nullptr)
 
 		// Copy source buffer to destination
-		if (count) Memory::constructCopyElements(buffer, src, count);
+		if (inBuffer && count > 0) Memory::constructCopyElements(buffer, inBuffer, count);
 	}
 
 	/**
-	 * Copy constructor with same allocator
-	 * 
-	 * Performs a copy of all elements
-	 * @{
+	 * Copy constructor.
 	 */
 	Array(const Array & other)
-		: Array{other.buffer, other.count, 0, nullptr}
+		: Array{other.buffer, other.count, 0}
 	{
 		//
 	}
 
 	/**
-	 * Copy constructor with different allocator type
-	 * 
-	 * Performs a copy of all elements
-	 */
-	template<typename MallocU>
-	Array(const Array<T, MallocU> & other)
-		: Array{other.buffer, other.count, 0, nullptr}
-	{
-		//
-	}
-
-	/**
-	 * Move constructor
+	 * Move constructor.
 	 */
 	Array(Array && other)
 		: malloc{move(other.malloc)}
@@ -430,9 +410,8 @@ public:
 	}
 
 	/**
-	 * Array destructor, destroys elements,
-	 * deallocates buffer and destroys managed
-	 * allocator
+	 * Array destructor, destroys items and
+	 * deallocates buffer.
 	 */
 	FORCE_INLINE ~Array()
 	{
@@ -440,7 +419,7 @@ public:
 	}
 
 	/**
-	 * Copy assignment with same allocator
+	 * Copy assignment.
 	 */
 	Array & operator=(const Array & other)
 	{
@@ -467,35 +446,7 @@ public:
 	}
 
 	/**
-	 * Copy assignment with different allocator
-	 */
-	template<typename MallocU>
-	Array & operator=(const Array<T, MallocU> & other)
-	{
-		// Resize buffer
-		resizeIfNecessary(other.count);
-
-		if (other.count < count)
-		{
-			// Copy elements and destroy the extra elements
-			Memory::copyElements(buffer, other.buffer, other.count);
-			Memory::destroyElements(buffer + other.count, buffer + count);
-		}
-		else
-		{
-			// Copy elements and construct the extra elements
-			Memory::copyElements(buffer, other.buffer, count);
-			Memory::constructCopyElements(buffer + count, other.buffer + count, other.count - count);
-		}
-
-		// Set new count
-		count = other.count;
-		
-		return *this;
-	}
-
-	/**
-	 * Move assignment
+	 * Move assignment.
 	 */
 	Array & operator=(Array && other)
 	{
@@ -514,19 +465,20 @@ public:
 	}
 
 	/**
-	 * Returns number of elements
+	 * Returns number of elements-
 	 * @{
 	 */
 	FORCE_INLINE uint64 getCount() const
 	{
 		return count;
 	}
+
 	METHOD_ALIAS_CONST(getSize, getCount)
 	METHOD_ALIAS_CONST(getNum, getCount)
-	/// @}
+	/** @} */
 
 	/**
-	 * Returns true if array is empty
+	 * Returns true if array is empty.
 	 */
 	FORCE_INLINE bool isEmpty() const
 	{
@@ -534,7 +486,7 @@ public:
 	}
 
 	/**
-	 * Returns total data size (in Bytes)
+	 * Returns total data size (in Bytes).
 	 */
 	FORCE_INLINE sizet getBytes() const
 	{
@@ -542,7 +494,7 @@ public:
 	}
 
 	/**
-	 * Returns pointer to array data
+	 * Returns pointer to array data.
 	 * @{
 	 */
 	FORCE_INLINE T * operator*()
@@ -550,18 +502,21 @@ public:
 		return buffer;
 	}
 	METHOD_ALIAS(getData, operator*)
+	METHOD_ALIAS(getBuffer, operator*)
 
 	FORCE_INLINE const T * operator*() const
 	{
 		return buffer;
 	}
+
 	METHOD_ALIAS_CONST(getData, operator*)
-	/// @}
+	METHOD_ALIAS_CONST(getBuffer, operator*)
+	/** @} */
 
 	/**
-	 * Returns array element at idx-th position
+	 * Returns array item at idx-th position
 	 * 
-	 * @param [in] idx element position
+	 * @param idx item position
 	 * @return reference to element
 	 * @{
 	 */
@@ -569,12 +524,14 @@ public:
 	{
 		return buffer[idx];
 	}
+
 	METHOD_ALIAS(getAt, operator[])
 
 	FORCE_INLINE const T & operator[](uint64 idx) const
 	{
 		return buffer[idx];
 	}
+
 	METHOD_ALIAS_CONST(getAt, operator[])
 	/** @} */
 
@@ -611,7 +568,7 @@ public:
 	{
 		return Iterator{buffer};
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Returns a new iterator that points
@@ -627,20 +584,20 @@ public:
 	{
 		return Iterator{buffer + count};
 	}
-	/// @}
+	/** @} */
 
 protected:
 	/**
-	 * Insert element without resizing.
+	 * Insert item without resizing.
 	 * 
 	 * @param idx position in which to insert
-	 * @param t element to insert
-	 * @return ref to inserted element
+	 * @param item item to insert
+	 * @return ref to inserted item
 	 */
-	template<typename TT>
-	FORCE_INLINE T & insertNoResize(uint64 idx, TT && t)
+	template<typename ItemT>
+	FORCE_INLINE T & insertNoResize(uint64 idx, ItemT && item)
 	{
-		return *(new (buffer + idx) T{forward<TT>(t)});
+		return *(new (buffer + idx) T{forward<ItemT>(item)});
 	}
 
 	/**
@@ -648,26 +605,27 @@ protected:
 	 * resizing container.
 	 * 
 	 * @param idx position in which to insert
-	 * @param a,b,c elements to insert
+	 * 	current item
+	 * @param item,items items to insert
 	 */
-	template<typename TT, typename ... TTT>
-	FORCE_INLINE void insertNoResize(uint64 idx, TT && a, TT && b, TTT && ... c)
+	template<typename ItemT, typename ... ItemListT>
+	FORCE_INLINE void insertNoResize(uint64 idx, ItemT && item, ItemListT && ... items)
 	{
-		new (buffer + idx) T{forward<TT>(a)};
-		insertNoResize(idx + 1, forward<TT>(b), forward<TTT>(c) ...);
+		new (buffer + idx) T{forward<ItemT>(item)};
+		insertNoResize(idx + 1, forward<ItemListT>(items) ...);
 	}
 
 public:
 	/**
-	 * Insert element(s) at position
+	 * Insert item(s) at position.
 	 * 
 	 * @param idx array position
-	 * @param t,a,b,c element(s) to insert
+	 * @param item.items item(s) to insert
 	 * @return reference to inserted element
 	 * @{
 	 */
-	template<typename TT>
-	T & insertAt(uint64 idx, TT && t)
+	template<typename ItemT>
+	T & insertAt(uint64 idx, ItemT && item)
 	{
 		const uint64 j = idx + 1;
 
@@ -682,14 +640,14 @@ public:
 		else resizeIfNecessary(count = j);
 		
 		// Copy construct element
-		return insertNoResize(idx, forward<TT>(t));
+		return insertNoResize(idx, forward<ItemT>(item));
 	}
 
-	template<typename TT, typename ... TTT>
-	void insertAt(uint64 idx, TT && a, TTT && ... b)
+	template<typename ItemT, typename ... ItemListT>
+	void insertAt(uint64 idx, ItemT && item, ItemListT && ... items)
 	{
 		// Number of elements to insert
-		constexpr uint64 numArgs = 1 + sizeof ... (TTT);
+		constexpr uint64 numArgs = 1 + sizeof... (ItemListT);
 		const uint64 j = idx + numArgs;
 
 		if (idx < count)
@@ -703,26 +661,20 @@ public:
 		else resizeIfNecessary((count = j));
 		
 		// Copy construct elements
-		insertNoResize(idx, forward<TT>(a), forward<TTT>(b) ...);
+		insertNoResize(idx, forward<ItemT>(item), forward<ItemListT>(items) ...);
 	}
-
-	/* template<typename It>
-	void insertAt(uint64 idx, It begin, It end)
-	{
-		// For iterators
-	} */
-	/// @}
+	/** @} */
 
 	/**
-	 * Insert a new element at the beginning of
-	 * the array
+	 * Inserts one or more items at the
+	 * beginning of the array.
 	 * 
-	 * @param [in] t,a,b,c element(s) to insert
-	 * @return reference to element
+	 * @param items,items item(s) to insert
+	 * @return ref to inserted item
 	 * @{
 	 */
-	template<typename TT>
-	T & insertFirst(TT && t)
+	template<typename ItemT>
+	T & insertFirst(ItemT && item)
 	{
 		resizeIfNecessary(count + 1);
 
@@ -731,56 +683,57 @@ public:
 		++count;
 
 		// Copy construct element
-		return insertNoResize(0, forward<TT>(t));
+		return insertNoResize(0, forward<ItemT>(item));
 	}
 
-	template<typename TT, typename ... TTT>
-	void insertFirst(TT && a, TTT && ... b)
+	template<typename ItemT, typename ... ItemListT>
+	void insertFirst(ItemT && item, ItemListT && ... items)
 	{
-		constexpr uint64 numArgs = 1 + sizeof ... (b);
+		constexpr uint64 numArgs = 1 + sizeof... (items);
 
 		// Resize and move elements up
 		resizeIfNecessary(count + numArgs);
 		Memory::moveElements(buffer + numArgs, buffer, count);
 		count += numArgs;
 
-		insertNoResize(0, forward<TT>(a), forward<TTT>(b) ...);
+		insertNoResize(0, forward<ItemT>(item), forward<ItemListT>(items) ...);
 	}
 	/// @}
 
 	/**
-	 * Insert a new element at the end of the
-	 * array
+	 * Insert one or more items at the
+	 * end of the array
 	 * 
-	 * @param [in] inT element to insert
-	 * @return reference to element
+	 * @param item,items item(s) to insert
+	 * @return ref to inserted item
 	 * @{
 	 */
-	template<typename TT>
-	T & insertLast(TT && inT)
+	template<typename ItemT>
+	T & insertLast(ItemT && item)
 	{
 		resizeIfNecessary(count + 1);
-		return insertNoResize(count++, forward<TT>(inT));
+		return insertNoResize(count++, forward<ItemT>(item));
 	}
 
-	template<typename TT, typename ... TTT>
-	void insertLast(TT && a, TTT && ... b)
+	template<typename ItemT, typename ... ItemListT>
+	void insertLast(ItemT && item, ItemListT && ... items)
 	{
-		constexpr uint64 numArgs = 1 + sizeof ... (b);
+		constexpr uint64 numArgs = 1 + sizeof... (items);
 
 		// Resize and copy construct elements
 		resizeIfNecessary(count + numArgs);
-		insertNoResize(count, forward<TT>(a), forward<TTT>(b) ...);
+		insertNoResize(count, forward<ItemT>(item), forward<ItemListT>(items) ...);
 
 		count += numArgs;
 	}
+
 	METHOD_ALIAS(add, insertLast)
 	METHOD_ALIAS(push, insertLast)
-	/// @}
+	/** @} */
 
 	/**
-	 * Remove element at index (does not
-	 * check index overflow)
+	 * Removes items at index (does not
+	 * check index overflow).
 	 * 
 	 * @param idx element index
 	 * @param [len=1] if provided, number
@@ -800,10 +753,9 @@ public:
 			count -= len;
 		}
 	}
-	/// @}
 
 	/**
-	 * Remove first element
+	 * Removes first element.
 	 */
 	FORCE_INLINE void removeFirst()
 	{
@@ -811,7 +763,7 @@ public:
 	}
 
 	/**
-	 * Remove last element
+	 * Removes last element.
 	 */
 	void removeLast()
 	{
@@ -823,42 +775,40 @@ public:
 	}
 
 	/**
-	 * Copy element out and remove it
+	 * Copys item out and removes it.
 	 * 
-	 * @param [in] idx element idx
-	 * @param [out] outT out element
+	 * @param idx element idx
+	 * @param outItem item copied out
 	 */
-	FORCE_INLINE void popAt(uint64 idx, T & outT)
+	FORCE_INLINE void popAt(uint64 idx, T & outItem)
 	{
 		// Move out element
-		outT = move(buffer[idx]);
+		outItem = move(buffer[idx]);
 
 		// Remove it
 		removeAt(idx);
 	}
 
 	/**
-	 * Pop first element
+	 * Pop first element.
+	 * @see popAt
 	 */
-	FORCE_INLINE void popFirst(uint64 idx, T & outT)
+	FORCE_INLINE void popFirst(T & outItem)
 	{
-		popAt(0, outT);
+		popAt(0, outItem);
 	}
 
 	/**
-	 * Pop last element
+	 * Pop last element.
+	 * @see PopAt
 	 */
-	FORCE_INLINE void popLast(uint64 idx, T & outT)
+	FORCE_INLINE void popLast(T & outItem)
 	{
-		// Move out element
-		outT = move(buffer[idx]);
-
-		// Remove it
-		removeLast();
+		popAt(count - 1, outItem);
 	}
 
 	/**
-	 * Wipe out array content
+	 * Wipes out array content.
 	 * @{
 	 */
 	FORCE_INLINE void empty()
@@ -867,13 +817,14 @@ public:
 		Memory::destroyElements(buffer, buffer + count);
 		count = 0;
 	}
+
 	METHOD_ALIAS(wipe, empty)
 	METHOD_ALIAS(clear, empty)
-	/// @}
+	/** @} */
 
 	/**
-	 * Reset array
-	 * Destroy all elements and reset storage
+	 * Resets array.
+	 * Destroys all elements and resets storage.
 	 */
 	FORCE_INLINE void reset()
 	{
@@ -881,15 +832,41 @@ public:
 		empty();
 
 		// Deallocate storage
-		malloc.free(buffer);
-		buffer = nullptr;
-		capacity = 0;
+		if (buffer)
+		{
+			malloc.free(buffer);
+			buffer = nullptr;
+		}
+		
+		count = capacity = 0;
 	}
 
 	/**
-	 * Print array to string
-	 * 
-	 * @return formatted string
+	 * Prints array to string.
 	 */
 	String toString() const;
+
+protected:
+	/// Object allocator
+	MallocObject<T> malloc;
+
+	/// Memory support
+	T * buffer;
+
+	/// Current max number of elements
+	uint64 capacity;
+
+	/// Number of elements
+	uint64 count;
+};
+
+/**
+ * Generalization that handles allocator
+ * management.
+ */
+template<typename T, typename MallocT>
+class Array : public Array<T, void>
+{
+	using Base = Array<T, void>;
+	using Base::Base;
 };

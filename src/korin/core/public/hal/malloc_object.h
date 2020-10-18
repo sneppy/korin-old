@@ -20,71 +20,48 @@ template<typename, typename = void> class MallocObject;
  * @param MallocT allocator type, or void
  */
 template<typename T>
-class MallocObject<T, void> : public NonCopyable
+class MallocObject<T, void>
 {
 public:
 	/**
-	 * Remove default constructor
-	 */
-	MallocObject() = delete;
-
-	/**
 	 * Creates object allocator with given malloc.
+	 * If malloc is not provided, use global
+	 * allocator instead.
 	 * 
 	 * @param inMalloc allocator that will
 	 * 	be used to allocate objects
 	 */
-	explicit FORCE_INLINE MallocObject(MallocBase * inMalloc)
+	explicit FORCE_INLINE MallocObject(MallocBase * inMalloc = gMalloc)
 		: malloc{inMalloc}
-		, bHasOwnMalloc{inMalloc == nullptr}
 	{
 		CHECKF(!!inMalloc, "Provided allocator cannot be NULL")
 	}
 
 	/**
-	 * Move constructor. Move allocator and reset
-	 * own allocator flag.
+	 * Move constructor.
 	 */
 	FORCE_INLINE MallocObject(MallocObject && other)
 		: malloc{other.malloc}
-		, bHasOwnMalloc{other.bHasOwnMalloc}
 	{
 		other.malloc = nullptr;
-		other.bHasOwnMalloc = false;
 	}
 
 	/**
-	 * Move operator. If has own allocator,
-	 * delete it and move other allocator
-	 * instead.
+	 * Move operator.
 	 */
 	FORCE_INLINE MallocObject & operator=(MallocObject && other)
 	{
-		// If has managed allocator, delete it
-		if (bHasOwnMalloc) delete malloc;
-
 		malloc = other.malloc;
-		bHasOwnMalloc = other.bHasOwnMalloc;
-
 		other.malloc = nullptr;
-		other.bHasOwnMalloc = false;
 
 		return *this;
 	}
 
 	/**
-	 * Destructor, deallocates managed allocator
-	 * and sets pointer to NULL.
+	 * Destructor.
 	 */
 	FORCE_INLINE ~MallocObject()
 	{
-		if (bHasOwnMalloc)
-		{
-			// Delete managed allocator
-			delete malloc;
-			bHasOwnMalloc = false;
-		}
-
 		malloc = nullptr;
 	}
 	
@@ -130,9 +107,6 @@ protected:
 
 	/// Pointer to the used allocator
 	MallocBase * malloc;
-
-	/// Has own allocator, flag
-	ubyte bHasOwnMalloc : 1;
 };
 
 /**
@@ -140,7 +114,7 @@ protected:
  * @see MallocObject
  */
 template<typename T, typename MallocT>
-struct MallocObject : public MallocObject<T, void>
+struct MallocObject : public MallocObject<T, void>, public NonCopyable
 {
 	using Base = MallocObject<T, void>;
 

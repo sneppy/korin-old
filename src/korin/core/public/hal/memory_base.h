@@ -2,6 +2,9 @@
 
 #include "core_types.h"
 
+/// The global memory allocator
+extern class MallocBase * gMalloc;
+
 /**
  * Default alignments
  */

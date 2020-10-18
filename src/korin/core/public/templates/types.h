@@ -329,3 +329,23 @@ public:
 		>::Type
 	>::Type;
 };
+
+/**
+ * Base class for non copyable objects.
+ */
+struct NonCopyable
+{
+private:
+	NonCopyable(const NonCopyable&) = delete;
+	NonCopyable& operator=(const NonCopyable&) = delete;
+};
+
+/**
+ * Base class for non movable objects.
+ */
+struct NonMovable
+{
+private:
+	NonMovable(NonMovable&&) = delete;
+	NonMovable& operator=(NonMovable&&) = delete;
+};

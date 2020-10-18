@@ -59,14 +59,21 @@ struct GenericPlatformMemory
 	/**
 	 * Default constructs elements in range
 	 * 
-	 * @param begin, end array range
+	 * @param begin,end array range
+	 * @{
 	 */
 	template<typename T>
-	static FORCE_INLINE void constructDefaultElements(T * begin, T * end)
+	static FORCE_INLINE typename EnableIf<!IsTriviallyConstructible<T>::value>::Type constructDefaultElements(T * begin, T * end)
 	{
-		for (; begin != end; ++begin)
-			new (begin) T{};
+		for (; begin != end; ++begin) new (begin) T{};
 	}
+
+	template<typename T>
+	static FORCE_INLINE typename EnableIf<IsTriviallyConstructible<T>::value>::Type constructDefaultElements(T * begin, T * end)
+	{
+		//
+	}
+	/** @} */
 
 	/**
 	 * Copy elements from source to destination.
