@@ -8,11 +8,10 @@
 /**
  * 
  */
-class String
+template<typename CharT>
+class StringBase
 {
-protected:
-	/// String content
-	Array<ansichar, MallocAnsi> array;
+	using ArrayT = Array<CharT>;
 
 protected:
 	/**
@@ -20,61 +19,55 @@ protected:
 	 */
 	FORCE_INLINE void terminateString()
 	{
-		array[array.count] = '\0';
+		array[array.count - 1] = '\0';
 	}
 
 public:
 	/**
 	 * Default constructor, initializes an
-	 * empty string with length n
-	 * 
-	 * @param [in] n string length
+	 * empty string.
 	 */
-	FORCE_INLINE String()
-		: array{0, 0, nullptr}
+	FORCE_INLINE StringBase()
+		: array{}
 	{
 		//
 	}
 
 	/**
 	 * Initializes an empty string of capacity n
-	 * (excluding terminating character)
+	 * (excluding terminating character).
 	 * 
-	 * @param [in] n string capacity
+	 * @param n string capacity
 	 */
-	explicit FORCE_INLINE String(sizet n)
-		: array{n + 1, n, nullptr}
+	explicit FORCE_INLINE StringBase(sizet n)
+		: array{nullptr, n + 1}
 	{
 		terminateString();
 	}
 
 	/**
-	 * Buffer constructor
+	 * Buffer constructor.
 	 * 
-	 * @param [in] src stream of characters
-	 * @param [in] len source length (in Bytes)
+	 * @param src stream of characters
+	 * @param len source length (in Bytes)
 	 */
-	FORCE_INLINE String(const ansichar * src, sizet n)
-		: array{n + 1, n, nullptr}
+	FORCE_INLINE StringBase(const CharT * src, sizet n)
+		: StringBase{n}
 	{
 		// Copy source and terminate string
-		Memory::memcpy(array.buffer, src, n);
-		terminateString();
+		Memory::memcpy(*array, src, n);
+		array[n] = '\0';
 	}
 
 	/**
 	 * C string constructor
 	 * 
-	 * @param [in] src a null-terminated C string
+	 * @param src a null-terminated C string
 	 */
-	FORCE_INLINE String(const ansichar * src)
-		: array{PlatformStrings::getLength(src) + 1, 0, nullptr}
+	FORCE_INLINE StringBase(const CharT * src)
+		: StringBase{src, PlatformStrings::getLength(src)}
 	{
-		// Manually set count
-		array.count = array.capacity - 1;
-
-		// Copy source string (including null character)
-		Memory::memcpy(array.buffer, src, array.capacity);
+		//
 	}
 
 	/**
@@ -82,187 +75,167 @@ public:
 	 * We override it because otherwise string
 	 * would not be terminated
 	 */
-	FORCE_INLINE String(const String & other)
-		: array{other.array.buffer, other.array.count, 1, nullptr}
+	FORCE_INLINE StringBase(const StringBase & other)
+		: array{other.array.buffer, other.array.count}
 	{
-		terminateString();
+		//
 	}
 
 protected:
 	/**
 	 * Copy constructor with extra slack
 	 * 
-	 * @param [in] other source string
-	 * @param [in] slack extra slack to add
+	 * @param other source string
+	 * @param slack extra slack to add
 	 */
-	FORCE_INLINE String(const String & other, sizet slack)
-		: array{other.array.buffer, other.array.count, slack + 1, nullptr}
-	{
-		terminateString();
-	}
-
-public:
-	/**
-	 * Move constructor, no copy involved
-	 */
-	FORCE_INLINE String(String && other)
-		: array{move(other.array)}
+	FORCE_INLINE StringBase(const StringBase & other, sizet slack)
+		: array{other.array.buffer, other.array.count, slack}
 	{
 		//
 	}
 
+public:
 	/**
-	 * Copy assignment
-	 */
-	FORCE_INLINE String & operator=(const String & other)
-	{
-		// Copy array
-		array.resizeIfNecessary(other.array.count + 1);
-		array.count = other.array.count;
-		PlatformMemory::memcpy(array.buffer, other.array.buffer, array.count + 1);
-
-		return *this;
-	}
-
-	/**
-	 * Move assignment
-	 */
-	FORCE_INLINE String & operator=(String && other)
-	{
-		// Move array
-		array = move(other.array);
-		return *this;
-	}
-
-	/**
-	 * Returns string length
+	 * Returns string length.
 	 * @{
 	 */
 	FORCE_INLINE sizet getLength() const
 	{
-		return array.count;
+		return array.count - 1;
 	}
+
 	METHOD_ALIAS_CONST(getSize, getLength)
 	METHOD_ALIAS_CONST(getLen, getLength)
-	/// @}
+	/** @} */
 
 	/**
-	 * Returns string raw content
+	 * Returns string raw content.
 	 * @{
 	 */
-	FORCE_INLINE ansichar * operator*()
+	FORCE_INLINE CharT * operator*()
 	{
-		return array.buffer;
+		return *array;
 	}
-	METHOD_ALIAS(getData, operator*);
 
-	FORCE_INLINE const ansichar * operator*() const
+	METHOD_ALIAS(getData, operator*)
+	METHOD_ALIAS(getBuffer, operator*)
+
+	FORCE_INLINE const CharT * operator*() const
 	{
-		return array.buffer;
+		return *array;
 	}
-	METHOD_ALIAS_CONST(getData, operator*);
-	/// @}
+
+	METHOD_ALIAS_CONST(getData, operator*)
+	METHOD_ALIAS_CONST(getBuffer, operator*)
+	/** @} */
 
 	/**
 	 * Returns reference to underlying array
-	 * resource
+	 * resource.
 	 * @{
 	 */
-	FORCE_INLINE Array<ansichar> & getArray()
+	FORCE_INLINE ArrayT & getArray()
 	{
 		return array;
 	}
 
-	FORCE_INLINE const Array<ansichar> & getArray() const
+	FORCE_INLINE const ArrayT & getArray() const
 	{
 		return array;
 	}
-	/// @}
+	/** @} */
 
 	/**
-	 * Provides access to string characters
+	 * Provides access to string characters.
 	 * 
-	 * @param [in] idx character index
-	 * @return lvalue reference
+	 * @param idx character index
+	 * @return ref to idx-th character
 	 * @{
 	 */
-	FORCE_INLINE ansichar & operator[](uint64 idx)
+	FORCE_INLINE CharT & operator[](uint64 idx)
 	{
 		return array[idx];
 	}
-	METHOD_ALIAS(getAt, operator[]);
 
-	FORCE_INLINE const ansichar & operator[](uint64 idx) const
+	METHOD_ALIAS(getAt, operator[])
+
+	FORCE_INLINE const CharT & operator[](uint64 idx) const
 	{
 		return array[idx];
 	}
-	METHOD_ALIAS_CONST(getAt, operator[]);
-	/// @}
+
+	METHOD_ALIAS_CONST(getAt, operator[])
+	/** @} */
 
 	/**
-	 * Compare string with another string, case sensitive
+	 * Compare string with another string,
+	 * case sensitive
 	 * 
-	 * @param [in] other string operand or c string
-	 * @return 0 if strings are equal, the difference of the first non-equal characters otherwise
+	 * @param other another string-like object
+	 * @return 0 if strings are equal, the
+	 * 	difference of the first non-equal
+	 * characters otherwise
 	 */
-	FORCE_INLINE int32 cmp(const String & other) const
+	FORCE_INLINE int32 cmp(const StringBase & other) const
 	{
 		return PlatformStrings::cmp(array.buffer, other.array.buffer);
 	}
 
-	FORCE_INLINE int32 cmp(const char * other) const
+	FORCE_INLINE int32 cmp(const CharT * other) const
 	{
 		return PlatformStrings::cmp(array.buffer, other);
 	}
-	/// @}
+	/** @} */
 
 	/**
-	 * Compare string with another string, case insensitive
+	 * Compare string with another string,
+	 * case insensitive
 	 * 
-	 * @param [in] other string operand or c string
-	 * @return 0 if strings are equal, the difference of the first non-equal characters otherwise
+	 * @param other another string-like object
+	 * @return 0 if strings are equal, the
+	 * 	difference of the first non-equal characters otherwise
 	 */
-	FORCE_INLINE int32 icmp(const String & other) const
+	FORCE_INLINE int32 icmp(const StringBase & other) const
 	{
 		return PlatformStrings::icmp(array.buffer, other.array.buffer);
 	}
 
-	FORCE_INLINE int32 icmp(const char * other) const
+	FORCE_INLINE int32 icmp(const CharT * other) const
 	{
 		return PlatformStrings::icmp(array.buffer, other);
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Returns true[false] if two
 	 * strings are equal, case
-	 * sensitive
+	 * sensitive.
 	 * 
-	 * @param [in] other other string
+	 * @param other other string
 	 * @return true[false] if strings
 	 * 	are equal
 	 * @{
 	 */
-	FORCE_INLINE bool operator==(const String & other) const
+	FORCE_INLINE bool operator==(const StringBase & other) const
 	{
 		return cmp(other) == 0;
 	}
 
-	FORCE_INLINE bool operator==(const char * other) const
+	FORCE_INLINE bool operator==(const CharT * other) const
 	{
 		return cmp(other) == 0;
 	}
 
-	FORCE_INLINE bool operator!=(const String & other) const
+	FORCE_INLINE bool operator!=(const StringBase & other) const
 	{
 		return cmp(other) != 0;
 	}
 
-	FORCE_INLINE bool operator!=(const char * other) const
+	FORCE_INLINE bool operator!=(const CharT * other) const
 	{
 		return cmp(other) != 0;
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Return true if string is
@@ -273,302 +246,286 @@ public:
 	 * @return true[false]
 	 * @{
 	 */
-	FORCE_INLINE bool operator<(const String & other) const
+	template<typename StringT>
+	FORCE_INLINE bool operator<(StringT && other) const
 	{
 		return cmp(other) < 0;
 	}
 
-	FORCE_INLINE bool operator<(const char * other) const
-	{
-		return cmp(other) < 0;
-	}
-
-	FORCE_INLINE bool operator>(const String & other) const
+	template<typename StringT>
+	FORCE_INLINE bool operator>(StringT && other) const
 	{
 		return cmp(other) > 0;
 	}
 
-	FORCE_INLINE bool operator>(const char * other) const
-	{
-		return cmp(other) > 0;
-	}
-
-	FORCE_INLINE bool operator<=(const String & other) const
+	template<typename StringT>
+	FORCE_INLINE bool operator<=(StringT && other) const
 	{
 		return cmp(other) <= 0;
 	}
 
-	FORCE_INLINE bool operator<=(const char * other) const
-	{
-		return cmp(other) <= 0;
-	}
-
-	FORCE_INLINE bool operator>=(const String & other) const
+	template<typename StringT>
+	FORCE_INLINE bool operator>=(StringT && other) const
 	{
 		return cmp(other) >= 0;
 	}
+	/** @} */
 
-	FORCE_INLINE bool operator>=(const char * other) const
-	{
-		return cmp(other) >= 0;
-	}
-	/// @}
-
+private:
 	/**
-	 * Append formatted text to string
+	 * Append a string at the end of this
+	 * string.
 	 * 
-	 * @param [in] format format string
-	 * @param [in] args format arguments
-	 * @return reference to self
+	 * @param src appended string
+	 * @param len string length
 	 */
-	template<typename... Args>
-	String & appendFormat(const char * format, Args &&... args)
+	StringBase & appendString(const CharT * src, sizet len)
 	{
-		// We have an overhead due to the fact that we
-		// don't know the size of the formatted string
-		// a priori
-		constexpr size_t maxlen = 1024;
-		char buff[maxlen] = {};
-
-		// Print in buffer
-		int32 len = snprintf(buff, maxlen, format, forward<Args>(args)...);
-
-		// Resize buffer and copy content
-		array.resizeIfNecessary(array.count + len + 1);
-		PlatformMemory::memcpy(array.buffer + array.count, buff, len + 1);
-		array.count += len;
+		const sizet currLen = getLength();
+		
+		// Resize buffer and copy string content
+		array(currLen + len) = '\0';
+		Memory::memcpy(*array + currLen, src, len);
 
 		return *this;
 	}
 
 	/**
-	 * Generic object formatter, expects toString() method
-	 * * Actually, I haven't decided yet. I don' like toString()
-	 * * reminds me of fucking Java
+	 * Append formatted text to string
 	 * 
-	 * @param [in] arg format argument
+	 * @param format format string
+	 * @param args format arguments
+	 * @return ref to self
+	 */
+	template<typename... Args>
+	StringBase & appendFormat(const CharT * format, Args &&... args)
+	{
+		// We have an overhead due to the fact that we
+		// don't know the size of the formatted string
+		// a priori
+		constexpr size_t maxlen = 1024;
+		CharT buff[maxlen] = {};
+
+		// Print in buffer and append
+		int32 len = snprintf(buff, maxlen, format, forward<Args>(args)...);
+		return appendString(buff, len);
+	}
+	
+public:
+	/**
+	 * Generic object formatter, uses
+	 * toString() method.
+	 * 
+	 * @param arg format argument
 	 * @return reference to self
 	 */
-	template<typename T>
-	FORCE_INLINE String & operator+=(const T & t)
+	template<typename ArgT>
+	FORCE_INLINE StringBase & operator+=(const ArgT & arg)
 	{
 		// Replace with formatted string
-		return operator+=(move(t.toString()));
+		return (*this += move(arg.toString()));
 	}
 
 	/**
-	 * Append a single character to this string
+	 * Append a single character to this
+	 * string.
 	 * 
-	 * @param [in] c character to append
+	 * @param c character to append
 	 * @return self
 	 */
-	String & operator+=(ansichar c)
+	StringBase & operator+=(CharT c)
 	{
-		// Resize and write character in buffer
-		array.resizeIfNecessary(array.count + 2);
-		array.buffer[array.count] = c;
-		array.count += 1;
-		terminateString();
+		array.add('\0');
+		array[getLength()] = c;
 
 		return *this;
 	}
 
 	/**
 	 * Append a c string at the end of this
-	 * string
+	 * string.
 	 * 
-	 * @param [in] string c string to append
+	 * @param cStr c string to append
 	 * @return self
 	 */
-	String & operator+=(const ansichar * cstr)
+	StringBase & operator+=(const CharT * cStr)
 	{
-		const sizet len = PlatformStrings::getLength(cstr);
-		
-		// Resize buffer and copy string content
-		array.resizeIfNecessary(array.count + len + 1);
-		Memory::memcpy(array.buffer + array.count, cstr, len + 1);
-		array.count += len;
-
-		return *this;
+		return appendString(cStr, PlatformStrings::getLength(cStr));
 	}
 
 	/**
 	 * Append another string at the end of
-	 * this string
+	 * this string.
 	 * 
-	 * @param [in] other string to append
+	 * @param other another string to append
 	 * @return reference to self
 	 */
-	String & operator+=(const String & other)
+	StringBase & operator+=(const StringBase & other)
 	{
-		// Resize buffer and copy string content
-		array.resizeIfNecessary(array.count + other.array.count + 1);
-		Memory::memcpy(array.buffer + array.count, other.array.buffer, other.array.count + 1);
-		array.count += other.array.count;
-
-		return *this;
+		return appendString(*(other.array), other.getLength());
 	}
 
 	/**
-	 * Append number as string
+	 * Append number as string.
 	 * 
-	 * @param [in] num number to append
+	 * @param num number to append
 	 * @return reference to self
 	 * @{
 	 */
-	FORCE_INLINE String & operator+=(int32 num)
+	FORCE_INLINE StringBase & operator+=(int32 num)
 	{
 		return appendFormat("%d", num);
 	}
 
-	FORCE_INLINE String & operator+=(int64 num)
+	FORCE_INLINE StringBase & operator+=(int64 num)
 	{
 		return appendFormat("%lld", num);
 	}
 
-	FORCE_INLINE String & operator+=(uint32 num)
+	FORCE_INLINE StringBase & operator+=(uint32 num)
 	{
 		return appendFormat("%u", num);
 	}
 
-	FORCE_INLINE String & operator+=(uint64 num)
+	FORCE_INLINE StringBase & operator+=(uint64 num)
 	{
 		return appendFormat("%llu", num);
 	}
 
-	FORCE_INLINE String & operator+=(float32 num)
+	FORCE_INLINE StringBase & operator+=(float32 num)
 	{
 		return appendFormat("%f", num);
 	}
 
-	FORCE_INLINE String & operator+=(float64 num)
+	FORCE_INLINE StringBase & operator+=(float64 num)
 	{
 		return appendFormat("%f", num);
 	}
-	/// @}
+	/** @} */
 
 	/**
-	 * Makes a new copy of the string and appends content to it
+	 * Makes a new copy of the string and
+	 * appends content to it.
 	 * 
-	 * @param [in] arg content to append
+	 * @param arg content to append
 	 * @return new string
 	 */
 	template<typename Arg>
-	FORCE_INLINE String operator+(const Arg & arg) const
+	FORCE_INLINE StringBase operator+(const Arg & arg) const
 	{
-		return String{*this}.operator+=(arg);
+		return (StringBase{*this} += (arg));
+	}
+
+private:
+	/**
+	 * Replaces content with another string.
+	 * 
+	 * @param src replacement string buffer
+	 * @param len string length
+	 * @return ref to self
+	 */
+	StringBase & printString(const CharT * src, sizet len)
+	{
+		array(len) = '\0';
+		Memory::memcpy(*array, src, len);
 	}
 
 	/**
-	 * Print formatted text into string
+	 * Print formatted text into string.
 	 * 
-	 * @param [in] format format string
-	 * @param [in] args format arguments
+	 * @param format format string
+	 * @param args format arguments
 	 * @return reference to self
 	 */
 	template<typename... Args>
-	String & printFormat(const char * format, Args &&... args)
+	StringBase & printFormat(const char * format, Args &&... args)
 	{
 		// We have an overhead due to the fact that we
 		// don't know the size of the formatted string
 		// a priori
 		constexpr sizet maxlen = 1024;
-		char buff[maxlen] = {};
+		CharT buff[maxlen] = {};
 
 		// Print in buffer
-		array.count = snprintf(buff, maxlen, format, forward<Args>(args)...);
-		
-		// Resize buffer and copy content
-		array.resizeIfNecessary(array.count + 1);
-		PlatformMemory::memcpy(array.buffer, buff, (sizet)(array.count + 1));
-
-		return *this;
+		const sizet len = snprintf(buff, maxlen, format, forward<Args>(args)...);
+		return printString(buff, len);
 	}
 
+public:
 	/**
-	 * Generic object formatter, expects toString() method
-	 * * Actually, I haven't decided yet. I don' like toString()
-	 * * reminds me of fucking Java
+	 * Generic object formatter, expects
+	 * toString() method
 	 * 
-	 * @param [in] arg format argument
+	 * @param arg format argument
 	 * @return reference to self
 	 */
 	template<typename T>
-	FORCE_INLINE String & operator<<=(const T & t)
+	FORCE_INLINE StringBase & operator<<=(const T & t)
 	{
 		// Replace with formatted string
-		return operator=(move(t.toString()));
+		return (*this = move(t.toString()));
 	}
 	
 	/**
-	 * Read content from file and append to string
+	 * Reads content from file and
+	 * appends to string.
 	 * 
-	 * @param [in] fp source file pointer
+	 * @param fp source file pointer
 	 * @return reference to self
 	 */
-	String & operator<<=(FILE * fp)
+	StringBase & operator<<=(FILE * fp)
 	{
+		// TODO
 		return *this;
 	}
 
 	/**
-	 * Print number as string
+	 * Print number as string.
 	 * 
-	 * @param [in] num number to append
+	 * @param num number to append
 	 * @return reference to self
 	 * @{
 	 */
-	FORCE_INLINE String & operator<<=(int32 num)
+	FORCE_INLINE StringBase & operator<<=(int32 num)
 	{
 		return printFormat("%d", num);
 	}
 
-	FORCE_INLINE String & operator<<=(int64 num)
+	FORCE_INLINE StringBase & operator<<=(int64 num)
 	{
 		return printFormat("%lld", num);
 	}
 
-	FORCE_INLINE String & operator<<=(uint32 num)
+	FORCE_INLINE StringBase & operator<<=(uint32 num)
 	{
 		return printFormat("%u", num);
 	}
 
-	FORCE_INLINE String & operator<<=(uint64 num)
+	FORCE_INLINE StringBase & operator<<=(uint64 num)
 	{
 		return printFormat("%llu", num);
 	}
 
-	FORCE_INLINE String & operator<<=(float32 num)
+	FORCE_INLINE StringBase & operator<<=(float32 num)
 	{
 		return printFormat("%f", num);
 	}
 
-	FORCE_INLINE String & operator<<=(float64 num)
+	FORCE_INLINE StringBase & operator<<=(float64 num)
 	{
 		return printFormat("%f", num);
 	}
-	/// @}
+	/** @} */
 
 	/**
-	 * Makes a new copy of the string with the new content
+	 * Static constructor, returns a
+	 * formatted string.
 	 * 
-	 * @param [in] arg argument to format
-	 * @return new string
-	 */
-	template<typename Arg>
-	FORCE_INLINE String operator<<(const Arg & arg) const
-	{
-		return String{}.operator<<=(arg);
-	}
-
-	/**
-	 * Static constructor, returns a formatted string
-	 * 
-	 * @param [in] format format string
-	 * @param [in] args format arguments
+	 * @param format format string
+	 * @param args format arguments
 	 */
 	template<typename... Args>
-	static FORCE_INLINE String format(const char * format, Args &&... args)
+	static FORCE_INLINE StringBase format(const char * format, Args &&... args)
 	{
 		// We don't know string length a priori
 		constexpr sizet maxlen = 1024;
@@ -576,64 +533,76 @@ public:
 
 		// Print and return new string
 		int32 len = snprintf(buff, maxlen, format, forward<Args>(args)...);
-		return String{buff, (sizet)len};
+		return StringBase{buff, (sizet)len};
 	}
 
 	/**
-	 * Returns a substring of the string
+	 * Returns a substring of the string.
 	 * 
-	 * @param [in] len substring length
-	 * @param [in] pos initial position
+	 * @param len substring length
+	 * @param pos initial position
 	 * @return new string
 	 */
-	String substr(sizet len, sizet pos = 0) const
+	StringBase substr(sizet len, sizet pos = 0) const
 	{
-		return String{array.buffer + pos, len};
+		return StringBase{array.buffer + pos, len};
+	}
+	
+private:
+	/**
+	 * Private implementation of splice algorithm.
+	 * @see splice
+	 */
+	StringBase & splice(sizet subPos, sizet subLen, const CharT * replSrc, sizet replLen)
+	{
+		if (replLen <= subLen)
+		{
+			// Since replacement string is smaller
+			// then replaced substring, we don't
+			// need to grow in size
+			array.removeAt(subPos, subLen - replLen);
+
+			if (replLen > 0)
+			{
+				// Copy replacement string
+				Memory::memcpy(*array + subPos, replSrc, replLen);
+			}
+		}
+		else
+		{
+			const sizet len = getLength();
+
+			// Replacement string is longer, buffer
+			// will be resized
+			array(len + (replLen - subLen)) = '\0';
+			Memory::memmov(*array + subPos + replLen, *array + subPos + subLen, len - (subPos + subLen));
+			Memory::memcpy(*array + subPos, replSrc, replLen);
+		}
+
+		return *this;
 	}
 
+public:
 	/**
-	 * Replaces substr(len, pos) with inserted string.
+	 * Replaces substr(len, pos) with inserted
+	 * string.
 	 * 
 	 * @param pos position of the substring
 	 * @param len length of the substring
 	 * @param [inserted=""] replacement string
 	 * @return ref to self
+	 * @{
 	 */
-	String & splice(sizet pos, sizet len, const String & inserted = "")
+	StringBase & splice(sizet pos, sizet len, const StringBase & inserted = "")
 	{
-		// Get insertion size
-		const sizet insertionLen = inserted.getLength();
-
-		if (insertionLen <= len)
-		{
-			// We have to remove a bunch of characters anyway
-			// First remove unused characters
-			array.removeAt(pos, len - insertionLen);
-
-			if (inserted.getLength())
-			{
-				// Copy inserted string in place
-				PlatformMemory::memcpy(*array + pos, inserted.getData(), insertionLen);
-			}
-		}
-		else
-		{
-			// We only have to add characters
-			// First, replace array
-			array.resizeIfNecessary(array.count += (insertionLen - len));
-
-			// Move to accomodate string
-			PlatformMemory::memmov(array.buffer + pos + insertionLen, array.buffer + pos + len, array.count - (len + pos));
-
-			// Copy inserted string in place
-			PlatformMemory::memcpy(*array + pos, inserted.getData(), insertionLen);
-		}
-
-		// Re-terminate string
-		terminateString();
-
-		return *this;
+		return splice(pos, len, *inserted, inserted.getLength());
 	}
+
+	StringBase & splice(sizet pos, sizet len, const CharT * cStr = "")
+	{
+		return splice(pos, len, cStr, PlatformStrings::getLength(cStr));
+	}
+	/** @} */
 
 	/**
 	 * Find index of first occurence in string.
@@ -660,13 +629,13 @@ public:
 		for (sizet idx = startPos, lastIdx = getLength() - patternLen; idx <= lastIdx; ++idx)
 		{
 			; // TODO: Maybe have some nice pattern-matching solution
-			if (PlatformMemory::memcmp(&array[idx], pattern, patternLen) == 0) return idx;
+			if (Memory::memcmp(&array[idx], pattern, patternLen) == 0) return idx;
 		}
 
 		return -1;
 	}
 
-	FORCE_INLINE int64 findIndex(const String & pattern, sizet startPos = 0) const
+	FORCE_INLINE int64 findIndex(const StringBase & pattern, sizet startPos = 0) const
 	{
 		return findIndex(*pattern, startPos, pattern.getLength());
 	}
@@ -681,7 +650,7 @@ public:
 		// Pattern not found, return -1
 		return -1;
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Utility function that return all
@@ -713,7 +682,7 @@ public:
 	 * 
 	 * @param pattern 
 	 */
-	String & replaceAll(const String & pattern, const String & replacement)
+	StringBase & replaceAll(const StringBase & pattern, const StringBase & replacement)
 	{
 		sizet patternLen = pattern.getLength();
 		sizet replacementLen = replacement.getLength();
@@ -734,9 +703,9 @@ public:
 	/**
 	 * Returns a lowercase copy of the string.
 	 */
-	String toLower() const
+	StringBase toLower() const
 	{
-		String lower{*this};
+		StringBase lower{*this};
 
 		// Transform each character
 		for (sizet idx = 0, len = getLength(); idx < len; ++idx)
@@ -751,9 +720,9 @@ public:
 	/**
 	 * Returns an uppercase copy of the string.
 	 */
-	String toUpper() const
+	StringBase toUpper() const
 	{
-		String upper{*this};
+		StringBase upper{*this};
 
 		// Transform each character
 		for (sizet idx = 0, len = getLength(); idx < len; ++idx)
@@ -764,14 +733,18 @@ public:
 
 		return upper;
 	}
+
+protected:
+	/// Underlying array object
+	ArrayT array;
 };
 
 /**
  * Special case, because we could not define
- * this function before defining String class
+ * this function before defining StringBase class
  */
-template<typename T, typename MallocT>
-String Array<T, MallocT>::toString() const
+template<typename T>
+String Array<T, void>::toString() const
 {
 	String out{"["};
 	uint64 i; for (i = 0; i < count - 1; ++i)
