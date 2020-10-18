@@ -38,6 +38,7 @@ TEST(templates, types)
 	// Remove reference
 	ASSERT_TRUE((IsSameType<short, typename RemoveReference<short&>::Type>::value));
 	ASSERT_FALSE((IsSameType<short, typename RemoveReference<short&&>::Type>::value));
+	//? It is pretty match written like this, so what's the correct behaviour?
 
 	// Remove const qualifier
 	ASSERT_TRUE((IsSameType<int, typename RemoveConst<const int>::Type>::value));

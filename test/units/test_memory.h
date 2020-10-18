@@ -148,7 +148,7 @@ TEST(memory, malloc_object)
 	} * foo;
 
 	MallocAnsi * innerMalloc = new MallocAnsi;
-	MallocObject<Foo, MallocAnsi> * malloc = new MallocObject<Foo, MallocAnsi>(innerMalloc);
+	MallocObject<Foo> * malloc = new MallocObject<Foo>{innerMalloc};
 
 	// Do some allocations
 	foo = malloc->alloc(1);

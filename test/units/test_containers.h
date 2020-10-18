@@ -16,8 +16,8 @@
 
 TEST(containers, array)
 {
-	Array<uint64, MallocAnsi> a(0, 0, nullptr);
-	Array<uint64, MallocAnsi> b(32, 32, nullptr);
+	Array<uint64> a;
+	Array<uint64> b{32, 32};
 	
 	ASSERT_EQ(a.getCount(), 0);
 	ASSERT_EQ(b.getCount(), 32);
@@ -32,7 +32,7 @@ TEST(containers, array)
 
 	a.add(t);
 
-	Array<uint64, MallocAnsi> c(a);
+	Array<uint64> c{a};
 
 	ASSERT_EQ(c[0], a[0]);
 	ASSERT_EQ(c[1], a[1]);
@@ -40,8 +40,8 @@ TEST(containers, array)
 
 	Array<Array<Array<uint64>>> d;
 
-	d.add(Array<Array<uint64>>(16, 8, nullptr));
-	d.add(Array<Array<uint64>>(8, 8, nullptr));
+	d.add(Array<Array<uint64>>(16, 8));
+	d.add(Array<Array<uint64>>(8, 8));
 
 	ASSERT_EQ(d.getCount(), 2);
 	ASSERT_EQ(d[0].getCount(), 8);
@@ -189,27 +189,19 @@ TEST(containers, string)
 	ASSERT_TRUE(a != "snep");
 	
 	String c, d, e;
-	
-	a <<= 3u;
-	b.printFormat("%.2f", 3.14f);
+	a = "C++";
+	b = "best";
+	c = "programming language";
+	d = "the world";
 
-	ASSERT_STREQ(*a, "3");
-	ASSERT_STREQ(*b, "3.14");
+	e = a + " is the " + b + " " + c + " in " + d;
 
-	c = a << 4u;
-	d = b << 4.5f;
-
-	ASSERT_STREQ(*c, "4");
-	ASSERT_STREQ(*d, "4.500000");
-
-	e = a + ", " + b + ", " + c + ", " + d;
-
-	ASSERT_STREQ(*e, "3, 3.14, 4, 4.500000");
+	ASSERT_STREQ(*e, "C++ is the best programming language in the world");
 
 	e += ", ";
 	e += 12;
 
-	ASSERT_STREQ(*e, "3, 3.14, 4, 4.500000, 12");
+	ASSERT_STREQ(*e, "C++ is the best programming language in the world, 12");
 
 	a = "Sneppy hates python";
 
