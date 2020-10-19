@@ -4,11 +4,12 @@
 #include "misc/utility.h"
 #include "misc/assert.h"
 #include "templates/iterator.h"
+#include "templates/utility.h"
+#include "templates/types.h"
 #include "hal/platform_memory.h"
 #include "hal/platform_math.h"
 #include "hal/malloc_ansi.h"
 #include "hal/malloc_object.h"
-#include "templates/utility.h"
 #include "./containers_types.h"
 
 /**
@@ -34,7 +35,7 @@ struct ArrayIteratorBase : public IteratorTraitsT
 	 * @param inArray ref to array
 	 * @param [inIdx = 0] start index
 	 */
-	FORCE_INLINE ArrayIteratorBase(ArrayT & inArray, uint64 inIdx = 0)
+	FORCE_INLINE ArrayIteratorBase(ArrayT & inArray, int64 inIdx = 0)
 		: array{inArray}
 		, idx{inIdx}
 	{
@@ -244,7 +245,7 @@ private:
 	ArrayT & array;
 
 	/// Current index
-	uint64 idx;
+	int64 idx;
 };
 
 /// Array iterator types
@@ -274,6 +275,7 @@ public:
 	using ItemT = T;
 	using ConstIterator = ArrayConstIterator<ArrayT>;
 	using Iterator = ArrayIterator<ArrayT>;
+	template<uint64 count> using StaticArrayT = StaticArray<T, count>;
 
 protected:
 	/**
@@ -340,12 +342,28 @@ public:
 	}
 
 	/**
+	 * Default constructor with custom
+	 * allocator.
+	 * 
+	 * @param inMalloc pointer to external
+	 * 	allocator
+	 */
+	FORCE_INLINE explicit Array(MallocBase * inMalloc)
+		: malloc{inMalloc}
+		, buffer{nullptr}
+		, capacity{0}
+		, count{0}
+	{
+		//
+	}
+
+	/**
 	 * Initialize array capacity and count,
 	 * and default construct items.
 	 * 
 	 * @param inCapacity array max capacity
 	 */
-	FORCE_INLINE Array(uint64 inCapacity, uint64 inCount)
+	FORCE_INLINE Array(uint64 inCapacity, uint64 inCount = 0)
 		: malloc{}
 		, buffer{nullptr}
 		, capacity{inCapacity}
@@ -362,15 +380,6 @@ public:
 	}
 
 	/**
-	 * Initialize array capacity and count.
-	 */
-	FORCE_INLINE Array(uint64 inCapacity)
-		: Array{inCapacity, 0}
-	{
-		
-	}
-
-	/**
 	 * Buffer constructor
 	 * 
 	 * @param inBuffer source buffer
@@ -384,6 +393,17 @@ public:
 
 		// Copy source buffer to destination
 		if (inBuffer && count > 0) Memory::constructCopyElements(buffer, inBuffer, count);
+	}
+
+	/**
+	 * Construct a dynamic array from
+	 * a static array.
+	 */
+	template<uint64 inCount>
+	FORCE_INLINE Array(const StaticArrayT<inCount> & inArray)
+		: Array{*inArray, inCount}
+	{
+		//
 	}
 
 	/**
@@ -863,10 +883,66 @@ protected:
 /**
  * Generalization that handles allocator
  * management.
+ * 
+ * An allocator of the specified type is
+ * created on the stack and passed to the
+ * array itself. After the array is
+ * destructed the allocator is destructed
+ * as well.
+ * 
+ * @param T type of items
+ * @param MallocT allocator type
  */
 template<typename T, typename MallocT>
 class Array : public Array<T, void>
 {
+	static_assert(IsBaseOf<MallocBase, MallocT>::value, "Allocator must be a subclass of MallocBase");
+
 	using Base = Array<T, void>;
-	using Base::Base;
+
+public:
+	/**
+	 * Constructs allocator and creates an
+	 * empty array that uses it.
+	 * 
+	 * @param createArgs allocator creation
+	 * 	arguments
+	 */
+	template<typename ...MallocCreateArgsT>
+	FORCE_INLINE Array(MallocCreateArgsT && ...mallocCreateArgs)
+		: Base{&autoMalloc}
+		, autoMalloc{forward<MallocCreateArgsT>(mallocCreateArgs)...}
+	{
+		//
+	}
+
+	/**
+	 * Destructor, destroy array buffer
+	 * here, because we need allocator,
+	 * and thus it cannot happend after
+	 * this function.
+	 */
+	FORCE_INLINE ~Array()
+	{
+		this->destroy();
+	}
+
+protected:
+	/// Managed allocator
+	MallocT autoMalloc;
+};
+
+/**
+ * Array type debug info struct.
+ * 
+ * @param T array item type
+ */
+template<typename T, typename MallocT>
+struct TypeDebugInfo<Array<T, MallocT>> : TypeDebugInfo<void>
+{
+private:
+	static constexpr Name debugNamePostfix = "[]";
+
+public:
+	static constexpr Name debugName = JOIN_NAME(TypeDebugInfo<T>::debugName, debugNamePostfix); 
 };
