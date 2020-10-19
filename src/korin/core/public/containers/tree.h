@@ -1167,7 +1167,7 @@ public:
 	}
 
 	/**
-	 * Delete all nodes
+	 * Delete all nodes.
 	 */
 	FORCE_INLINE void empty()
 	{
@@ -1180,12 +1180,22 @@ public:
 		numNodes = 0;
 	}
 
+protected:
+	/**
+	 * Destroy tree.
+	 */
+	FORCE_INLINE void destroy()
+	{
+		empty();
+	}
+
+public:
 	/**
 	 * Tree destructor.
 	 */
 	FORCE_INLINE ~BinaryTree()
 	{
-		empty();
+		destroy();
 	}
 
 	/**
@@ -1607,4 +1617,37 @@ protected:
 
 	/// Number of nodes
 	uint64 numNodes;
+};
+
+template<typename T, typename CompareT, typename MallocT>
+class BinaryTree : public BinaryTree<T, CompareT, void>
+{
+	static_assert(IsBaseOf<MallocBase, MallocT>::value, "Allocator must be a subclass of MallocBase");
+
+	using Base = BinaryTree<T, CompareT, void>;
+
+public:
+	/**
+	 * Constructr that accepts
+	 */
+	template<typename ...MallocCreateArgsT>
+	FORCE_INLINE BinaryTree(MallocCreateArgsT && ...mallocCreateArgs)
+		: Base{&autoMalloc}
+		, autoMalloc{forward<MallocCreateArgsT>(mallocCreateArgs)...}
+	{
+		//
+	}
+
+	/**
+	 * Destroy tree before destroying
+	 * managed allocator.
+	 */
+	~BinaryTree()
+	{
+		Base::destroy();
+	}
+
+protected:
+	/// Managed allocator
+	MallocT autoMalloc;
 };
