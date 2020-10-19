@@ -1,16 +1,22 @@
 #pragma once
 
-#include "../core_types.h"
-#include "../templates/utility.h"
-#include "../hal/malloc_ansi.h"
-#include "containers_types.h"
+#include "core_types.h"
+#include "templates/utility.h"
+#include "hal/malloc_ansi.h"
+#include "./containers_types.h"
+#include "./string.h"
 
 /**
+ * Node class with next and prev
+ * links.
  * 
+ * @param T type of the items
  */
 template<typename T>
 struct Link
 {
+	using DataT = T;
+
 	/// Pointer to next link
 	Link * next;
 
@@ -21,13 +27,13 @@ struct Link
 	T data;
 
 	/**
-	 * Initialize data
+	 * Initialize data.
 	 */
-	template<typename TT>
-	Link(TT && inData)
+	template<typename ItemT>
+	Link(ItemT && inData)
 		: next{nullptr}
 		, prev{nullptr}
-		, data{forward<TT>(inData)}
+		, data{forward<ItemT>(inData)}
 	{
 		//
 	}
@@ -36,382 +42,185 @@ struct Link
 /**
  * 
  */
-template<typename T>
-struct ListIterator
+template<typename LinkT, typename IteratorTraitsT = BidirectionalIterator<typename LinkT::DataT>>
+struct ListIteratorBase
 {
-	template<typename> friend struct ListConstIterator;
+	template<typename, typename>	friend struct ListIteratorBase;
+	template<typename, typename>	friend class List;
 
-	//////////////////////////////////////////////////
-	// Iterator types
-	//////////////////////////////////////////////////
-	
-	using LinkT = Link<T>;
-	using RefT = T&;
-	using PtrT = T*;
+	using RefT = typename IteratorTraitsT::RefT;
+	using PtrT = typename IteratorTraitsT::PtrT;
 
 	/**
-	 * Default constructor
+	 * Create iterator that points
+	 * on link.
+	 * 
+	 * @param inLink current link
 	 */
-	FORCE_INLINE ListIterator()
-		: link{nullptr}
-	{
-		//
-	}
-
-	/**
-	 * Initialize current link
-	 */
-	FORCE_INLINE ListIterator(LinkT * inLink)
+	FORCE_INLINE explicit ListIteratorBase(LinkT * inLink = nullptr)
 		: link{inLink}
 	{
 		//
 	}
 
-	//////////////////////////////////////////////////
-	// BaseIterator interface
-	//////////////////////////////////////////////////
-	
+	/**
+	 * Returns ref to data pointed by
+	 * current link.
+	 */
 	FORCE_INLINE RefT operator*() const
 	{
 		return link->data;
 	}
 
+	/**
+	 * Returns ptr to data pointed
+	 * by current link.
+	 */
 	FORCE_INLINE PtrT operator->() const
 	{
-		return &operator*();
+		return &(**this);
 	}
 
-	FORCE_INLINE bool operator==(const ListIterator & other) const
+	/**
+	 * Returns true if both iterators
+	 * point to the same link.
+	 */
+	FORCE_INLINE bool operator==(const ListIteratorBase & other) const
 	{
 		return link == other.link;
 	}
 
-	FORCE_INLINE bool operator!=(const ListIterator & other) const
+	/**
+	 * Returns true if iterators point
+	 * to different links.
+	 */
+	FORCE_INLINE bool operator!=(const ListIteratorBase & other) const
 	{
 		return !(*this == other);
 	}
 
-	//////////////////////////////////////////////////
-	// ForwardIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE ListIterator & operator++()
+	/**
+	 * Advances iterator to the next
+	 * link and returns a ref to the
+	 * iterator.
+	 */
+	FORCE_INLINE ListIteratorBase & operator++()
 	{
 		link = link->next;
 		return *this;
 	}
 
-	FORCE_INLINE ListIterator operator++(int)
+	/**
+	 * Advances iterator to the next
+	 * link and returns a new iterator
+	 * that points to the current link.
+	 */
+	FORCE_INLINE ListIteratorBase operator++(int32)
 	{
-		auto other = ListIterator{link->next};
+		ListIteratorBase it{*this};
 		link = link->next;
-		return other;
+		return it;
 	}
 
-	//////////////////////////////////////////////////
-	// BidirectionalIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE ListIterator & operator--()
+	/**
+	 * Move iterator backward and
+	 * returns a ref to the iterator.
+	 */
+	FORCE_INLINE ListIteratorBase & operator--()
 	{
 		link = link->prev;
 		return *this;
 	}
 
-	FORCE_INLINE ListIterator operator--(int) const
-	{
-		return ListIterator{link->prev};
-	}
-
-protected:
-	/// Current link
-	LinkT * link;
-};
-
-/**
- * 
- */
-template<typename T>
-struct ListConstIterator
-{
-	template<typename> friend class List;
-
-	//////////////////////////////////////////////////
-	// Iterator types
-	//////////////////////////////////////////////////
-	
-	using LinkT = Link<T>;
-	using RefT = const T&;
-	using PtrT = const T*;
-
 	/**
-	 * Default constructor
+	 * Moves iterator to the previous
+	 * link and returns a new iterator
+	 * that points to the current link.
 	 */
-	FORCE_INLINE ListConstIterator()
-		: link{nullptr}
+	FORCE_INLINE ListIteratorBase operator--(int32)
 	{
-		//
-	}
-
-	/**
-	 * Initialize current link
-	 */
-	FORCE_INLINE ListConstIterator(const LinkT * inNode)
-		: link{inNode}
-	{
-		//
-	}
-
-	/**
-	 * Cast non-const to const iterator
-	 */
-	FORCE_INLINE ListConstIterator(const ListIterator<T> & other)
-		: link{other.link}
-	{
-		//
-	}
-
-	//////////////////////////////////////////////////
-	// BaseIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE RefT operator*() const
-	{
-		return link->data;
-	}
-
-	FORCE_INLINE PtrT operator->() const
-	{
-		return &operator*();
-	}
-
-	FORCE_INLINE bool operator==(const ListConstIterator & other) const
-	{
-		return link == other.link;
-	}
-
-	FORCE_INLINE bool operator!=(const ListConstIterator & other) const
-	{
-		return !(*this == other);
-	}
-
-	//////////////////////////////////////////////////
-	// ForwardIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE ListConstIterator & operator++()
-	{
-		link = link->next;
-		return *this;
-	}
-
-	FORCE_INLINE ListConstIterator operator++(int)
-	{
-		auto other = ListConstIterator{link->next};
-		link = link->next;
-		return other;
-	}
-
-	//////////////////////////////////////////////////
-	// BidirectionalIterator interface
-	//////////////////////////////////////////////////
-	
-	FORCE_INLINE ListConstIterator & operator--()
-	{
+		ListIteratorBase it{*this};
 		link = link->prev;
-		return *this;
+		return it;
 	}
 
-	FORCE_INLINE ListConstIterator operator--(int) const
-	{
-		return ListConstIterator{link->prev};
-	}
-
-protected:
+private:
 	/// Current link
 	LinkT * link;
 };
+
+/// Iterator types
+/// @{
+template<typename LinkT>
+using ListConstIterator = ListIteratorBase<const LinkT, BidirectionalIterator<const typename LinkT::DataT>>;
+
+template<typename LinkT>
+using ListIterator = ListIteratorBase<LinkT, BidirectionalIterator<typename LinkT::DataT>>;
+/// @}
 
 /**
  * 
  */
 template<typename T>
-class List
+class List<T, void>
 {
-public:
-	/// Data type
 	using DataT = T;
-
-	/// Link type
 	using LinkT = Link<T>;
-
-	/// Iterator type
-	using Iterator = ListIterator<T>;
-
-	/// Const iterator type
-	using ConstIterator = ListConstIterator<T>;
-
-protected:
-	/// Allocator
-	MallocBase * malloc;
-
-	/// Has own allocator flag
-	bool bHasOwnMalloc;
-
-	/// Pointer to list head
-	LinkT * head;
-
-	/// Pointer to list tail
-	LinkT * tail;
-
-	/// Length of the list (number of links)
-	uint64 length;
+	using Iterator = ListIterator<LinkT>;
+	using ConstIterator = ListConstIterator<LinkT>;
 
 public:
 	/**
 	 * Default constructor, creates empty
-	 * list
+	 * list with global allocator.
 	 */
 	FORCE_INLINE List()
-		: malloc{nullptr}
-		, bHasOwnMalloc{true} 
+		: malloc{}
 		, head{nullptr}
 		, tail{nullptr}
-		, length{0ull}
+		, length{0}
 	{
-		malloc = new MallocAnsi;
+		//
 	}
 
 	/**
-	 * Provide external allocator
+	 * Allocator initializer.
 	 */
 	FORCE_INLINE List(MallocBase * inMalloc)
 		: malloc{inMalloc}
-		, bHasOwnMalloc{true}
 		, head{nullptr}
 		, tail{nullptr}
-		, length{0ull}
+		, length{0}
 	{
-		CHECKF(inMalloc != nullptr, "Invalid allocator provided");
+		//
 	}
 
 protected:
 	/**
-	 * Create a single link
+	 * Create a single link with
+	 * the provided data.
 	 * 
 	 * @param data link data
 	 * @return pointer to link
 	 */
-	template<typename TT>
-	FORCE_INLINE LinkT * createLink(TT && a) const
+	template<typename DataT>
+	FORCE_INLINE LinkT * createLink(DataT && a) const
 	{
-		return new (malloc->alloc(sizeof(LinkT), alignof(LinkT))) LinkT{forward<TT>(a)};
+		return new (malloc.alloc()) LinkT{forward<DataT>(a)};
 	}
 	
 	/**
-	 * Destroy link, explicitly call
-	 * link destructor
+	 * Destroy link.
 	 */
 	FORCE_INLINE void destroyLink(LinkT * link) const
 	{
 		link->~LinkT();
-		malloc->free(link);
+		malloc.free(link);
 	}
 
 public:
 	/**
-	 * Copy constructor
-	 */
-	List(const List & other)
-		: List{}
-	{
-		LinkT * it = other.head;
-		while (it) pushBack(it->data), it = it->next;
-	}
-
-	/**
-	 * Move constructor
-	 */
-	FORCE_INLINE List(List && other)
-		: malloc{other.malloc}
-		, bHasOwnMalloc{other.bHasOwnMalloc}
-		, head{other.head}
-		, tail{other.tail}
-		, length{other.length}
-	{
-		other.malloc = nullptr;
-		other.bHasOwnMalloc = false;
-		other.head = other.tail = nullptr;
-		other.length = 0ull;
-	}
-
-	/**
-	 * Copy assignment
-	 */
-	List & operator=(const List & other)
-	{
-		LinkT * it = head, * jt = other.head;
-
-		if (jt)
-		{
-			while (it && jt)
-			{
-				tail = it;
-
-				// Copy value
-				it->data = jt->data;
-
-				// Next
-				it = it->next;
-				jt = jt->next;
-			}
-			
-			while (it)
-			{
-				LinkT * link = it;
-				it = it->next;
-
-				destroyLink(link);
-			}
-
-			// Ensure tail is valid
-			if (tail) tail->next = nullptr;
-
-			// Push remaining objects
-			while (jt) pushBack(jt->data), jt = jt->next;
-		}
-		// Corner case: other is empty
-		else empty();
-
-		return *this;
-	}
-
-	/**
-	 * Move assignment
-	 */
-	List & operator=(List && other)
-	{
-		// Remove all
-		empty();
-
-		// Delete allocator
-		if (bHasOwnMalloc) delete malloc;
-
-		// Take from other
-		malloc = other.malloc;
-		bHasOwnMalloc = other.bHasOwnMalloc;
-		head = other.head;
-		tail = other.tail;
-		length = other.length;
-
-		other.malloc = nullptr;
-		other.bHasOwnMalloc = false;
-		other.head = other.tail = nullptr;
-		other.length = 0ull;
-	}
-
-	/**
-	 * Remove and destroy all links
+	 * Empty list, removes all links.
 	 */
 	void empty()
 	{
@@ -419,32 +228,140 @@ public:
 		{
 			LinkT * link = head;
 			head = head->next;
-
 			destroyLink(link);
 		}
-
+		
 		head = tail = nullptr;
 		length = 0;
 	}
 
+protected:
 	/**
-	 * Destructor, destroys all links
+	 * Destroy list.
 	 */
-	FORCE_INLINE ~List()
+	FORCE_INLINE void destroy()
 	{
 		empty();
+	}
 
-		if (bHasOwnMalloc)
+public:
+	/**
+	 * Copies data from iterators.
+	 * 
+	 * @param inBegin,inEnd begin and
+	 * 	end iterators
+	 */
+	template<typename It>
+	List(It inBegin, It inEnd)
+		: List{}
+	{
+		for (; inBegin != inEnd; ++inBegin)
 		{
-			delete malloc;
-
-			malloc = nullptr;
-			bHasOwnMalloc = false;
+			pushBack(*inBegin);
 		}
 	}
 
+
 	/**
-	 * Returns head link
+	 * Copy constructor.
+	 */
+	List(const List & other)
+		: List{other.begin(), other.end()}
+	{
+		//
+	}
+
+	/**
+	 * Move constructor.
+	 */
+	FORCE_INLINE List(List && other)
+		: malloc{move(other.malloc)}
+		, head{other.head}
+		, tail{other.tail}
+		, length{other.length}
+	{
+		other.head = other.tail = nullptr;
+		other.length = 0ull;
+	}
+
+	/**
+	 * Copy assignment.
+	 */
+	List & operator=(const List & other)
+	{
+		LinkT * it = head;
+		LinkT * jt = other.head;
+
+		if (!jt)
+		{
+			// Empty array
+			empty();
+		}
+		else if (!it)
+		{
+			for (const auto & data : other)
+			{
+				// Copy all items
+				pushBack(data);
+			}
+		}
+		else
+		{
+			for (; it && jt; it = (tail = it)->next, jt = jt->next)
+			{
+				// Copy data
+				it->data = jt->data;
+			}
+			
+			while (it)
+			{
+				LinkT * link = it;
+				it = it->next;
+				destroyLink(link);
+			}
+
+			// Push remaining objects
+			while (jt)
+			{
+				pushBack(jt->data);
+				jt = jt->next;
+			}
+
+			// Ensure tail is valid
+			if (tail) tail->next = nullptr;
+		}
+
+		return *this;
+	}
+
+	/**
+	 * Move assignment.
+	 */
+	FORCE_INLINE List & operator=(List && other)
+	{
+		// Remove all
+		empty();
+
+		// Take from other
+		malloc = move(other.malloc);
+		head = other.head;
+		tail = other.tail;
+		length = other.length;
+
+		other.head = other.tail = nullptr;
+		other.length = 0;
+	}
+
+	/**
+	 * Destructor, destroys all links.
+	 */
+	FORCE_INLINE ~List()
+	{
+		destroy();
+	}
+
+	/**
+	 * Returns head link.
 	 * @{
 	 */
 	FORCE_INLINE const LinkT * getHead() const
@@ -456,10 +373,10 @@ public:
 	{
 		return head;
 	}
-	/// @}
+	/** @} */
 
 	/**
-	 * Returns tail link
+	 * Returns tail link.
 	 * @{
 	 */
 	FORCE_INLINE const LinkT * getTail() const
@@ -471,12 +388,12 @@ public:
 	{
 		return tail;
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Returns a new iterator that
 	 * points to the beginning of
-	 * the list
+	 * the list.
 	 * @{
 	 */
 	FORCE_INLINE ConstIterator begin() const
@@ -488,11 +405,11 @@ public:
 	{
 		return Iterator{head};
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Returns a new iterator that
-	 * points to the end of the list
+	 * points to the end of the list.
 	 * @{
 	 */
 	FORCE_INLINE ConstIterator end() const
@@ -504,10 +421,10 @@ public:
 	{
 		return Iterator{nullptr};
 	}
-	/// @}
+	/** @} */
 
 	/**
-	 * Returns list length
+	 * Returns list length.
 	 */
 	FORCE_INLINE uint64 getLength() const
 	{
@@ -516,19 +433,22 @@ public:
 
 	/**
 	 * Push element(s) to the end of
-	 * the array
+	 * the array.
 	 * 
-	 * @param arg,args element(s)
-	 * @return inserted element
+	 * @param data,datas data to
+	 * 	insert in list
+	 * @return ref to inserted data
 	 * @{
 	 */
-	template<typename TT>
-	T & pushBack(TT && arg)
+	template<typename DataT>
+	T & pushBack(DataT && data)
 	{
-		LinkT * link = createLink(forward<TT>(arg));
+		LinkT * link = createLink(forward<DataT>(data));
 
 		if (!tail)
+		{
 			head = tail = link;
+		}
 		else
 		{
 			link->prev = tail;
@@ -537,32 +457,46 @@ public:
 		}
 
 		++length;
+
 		return link->data;
 	}
 
-	template<typename TT, typename ... TTT>
-	FORCE_INLINE void pushBack(TT && arg, TTT && ... args)
+	template<typename ...DataListT>
+	FORCE_INLINE void pushBack(DataListT && ... datas)
 	{
-		pushBack(forward<TT>(arg));
-		pushBack(forward<TTT>(args) ...);
+		(pushBack(forward<DataT>(datas)), ...);
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Push element(s) to the beginning
-	 * of the array
+	 * of the array. Data is inserted
+	 * as if pushFront would be called
+	 * on the parameters in the order
+	 * with which they are presented
+	 * (left to right)
 	 * 
-	 * @param arg,args element(s)
+	 * Example:
+	 * 
+	 * ```
+	 * pushFront(1) ... (3) = {3, 2, 1}
+	 * pushFront(1, 2, 3) = {3, 2, 1}
+	 * ```
+	 * 
+	 * @param data,datas data(s) to push
+	 * 	at the beginning of the list
 	 * @return inserted element
 	 * @{
 	 */
-	template<typename TT>
-	FORCE_INLINE T & pushFront(TT && arg)
+	template<typename DataT>
+	FORCE_INLINE T & pushFront(DataT && arg)
 	{
-		LinkT * link = createLink(forward<TT>(arg));
+		LinkT * link = createLink(forward<DataT>(arg));
 
 		if (!head)
+		{
 			head = tail = link;
+		}
 		else
 		{
 			link->next = head;
@@ -571,22 +505,16 @@ public:
 		}
 
 		++length;
+
 		return link->data;
 	}
 
-	template<typename TT, typename ... TTT>
-	FORCE_INLINE void pushFront(TT && arg, TTT && ... args)
+	template<typename ...DataListT>
+	FORCE_INLINE void pushFront(DataListT && ... datas)
 	{
-		// Neat trick, since we expect
-		// pushFront(a, b, c, d, ...)
-		// to result in {a, b, c, d}
-		// we first use recursion and
-		// so that a is pushed last,
-		// after b, c, d, etc.
-		pushFront(forward<TTT>(args) ...);
-		pushFront(forward<TT>(arg));
+		(... ,pushFront(forward<DataT>(datas)));
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Remove link from list
@@ -615,15 +543,15 @@ public:
 
 	/**
 	 * Remove element pointed by
-	 * iterator
+	 * iterator.
 	 */
-	FORCE_INLINE void remove(ConstIterator it)
+	FORCE_INLINE void remove(Iterator it)
 	{
-		if (it->link) remove(it->link);
+		if (it.link) remove(it.link);
 	}
 
 	/**
-	 * Remove tail element
+	 * Remove tail element.
 	 * 
 	 * @return false if list is empty,
 	 * 	true otherwise
@@ -635,9 +563,13 @@ public:
 			LinkT * link = tail;
 
 			if (tail == head)
+			{
 				head = tail = nullptr;
+			}
 			else
+			{
 				(tail = tail->prev)->next = nullptr;
+			}
 			
 			--length;
 			
@@ -646,11 +578,12 @@ public:
 			
 			return true;
 		}
-		else return false;
+		
+		return false;
 	}
 
 	/**
-	 * Remove head element
+	 * Remove head element.
 	 * 
 	 * @return false if list is empty,
 	 * 	true otherwise
@@ -662,9 +595,13 @@ public:
 			LinkT * link = head;
 
 			if (head == tail)
+			{
 				head = tail = nullptr;
+			}
 			else
+			{
 				(head = head->next)->prev = nullptr;
+			}
 			
 			--length;
 			
@@ -673,14 +610,15 @@ public:
 			
 			return true;
 		}
-		else return false;
+		
+		return false;
 	}
 
 	/**
 	 * Remove tail element and
 	 * return its data.
 	 * 
-	 * @param [in] outData returned tail
+	 * @param outData returned tail
 	 * 	data
 	 * @return false if list is empty,
 	 * 	true otherwise
@@ -699,7 +637,7 @@ public:
 	 * Remove head element and
 	 * return its data.
 	 * 
-	 * @param [in] outData returned head
+	 * @param outData returned head
 	 * 	data
 	 * @return false if list is empty,
 	 * 	true otherwise
@@ -713,4 +651,59 @@ public:
 		}
 		else return false;
 	}
+
+	/**
+	 * Prints list to string.
+	 */
+	String toString() const
+	{
+		if (!head) return "[]";
+
+		String out = "[ ";
+
+		for (auto it = head; it != tail; it = it->next)
+		{
+			out += it->data;
+			out += "-> ";
+		}
+
+		return out + tail->data + " ]";
+	}
+
+protected:
+	/// Allocator
+	mutable MallocObject<LinkT> malloc;
+
+	/// Pointer to list head
+	LinkT * head;
+
+	/// Pointer to list tail
+	LinkT * tail;
+
+	/// Length of the list (number of links)
+	uint64 length;
+};
+
+template<typename T, typename MallocT>
+class List : public List<T, void>
+{
+	using Base = List<T, void>;
+
+public:
+	/**
+	 * Constructs the allocator on
+	 * the stack and passes it to
+	 * the list.
+	 */
+	template<typename ...MallocCreateArgsT>
+	FORCE_INLINE List(MallocCreateArgsT && ...mallocCreateArgs)
+		: Base{&autoMalloc}
+		, autoMalloc{forward<MallocCreateArgsT>(mallocCreateArgs)...}
+	{
+		//
+	}
+
+protected:
+	/// Managed allocator
+	MallocT autoMalloc;
 };
