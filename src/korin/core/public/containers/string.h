@@ -71,6 +71,15 @@ public:
 	}
 
 	/**
+	 * 
+	 */
+	FORCE_INLINE StringBase(const Name & inName)
+		: StringBase{*inName, inName.getLength()}
+	{
+		//
+	}
+
+	/**
 	 * Copy constructor, copy string content.
 	 * We override it because otherwise string
 	 * would not be terminated
@@ -740,24 +749,21 @@ protected:
 };
 
 /**
- * Special case, because we could not define
- * this function before defining StringBase class
+ * Array toString implementation.
  */
 template<typename T>
-String Array<T, void>::toString() const
+String Array<T>::toString() const
 {
-	String out{"["};
-	uint64 i; for (i = 0; i < count - 1; ++i)
+	// Default if no items
+	if (count == 0) return "[]";
+
+	String out = "[";
+
+	for (uint64 idx = 0; idx < count - 1; ++idx)
 	{
-		out += buffer[i];
+		out += buffer[idx];
 		out += ", ";
 	}
 
-	if (i != 0)
-	{
-		out += buffer[i];
-		out += "]";
-	}
-
-	return out;
+	return out + buffer[count - 1] + "]";
 }
