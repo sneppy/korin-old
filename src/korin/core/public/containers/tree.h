@@ -1616,6 +1616,11 @@ protected:
 	uint64 numNodes;
 };
 
+/**
+ * Allocator type generalization.
+ * Manages an allocator created on
+ * the stack.
+ */
 template<typename T, typename CompareT, typename MallocT>
 class BinaryTree : public BinaryTree<T, CompareT, void>
 {

@@ -5,6 +5,47 @@
 #include "templates/functional.h"
 #include "./tree.h"
 
+/**
+ * This class represent a set
+ * of items, as in the math
+ * definition of "set of items".
+ * 
+ * As such, this class has
+ * methods to manipulate sets
+ * using the well known math
+ * set operations, i.e. union,
+ * intersection and difference:
+ * 
+ * ```
+ * {1, 2, 3} + {3, 5, 7} = {1, 2, 3, 5, 7}
+ * {1, 2, 3} * {3, 5, 7} = {3}
+ * {1, 2, 3} - {3, 5, 7} = {1, 2, 5, 7}
+ * ```
+ * 
+ * Items inside a set are sorted
+ * according to the compare type
+ * provided.
+ * 
+ * A partial ordering is defined
+ * on a set of sets. A set is equal
+ * to another set if they both have
+ * exactly the same items. A set is
+ * GT another set if it contains all
+ * its items. Conversly, a set is LT
+ * another set if all its items are
+ * contained in the other set. GE and
+ * LE operators are also defined as
+ * you would expect.
+ * 
+ * Note however, that the usual
+ * relationship !(a > b) => (b <= a)
+ * does not stand with sets. Example:
+ * 
+ * ```
+ * {1, 2, 3} < {1, 2, 4} = false, 4 not contained
+ * {1, 2, 3} >= {1, 2, 4} = false, 3 not contained
+ * ```
+ */
 template<typename T, typename CompareT>
 class Set
 {
@@ -474,6 +515,94 @@ public:
 
 	/**
 	 * This operator returns true if this
+	 * set is contained in the other set.
+	 * 
+	 * Example:
+	 * ```
+	 * {1, 3, 4} < {1, 2, 3, 4} = true
+	 * {1, 3, 5} < {1, 2, 3, 4} = false, because of 5
+	 * {1, 3, 4} < {1, 3, 4} = true
+	 * ```
+	 * 
+	 * @param other another set
+	 * @return true if this set is contained
+	 * 	in the other set
+	 */
+	bool operator<=(const Set & other) const
+	{
+		const NodeT * it = tree.getMin();
+		const NodeT * jt = other.tree.getMin();
+
+		while (it && jt)
+		{
+			int32 cmp = CompareT{}(it->data, jt->data);
+
+			if (cmp < 0)
+			{
+				return false;
+			}
+			else if (cmp > 0)
+			{
+				// Advance to next node
+				jt = jt->next;
+			}
+			else
+			{
+				// Advance both nodes
+				it = it->next;
+				jt = jt->next;
+			}
+		}
+		
+		return !it;
+	}
+
+	/**
+	 * This operator returns true if this
+	 * set contains the other set.
+	 * 
+	 * Example:
+	 * ```
+	 * {1, 2, 3, 4} > {1, 2, 3} = true
+	 * {1, 2, 3, 4} > {1, 3, 5} = false, because of 5
+	 * {1, 3, 4} > {1, 3, 4} = true
+	 * ```
+	 * 
+	 * @param other another set
+	 * @return true if this set contains the
+	 * 	other set
+	 */
+	FORCE_INLINE bool operator>=(const Set & other) const
+	{
+		const NodeT * it = tree.getMin();
+		const NodeT * jt = other.tree.getMin();
+
+		while (it && jt)
+		{
+			int32 cmp = CompareT{}(it->data, jt->data);
+
+			if (cmp < 0)
+			{
+				// Advance to next node
+				it = it->next;
+			}
+			else if (cmp > 0)
+			{
+				return false;
+			}
+			else
+			{
+				// Advance both nodes
+				it = it->next;
+				jt = jt->next;
+			}
+		}
+		
+		return !jt;
+	}
+
+	/**
+	 * This operator returns true if this
 	 * set is strictly contained in the
 	 * other set. It returns false if
 	 * the sets are equal.
@@ -519,7 +648,7 @@ public:
 		}
 		
 		// Return true only if other still has elements
-		return !eq;
+		return !it && !eq;
 	}
 
 	/**
@@ -541,28 +670,9 @@ public:
 	 */
 	FORCE_INLINE bool operator>(const Set & other) const
 	{
-		return other < *this;
-	}
-
-	/**
-	 * This operator returns true if this
-	 * set is contained in the other set.
-	 * 
-	 * Example:
-	 * ```
-	 * {1, 3, 4} < {1, 2, 3, 4} = true
-	 * {1, 3, 5} < {1, 2, 3, 4} = false, because of 5
-	 * {1, 3, 4} < {1, 3, 4} = true
-	 * ```
-	 * 
-	 * @param other another set
-	 * @return true if this set is contained
-	 * 	in the other set
-	 */
-	bool operator<=(const Set & other) const
-	{
 		const NodeT * it = tree.getMin();
 		const NodeT * jt = other.tree.getMin();
+		bool eq = true;
 
 		while (it && jt)
 		{
@@ -570,12 +680,14 @@ public:
 
 			if (cmp < 0)
 			{
-				return false;
+				eq = false;
+
+				// Advance to next node
+				it = it->next;
 			}
 			else if (cmp > 0)
 			{
-				// Advance to next node
-				jt = jt->next;
+				return false;
 			}
 			else
 			{
@@ -585,27 +697,8 @@ public:
 			}
 		}
 		
-		return true;
-	}
-
-	/**
-	 * This operator returns true if this
-	 * set contains the other set.
-	 * 
-	 * Example:
-	 * ```
-	 * {1, 2, 3, 4} > {1, 2, 3} = true
-	 * {1, 2, 3, 4} > {1, 3, 5} = false, because of 5
-	 * {1, 3, 4} > {1, 3, 4} = true
-	 * ```
-	 * 
-	 * @param other another set
-	 * @return true if this set contains the
-	 * 	other set
-	 */
-	FORCE_INLINE bool operator>=(const Set & other) const
-	{
-		return other <= *this;
+		// Return true only if other still has elements
+		return !jt && !eq;
 	}
 
 private:
