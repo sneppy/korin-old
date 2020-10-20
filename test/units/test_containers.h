@@ -128,7 +128,7 @@ TEST(containers, array)
 	ASSERT_EQ(g[2], 2);
 	ASSERT_EQ(gg, 4);
 
-	Array<int32> h = StaticArray<int32, 6>({1, 5, 1, 3, 4});
+	Array<int32> h = StaticArray<int32, 5>({1, 5, 1, 3, 4});
 
 	ASSERT_EQ(h.getCount(), 5);
 
@@ -669,6 +669,14 @@ TEST(containers, set)
 	ASSERT_FALSE(c <= a);
 	ASSERT_TRUE(c >= a);
 	ASSERT_FALSE(a >= c);
+
+	d = Set<int32>{};
+	d.set(1, 3, 6);
+	
+	ASSERT_FALSE(d <= a);
+	ASSERT_FALSE(d >= a);
+	ASSERT_FALSE(d < a);
+	ASSERT_FALSE(d > a);
 	
 	uint32 idx = 0; for (auto it = a.begin(); it != a.end(); ++it, ++idx)
 	{
