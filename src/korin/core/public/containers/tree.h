@@ -1395,12 +1395,12 @@ public:
 	 * @{
 	 */
 	template<typename DataT>
-	T & insert(DataT && arg)
+	T & insert(DataT && data)
 	{
 		if (root)
 		{
 			// Insert node
-			NodeT * node = createNode(forward<DataT>(arg));
+			NodeT * node = createNode(forward<DataT>(data));
 			root->insert(node);
 			root = root->getRoot();
 
@@ -1411,7 +1411,7 @@ public:
 		else
 		{
 			// Insert as root
-			root = createNode(forward<DataT>(arg));
+			root = createNode(forward<DataT>(data));
 			root->color = BinaryNodeColor::BLACK;
 
 			numNodes = 1;
@@ -1420,13 +1420,12 @@ public:
 		}
 	}
 
-	template<typename DataT, typename ... DataListT>
-	void insert(DataT && arg, DataListT && ... args)
+	template<typename ... DataListT>
+	void insert(DataListT && ... datas)
 	{
-		insert(forward<DataT>(arg));
-		insert(forward<DataListT>(args)...);
+		(insert(forward<DataListT>(datas)), ...);
 	}
-	/// @}
+	/** @} */
 
 	/**
 	 * Insert node, without overriding
@@ -1440,7 +1439,7 @@ public:
 	 * @{
 	 */
 	template<typename DataT>
-	T & insertUnique(DataT && arg)
+	T & insertUnique(DataT && data)
 	{
 		if (root)
 		{
@@ -1450,7 +1449,7 @@ public:
 			{
 				parent = it;
 
-				int32 cmp = CompareT{}(arg, it->data);
+				int32 cmp = CompareT{}(data, it->data);
 				if (cmp < 0)
 				{
 					it = it->left;
@@ -1465,7 +1464,7 @@ public:
 			}
 			
 			// Insert node
-			NodeT * node = parent->insert(createNode(forward<DataT>(arg)));
+			NodeT * node = parent->insert(createNode(forward<DataT>(data)));
 			root = root->getRoot();
 
 			++numNodes;
@@ -1474,7 +1473,7 @@ public:
 		else
 		{
 			// Insert as root
-			root = createNode(forward<DataT>(arg));
+			root = createNode(forward<DataT>(data));
 			root->color = BinaryNodeColor::BLACK;
 
 			numNodes = 1;
@@ -1483,11 +1482,10 @@ public:
 		}
 	}
 
-	template<typename DataT, typename ... DataListT>
-	void insertUnique(DataT && arg, DataListT && ... args)
+	template<typename ... DataListT>
+	void insertUnique(DataListT && ... datas)
 	{
-		insertUnique(forward<DataT>(arg));
-		insertUnique(forward<DataListT>(args)...);
+		(insertUnique(forward<DataListT>(datas)), ...);
 	}
 	/// @}
 
@@ -1497,12 +1495,12 @@ public:
 	 * node exists, the first one encountered
 	 * is replaced
 	 * 
-	 * @param arg,args data to insert
+	 * @param data,datas data to insert
 	 * @return reference to inserted data
 	 * @{
 	 */
 	template<typename DataT>
-	T & replace(DataT && arg)
+	T & replace(DataT && data)
 	{
 		if (root)
 		{
@@ -1512,7 +1510,7 @@ public:
 			{
 				parent = it;
 
-				int32 cmp = CompareT{}(arg, it->data);
+				int32 cmp = CompareT{}(data, it->data);
 				if (cmp < 0)
 				{
 					it = it->left;
@@ -1523,11 +1521,11 @@ public:
 				}
 				else /* cmp == 0 */
 					// Replacing existing data
-					return (it->data = forward<DataT>(arg));
+					return (it->data = forward<DataT>(data));
 			}
 			
 			// Insert new node
-			NodeT * node = parent->insert(createNode(forward<DataT>(arg)));
+			NodeT * node = parent->insert(createNode(forward<DataT>(data)));
 
 			++numNodes;
 			return node->data;
@@ -1535,7 +1533,7 @@ public:
 		else
 		{
 			// Insert as root
-			root = createNode(forward<DataT>(arg));
+			root = createNode(forward<DataT>(data));
 			root->color = BinaryNodeColor::BLACK;
 
 			numNodes = 1;
@@ -1544,11 +1542,10 @@ public:
 		}
 	}
 
-	template<typename DataT, typename ... DataListT>
-	void replace(DataT && arg, DataListT && ... args)
+	template<typename ... DataListT>
+	void replace(DataListT && ... datas)
 	{
-		replace(forward<DataT>(arg));
-		replace(forward<DataListT>(args)...);
+		(replace(forward<DataListT>(datas)), ...);
 	}
 	/// @}
 

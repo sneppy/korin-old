@@ -174,46 +174,32 @@ public:
 	 * Returns true if some of the provided
 	 * items exist in the set,
 	 * 
-	 * @param key,keys one or more keys
+	 * @param keys one or more keys
 	 * 	to search
 	 * @return true if at least one item
 	 * 	exists in the set
 	 */
-	template<typename KeyT>
-	FORCE_INLINE bool any(const KeyT & key) const
-	{
-		return get(key);
-	}
-
 	template<typename KeyT, typename ...KeyListT>
 	FORCE_INLINE bool any(const KeyT & key, KeyListT && ...keys) const
 	{
-		return get(key) || any(forward<KeyListT>(keys)...);
+		return (get(keys) || ... || false);
 	}
-	/** @} */
 
 	/**
 	 * Returns true if all of the provided
 	 * items exist in the set.
 	 * 
-	 * @param key,keys one or more keys
+	 * @param keys one or more keys
 	 * 	to search
 	 * @return true if all the items exist
 	 * in the set
 	 * @{
 	 */
-	template<typename KeyT>
-	FORCE_INLINE bool all(const KeyT & key) const
+	template<typename ...KeyListT>
+	FORCE_INLINE bool all(KeyListT && ...keys) const
 	{
-		return get(key);
+		return (get(keys) && ... && true);
 	}
-
-	template<typename KeyT, typename ...KeyListT>
-	FORCE_INLINE bool all(const KeyT & key, KeyListT && ...keys) const
-	{
-		return get(key) && all(forward<KeyListT>(keys)...);
-	}
-	/** @} */
 	
 	/**
 	 * Insert a new value in the set and
@@ -234,11 +220,10 @@ public:
 		return tree.insertUnique(forward<ItemT>(item));
 	}
 
-	template<typename ItemT, typename ...ItemListT>
-	FORCE_INLINE void set(ItemT && item, ItemListT && ...items)
+	template<typename ...ItemListT>
+	FORCE_INLINE void set(ItemListT && ...items)
 	{
-		set(forward<ItemT>(item));
-		set(forward<ItemListT>(items)...);
+		(set(forward<ItemListT>(items)), ...);
 	}
 	/** @} */
 
