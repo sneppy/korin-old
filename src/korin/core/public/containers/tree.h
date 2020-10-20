@@ -27,8 +27,8 @@ enum class BinaryNodeColor : ubyte
 template<typename T, typename CompareT>
 struct BinaryNode
 {
-	template<typename, typename, typename>	friend class BinaryTree;
-	template<typename, typename, typename>	friend class Map;
+	template<typename, typename, typename>				friend class BinaryTree;
+	template<typename, typename, typename, typename>	friend class Map;
 
 	using DataT = T;
 
@@ -934,8 +934,8 @@ using TreeIterator = TreeIteratorBase<NodeT, RandomAccessIterator<typename NodeT
 template<typename T, typename CompareT>
 class BinaryTree<T, CompareT, void>
 {
-	template<typename, typename, typename>	friend class Map;
-	template<typename, typename>			friend class Set;
+	template<typename, typename, typename, typename>	friend class Map;
+	template<typename, typename>						friend class Set;
 
 public:
 	using NodeT = BinaryNode<T, CompareT>;
