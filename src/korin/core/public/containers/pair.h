@@ -15,10 +15,8 @@
 template<typename A, typename B, typename CompareT>
 struct Pair
 {
-	/// Key and value types @{
 	using KeyT = A;
 	using ValT = B;
-	/// @}
 
 	/**
 	 * Encapsulate compare class
@@ -68,46 +66,15 @@ struct Pair
 	B second;
 
 	/**
-	 * Default constructor, zero initialize both
-	 */
-	/* FORCE_INLINE Pair()
-		: first{}
-		, second{}
-	{
-		//
-	} */
-
-	/**
-	 * Key constructor, zero initialize value
-	 * 
-	 * @param [in] key pair key
-	 * @{
-	 */
-	/* FORCE_INLINE Pair(const A & key)
-		: first{key}
-		, second{}
-	{
-		//
-	}
-
-	FORCE_INLINE Pair(A && key)
-		: first{move(key)}
-		, second{}
-	{
-		//
-	} */
-	/// @}
-
-	/**
 	 * Pair constructor
 	 * 
 	 * @param [in] key pair key
 	 * @param [in] val pair value
 	 */
-	template<typename AA, typename BB>
-	FORCE_INLINE Pair(AA && key, BB && val)
-		: first{forward<AA>(key)}
-		, second{forward<BB>(val)}
+	template<typename KeyT, typename ValT>
+	FORCE_INLINE Pair(KeyT && key, ValT && val)
+		: first{forward<KeyT>(key)}
+		, second{forward<ValT>(val)}
 	{
 		//
 	}
@@ -133,7 +100,45 @@ struct Pair
 	{
 		return second;
 	}
-	/// @}
+	/** @} */
 
-	// TODO: Comparison operators
+	/**
+	 * Compare two pairs based on
+	 * the provided compare type.
+	 * 
+	 * @param other another pair
+	 * 	to compare with
+	 * @return comapare result
+	 * @{
+	 */
+	FORCE_INLINE bool operator==(const Pair & other) const
+	{
+		return CompareT{}(*this, other) == 0;
+	}
+
+	FORCE_INLINE bool operator!=(const Pair & other) const
+	{
+		return !(*this == other);
+	}
+
+	FORCE_INLINE bool operator<(const Pair & other) const
+	{
+		return CompareT{}(*this, other) < 0;
+	}
+
+	FORCE_INLINE bool operator>(const Pair & other) const
+	{
+		return CompareT{}(*this, other) > 0;
+	}
+
+	FORCE_INLINE bool operator<=(const Pair & other) const
+	{
+		return !(*this > other);
+	}
+
+	FORCE_INLINE bool operator>=(const Pair & other) const
+	{
+		return !(*this < other);
+	}
+	/** @} */
 };
