@@ -3,10 +3,10 @@
 #include "core_types.h"
 #include "misc/assert.h"
 #include "hal/platform_math.h"
+#include "templates/array.h"
 #include "math_types.h"
 #include "vec3.h"
 #include "vec4.h"
-#include "../containers/tuple.h"
 
 /**
  * A 4 component vector that describes a rotation
@@ -136,13 +136,13 @@ public:
 	 * 
 	 * @return tuple with x, y, z axes
 	 */
-	FORCE_INLINE Tuple<Vec3<float32>, 3> getAxes() const
+	FORCE_INLINE StaticArray<Vec3<float32>, 3> getAxes() const
 	{
 		const vec3 x = *this * Vec3<float32>::right;
 		const vec3 y = *this * Vec3<float32>::up;
 		const vec3 z = x ^ y;
 
-		return T(x, y, z);
+		return {x, y, z};
 	}
 
 	/**
