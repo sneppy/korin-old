@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "./utility.h"
 
 /**
  * This class represent a static
@@ -22,8 +23,36 @@ struct StaticArray
 	/**
 	 * Default construct array.
 	 */
-	constexpr StaticArray()
+	constexpr FORCE_INLINE StaticArray()
 		: buffer{}
+		, count{inCount}
+	{
+		//
+	}
+
+	/**
+	 * 
+	 */
+	constexpr FORCE_INLINE StaticArray(const T * inBuffer)
+		: buffer{}
+		, count{inCount}
+	{
+		for (uint64 idx = 0; idx < count; ++idx)
+		{
+			buffer[idx] = inBuffer[idx];
+		}
+	}
+
+	/**
+	 * Constructor that accepts one or
+	 * more item values.
+	 * 
+	 * @param items item to insert in
+	 * 	array
+	 */
+	template<typename ...ItemPackT>
+	constexpr FORCE_INLINE StaticArray(ItemPackT && ...items)
+		: buffer{forward<ItemPackT>(items)...}
 		, count{inCount}
 	{
 		//
@@ -73,3 +102,9 @@ protected:
 	/// as number of items
 	uint64 count;
 };
+
+template<typename T, uint64 inSize>
+constexpr FORCE_INLINE StaticArray<T, inSize> makeStaticArray(const T (&inList)[inSize])
+{
+	return StaticArray<T, inSize>(static_cast<const T*>(inList));
+}

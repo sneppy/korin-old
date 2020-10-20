@@ -3,7 +3,8 @@
 #include "core_types.h"
 #include "hal/platform_memory.h"
 #include "hal/platform_strings.h"
-#include "array.h"
+#include "templates/name.h"
+#include "./array.h"
 
 /**
  * 

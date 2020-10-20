@@ -4,8 +4,9 @@
 #include "misc/utility.h"
 #include "misc/assert.h"
 #include "templates/iterator.h"
-#include "templates/utility.h"
 #include "templates/types.h"
+#include "templates/utility.h"
+#include "templates/array.h"
 #include "hal/platform_memory.h"
 #include "hal/platform_math.h"
 #include "hal/malloc_ansi.h"
@@ -756,21 +757,21 @@ public:
 	 * check index overflow).
 	 * 
 	 * @param idx element index
-	 * @param [len=1] if provided, number
+	 * @param [num=1] if provided, number
 	 * 	of elements to be removed
 	 */
-	void removeAt(uint64 idx, uint64 len = 1)
+	void removeAt(uint64 idx, uint64 num = 1)
 	{
-		if (len > 0)
+		if (num > 0)
 		{
 			// Destroy element
-			Memory::destroyElements(buffer + idx, buffer + idx + len);
+			Memory::destroyElements(buffer + idx, buffer + idx + num);
 
 			// Move elements to the left
-			Memory::moveElements(buffer + idx, buffer + idx + len, count - (idx + len));
+			Memory::moveElements(buffer + idx, buffer + idx + num, count - (idx + num));
 
 			// Decrement count
-			count -= len;
+			count -= num;
 		}
 	}
 
@@ -924,25 +925,10 @@ public:
 	 */
 	FORCE_INLINE ~Array()
 	{
-		this->destroy();
+		Base::destroy();
 	}
 
 protected:
 	/// Managed allocator
 	MallocT autoMalloc;
-};
-
-/**
- * Array type debug info struct.
- * 
- * @param T array item type
- */
-template<typename T, typename MallocT>
-struct TypeDebugInfo<Array<T, MallocT>> : TypeDebugInfo<void>
-{
-private:
-	static constexpr Name debugNamePostfix = "[]";
-
-public:
-	static constexpr Name debugName = JOIN_NAME(TypeDebugInfo<T>::debugName, debugNamePostfix); 
 };

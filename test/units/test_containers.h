@@ -5,7 +5,6 @@
 #include "containers/array.h"
 #include "containers/string.h"
 #include "containers/list.h"
-#include "containers/tuple.h"
 #include "containers/tree.h"
 #include "containers/pair.h"
 #include "containers/map.h"
@@ -129,7 +128,7 @@ TEST(containers, array)
 	ASSERT_EQ(g[2], 2);
 	ASSERT_EQ(gg, 4);
 
-	Array<int32> h = T(1, 5, 1, 3, 4);
+	Array<int32> h = StaticArray<int32, 6>({1, 5, 1, 3, 4});
 
 	ASSERT_EQ(h.getCount(), 5);
 
@@ -315,66 +314,6 @@ TEST(containers, list)
 	c = d;
 
 	SUCCEED();
-}
-
-TEST(containers, tuple)
-{
-	auto tup0 = Tuple<int, 5>{4, 5, 1, 8, 8};
-
-	ASSERT_EQ(tup0.len, 5);
-	ASSERT_EQ(tup0[0], 4);
-	ASSERT_EQ(tup0[1], 5);
-	ASSERT_EQ(tup0[2], 1);
-	ASSERT_EQ(tup0[3], 8);
-	ASSERT_EQ(tup0[4], 8);
-	ASSERT_EQ(tup0[0], tup0[-5]);
-	ASSERT_EQ(tup0[1], tup0[-4]);
-	ASSERT_EQ(tup0[2], tup0[-3]);
-	ASSERT_EQ(tup0[3], tup0[-2]);
-	ASSERT_EQ(tup0[4], tup0[-1]);
-
-	auto tup1 = T(4, 5, 1);
-
-	ASSERT_TRUE((IsSameType<decltype(tup1[0]), int&>::value));
-	ASSERT_EQ(tup1.len, 3);
-	ASSERT_EQ(tup1[0], 4);
-	ASSERT_EQ(tup1[1], 5);
-	ASSERT_EQ(tup1[2], 1);
-
-	auto tup2 = T(T(1.f, 2.f), T(4.f, 2.f));
-
-	ASSERT_TRUE((IsSameType<decltype(tup2[0]), Tuple<float32, 2>&>::value));
-
-	auto tup3 = T(tup1[1], tup1[0], 0);
-
-	ASSERT_EQ(tup3.len, 3);
-	ASSERT_EQ(tup3[0], tup1[1]);
-	ASSERT_EQ(tup3[1], tup1[0]);
-	ASSERT_EQ(tup3[2], 0);
-
-	auto tup4 = tup3 + 1;
-
-	ASSERT_EQ(tup4.len, 4);
-	ASSERT_EQ(tup3[0], tup3[0]);
-	ASSERT_EQ(tup3[1], tup3[1]);
-	ASSERT_EQ(tup3[2], tup3[2]);
-	ASSERT_EQ(tup4[3], 1);
-
-	auto tup5 = tup3 + tup4;
-
-	ASSERT_EQ(tup5.len, tup3.len + tup4.len);
-	ASSERT_EQ(tup5[0], tup3[0]);
-	ASSERT_EQ(tup5[1], tup3[1]);
-	ASSERT_EQ(tup5[2], tup3[2]);
-	ASSERT_EQ(tup5[3], tup4[0]);
-	ASSERT_EQ(tup5[4], tup4[1]);
-	ASSERT_EQ(tup5[5], tup4[2]);
-	ASSERT_EQ(tup5[6], tup4[3]);
-
-	auto tup6 = tup5.slice<4, -1>();
-	ASSERT_EQ(tup6.len, 2);
-	ASSERT_EQ(tup6[0], tup5[4]);
-	ASSERT_EQ(tup6[1], tup5[5]);
 }
 
 template<typename T>

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../core_types.h"
-#include "enable_if.h"
-#include "types.h"
+#include "core_types.h"
+#include "./enable_if.h"
+#include "./types.h"
 
 /**
  * Forces move semantics by casting to rvalue reference
