@@ -46,10 +46,10 @@
  * {1, 2, 3} >= {1, 2, 4} = false, 3 not contained
  * ```
  */
-template<typename T, typename CompareT>
+template<typename T, typename CompareT, typename MallocT>
 class Set
 {
-	using TreeT = BinaryTree<T, CompareT>;
+	using TreeT = BinaryTree<T, CompareT, MallocT>;
 	using NodeT = typename TreeT::NodeT;
 	using Iterator = typename TreeT::Iterator;
 	using ConstIterator = typename TreeT::ConstIterator;
@@ -82,13 +82,13 @@ public:
 	 * Returns count of items in set.
 	 * @{
 	 */
-	FORCE_INLINE uint64 getCount() const
+	FORCE_INLINE uint64 getSize() const
 	{
 		return tree.getNumNodes();
 	}
 	
-	METHOD_ALIAS_CONST(getSize, getCount);
-	METHOD_ALIAS_CONST(getNumItems, getCount);
+	METHOD_ALIAS_CONST(getCount, getSize);
+	METHOD_ALIAS_CONST(getNumItems, getSize);
 	/** @} */
 
 	/**

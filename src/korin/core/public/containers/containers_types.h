@@ -11,6 +11,6 @@ template<typename, typename = ThreeWayCompare>								class BinaryNode;
 template<typename, typename = ThreeWayCompare, typename = void>				class BinaryTree;
 template<typename, typename, typename = NullCompare>						class Pair;
 template<typename, typename, typename = ThreeWayCompare, typename = void>	class Map;
-template<typename, typename = ThreeWayCompare>								class Set;
+template<typename, typename = ThreeWayCompare, typename = void>				class Set;
 
 using String = StringBase<ansichar>;
