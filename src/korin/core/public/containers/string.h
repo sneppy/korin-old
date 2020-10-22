@@ -14,22 +14,13 @@ class StringBase
 {
 	using ArrayT = Array<CharT>;
 
-protected:
-	/**
-	 * Makes sure that string is terminated
-	 */
-	FORCE_INLINE void terminateString()
-	{
-		array[array.count - 1] = '\0';
-	}
-
 public:
 	/**
 	 * Default constructor, initializes an
 	 * empty string.
 	 */
 	FORCE_INLINE StringBase()
-		: array{}
+		: array{"", 1}
 	{
 		//
 	}
@@ -43,7 +34,7 @@ public:
 	explicit FORCE_INLINE StringBase(sizet n)
 		: array{nullptr, n + 1}
 	{
-		terminateString();
+		array[0] = '\0';
 	}
 
 	/**
@@ -345,8 +336,9 @@ public:
 	 */
 	StringBase & operator+=(CharT c)
 	{
-		array.add('\0');
-		array[getLength()] = c;
+		const sizet currLen = getLength();
+		array(currLen + 1) = '\0';
+		array[currLen] = c;
 
 		return *this;
 	}
