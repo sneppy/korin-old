@@ -69,9 +69,21 @@ namespace NFA
 		 * @return ptr to created state
 		 */
 		template<typename StateAnyT, typename ...CreateStateArgsT>
-		StateAnyT * createState(CreateStateArgsT && ...createStateArgs)
+		FORCE_INLINE StateAnyT * createState(CreateStateArgsT && ...createStateArgs)
 		{
 			return new (MallocObject<StateAnyT>{}.alloc()) StateAnyT{forward<CreateStateArgsT>(createStateArgs)...};
+		}
+
+		/**
+		 * Destroys and deallocates state.
+		 * 
+		 * @param state ptr to state to
+		 * 	be deallocated
+		 */
+		FORCE_INLINE void destroyState(StateT * state)
+		{
+			state->~StateT();
+			MallocObject<StateT>{}.free(state);
 		}
 	
 	public:
@@ -79,6 +91,12 @@ namespace NFA
 		 * Default constructor.
 		 */
 		Automaton();
+
+		/**
+		 * Destroy automaton. Deallocates
+		 * all states.
+		 */
+		~Automaton();
 
 		/**
 		 * Returns true if the provided
@@ -184,6 +202,20 @@ namespace NFA
 	}
 
 	template<typename AlphaT>
+	Automaton<AlphaT>::~Automaton()
+	{
+		for (StateT * state : allocatedStates)
+		{
+			// Destroy all allocated states
+			destroyState(state);
+		}
+
+		// Destroy start and accepted states
+		destroyState(startState);
+		destroyState(acceptedState);
+	}
+
+	template<typename AlphaT>
 	bool Automaton<AlphaT>::acceptString(const AlphaStringT & input) const
 	{
 		using Visit = Pair<const StateT*, AlphaStringT>;
@@ -222,6 +254,7 @@ namespace NFA
 	template<typename AlphaT>
 	String Automaton<AlphaT>::toString() const
 	{
+		// TODO: Remove compare type, not needed
 		using Visit = Pair<const StateT*, sizet, typename StateT::FindState>;
 		
 		String out;
