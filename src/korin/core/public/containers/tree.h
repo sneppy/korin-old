@@ -935,7 +935,7 @@ template<typename T, typename CompareT>
 class BinaryTree<T, CompareT, void>
 {
 	template<typename, typename, typename, typename>	friend class Map;
-	template<typename, typename>						friend class Set;
+	template<typename, typename, typename>				friend class Set;
 
 public:
 	using NodeT = BinaryNode<T, CompareT>;

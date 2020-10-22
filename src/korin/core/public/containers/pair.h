@@ -31,7 +31,7 @@ struct Pair
 		 */
 		FORCE_INLINE int32 operator()(const Pair & a, const Pair & b) const
 		{
-			return CompareT()(a.first, b.first);
+			return CompareT{}(a.first, b.first);
 		}
 
 		/**
@@ -43,7 +43,7 @@ struct Pair
 		 */
 		FORCE_INLINE int32 operator()(const Pair & a, const A & b) const
 		{
-			return CompareT()(a.first, b);
+			return CompareT{}(a.first, b);
 		}
 
 		/**
@@ -55,7 +55,7 @@ struct Pair
 		 */
 		FORCE_INLINE int32 operator()(const A & a, const Pair & b) const
 		{
-			return CompareT()(a, b.first);
+			return CompareT{}(a, b.first);
 		}
 	};
 

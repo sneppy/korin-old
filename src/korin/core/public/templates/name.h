@@ -35,7 +35,7 @@ public:
 	}
 
 	/**
-	 * Construct that accepts a string
+	 * Constructor that accepts a string
 	 * literal.
 	 * 
 	 * Example:
