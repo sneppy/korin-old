@@ -113,7 +113,19 @@ namespace NFA
 		 */
 		FORCE_INLINE StateBase * mergeNextState()
 		{
-			// TODO
+			CHECK(nextStates.getSize() == 1);
+
+			// Get next state and unlink
+			StateBase * nextState = *nextStates.begin();
+			nextState->prevStates.remove(this);
+
+			for (StateBase * prevState : prevStates)
+			{
+				prevState->nextStates.remove(this);
+				prevState->addNextState(nextState);
+			}
+
+			return nextState;
 		}
 
 		/**
@@ -123,7 +135,19 @@ namespace NFA
 		 */
 		FORCE_INLINE StateBase * mergePrevState()
 		{
-			// TODO
+			CHECK(prevStates.getSize() == 1);
+
+			// Get next state and unlink
+			StateBase * prevState = *prevStates.begin();
+			prevState->nextStates.remove(this);
+
+			for (StateBase * nextState : nextStates)
+			{
+				nextState->prevStates.remove(this);
+				prevState->addNextState(nextState);
+			}
+
+			return prevState;
 		}
 
 		/**

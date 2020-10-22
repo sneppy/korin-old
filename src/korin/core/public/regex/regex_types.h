@@ -49,24 +49,24 @@ struct AlphabetTraits
  * type.
  */
 template<>
-struct AlphabetTraits<char>
+struct AlphabetTraits<ansichar>
 {
 	/// Alphabet symbol type
-	using SymbolT = char;
+	using SymbolT = ansichar;
 
 	// Alphabet string type
-	using StringT = const char*;
+	using StringT = const ansichar*;
 
 	/// Terminal symbol
-	static constexpr char terminalSymbol = '\0';
+	static constexpr ansichar terminalSymbol = '\0';
 
 	/// Empty string
-	static constexpr const char * emptyString = "";
+	static constexpr const ansichar * emptyString = "";
 
 	/**
 	 * 
 	 */
-	static FORCE_INLINE const char * consumeInput(const char * input, int32 numRead)
+	static FORCE_INLINE const ansichar * consumeInput(const ansichar * input, int32 numRead)
 	{
 		return input + numRead;
 	}
@@ -74,7 +74,7 @@ struct AlphabetTraits<char>
 	/**
 	 * 
 	 */
-	static FORCE_INLINE bool isEOF(const char * input)
+	static FORCE_INLINE bool isEOF(const ansichar * input)
 	{
 		return *input == '\0';
 	}

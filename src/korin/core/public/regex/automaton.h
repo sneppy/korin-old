@@ -8,6 +8,7 @@
 namespace NFA
 {
 	template<typename> class AutomatonBuilder;
+	template<typename> class AutomatonOptimizer;
 
 	/**
 	 * This class implements a non-deterministic
@@ -38,6 +39,7 @@ namespace NFA
 	class Automaton
 	{
 		friend AutomatonBuilder<AlphaT>;
+		friend AutomatonOptimizer<AlphaT>;
 		friend Regex;
 
 		/// State types definitions
@@ -177,8 +179,8 @@ namespace NFA
 		, acceptedState{nullptr}
 	{
 		// Create start and accepted states
-		startState = pushState<EpsilonT>();
-		acceptedState = pushState<EpsilonT>();
+		startState = createState<EpsilonT>();
+		acceptedState = createState<EpsilonT>();
 	}
 
 	template<typename AlphaT>
@@ -280,7 +282,7 @@ namespace NFA
 	 * 	alphabet
 	 */
 	template<typename AlphaT>
-	struct AutomatonBuilder
+	class AutomatonBuilder
 	{
 		using AutomatonT = Automaton<AlphaT>;
 		using StateT = typename AutomatonT::StateT;
@@ -454,4 +456,61 @@ namespace NFA
 		/// Current active group
 		int8 currentGroup;
 	};
+
+	/**
+	 * 
+	 */
+	template<typename AlphaT>
+	class AutomatonOptimizer
+	{
+		using AutomatonT = Automaton<AlphaT>;
+		using StateT = typename AutomatonT::StateT;
+		using EpsilonT = typename AutomatonT::EpsilonT;
+
+	public:
+		/**
+		 * Creates a new optimizer for
+		 * the given automaton.
+		 * 
+		 * @param inAutomaton the
+		 * 	automaton to be optimized
+		 */
+		FORCE_INLINE AutomatonOptimizer(AutomatonT & inAutomaton)
+			: automaton{inAutomaton}
+		{
+			//
+		}
+
+		/**
+		 * 
+		 */
+		AutomatonOptimizer & removeEpsilons();
+
+	protected:
+		/// The automaton to be optimized
+		AutomatonT & automaton;
+	};
+
+	template<typename AlphaT>
+	AutomatonOptimizer<AlphaT> & AutomatonOptimizer<AlphaT>::removeEpsilons()
+	{
+		for (StateT * state : automaton.allocatedStates)
+		{
+			if (EpsilonT * epsilon = state->template as<EpsilonT>())
+			{
+				if (epsilon->getPrevStates().getCount() == 1)
+				{
+					// Merge into previous state
+					epsilon->mergePrevState();
+				}
+				else if (epsilon->getNextStates().getCount() == 1)
+				{
+					// Merge into next state
+					epsilon->mergeNextState();
+				}
+			}
+		}
+
+		return *this;
+	}
 } // namespace NFA
