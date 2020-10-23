@@ -45,13 +45,14 @@ namespace Re
 		friend Re::Regex;
 
 		/// State types definitions
-		/// @{
+		/// @{			
 		using StateT = StateBase<AlphaT>;
 		using FindStateT = typename StateT::FindState;
 		using EpsilonT = StateEpsilon<AlphaT>;
 		using AnyT = StateAny<AlphaT>;
 		using SymbolT = StateSymbol<AlphaT>;
 		using StringT = StateString<AlphaT>;
+		using LambdaT = StateLambda<AlphaT>;
 		/// @}
 
 		using AlphabetTraitsT = AlphabetTraits<AlphaT>;
@@ -467,9 +468,55 @@ namespace Re
 		{
 			// Terminate and push current branch
 			// by linking current state to end
-			// of current group
+			// of current group.
 			currentState->addNextState(groupEnd[currentGroup - 1]);
 			currentState = groupStart[currentGroup - 1];
+
+			return *this;
+		}
+
+		/**
+		 * Creates a shortcut, similar to
+		 * a branch, that skips the current
+		 * group (equivalent to star `*`
+		 * operation in regex syntax).
+		 * 
+		 * Example:
+		 * ```
+		 * before: B->1->2->(3)->| E
+		 * 
+		 * after: B->1->2->3->(e)->|
+		 *        \___________^
+		 * ```
+		 * 
+		 * Note that the same effect can
+		 * be achieved using a combination
+		 * of group and branch. However that
+		 * would not be possible for a single
+		 * state (i.e. the single state would
+		 * need to be inside a proper group).
+		 * 
+		 * Example:
+		 * ```
+		 * before: e->(1)->|
+		 * 
+		 * after: e->1->(e)->|
+		 *        \_____^
+		 * ```
+		 * 
+		 * @return ref to self
+		 */
+		FORCE_INLINE AutomatonBuilder & pushSkip()
+		{
+			// We need an epsilon state to
+			// skip the current group
+			StateT * epsilon = automaton.template pushState<EpsilonT>();
+			
+			currentState->addNextState(epsilon);
+			currentState = epsilon;
+
+			// Create shortcut
+			groupStart[currentGroup]->addNextState(epsilon);
 
 			return *this;
 		}
@@ -488,6 +535,8 @@ namespace Re
 		 * after: B->1->2->3->(E)->|
 		 *        ^\__________|
 		 * ```
+		 * 
+		 * @return ref to self
 		 */
 		FORCE_INLINE AutomatonBuilder & pushJump()
 		{

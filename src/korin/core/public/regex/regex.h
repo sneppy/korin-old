@@ -25,6 +25,11 @@ namespace Re
 	 * Regex regex{"https?://\\w+(\\.\\w+)+[/\\w+]*"};
 	 * regex.match("https://www.google.com"); // True
 	 * ```
+	 * 
+	 * The reference flavor at the moment is
+	 * ECMAScript (JavaScript) regular
+	 * expressions. In the future, it will
+	 * support multiple flavors.
 	 */
 	class Regex
 	{
@@ -32,6 +37,7 @@ namespace Re
 		using StateT = typename AutomatonT::StateT;
 		using EpsilonT = typename AutomatonT::EpsilonT;
 		using SymbolT = typename AutomatonT::SymbolT;
+		using LambdaT = typename AutomatonT::LambdaT;
 		using AnySymbolT = typename AutomatonT::AnyT;
 		using BuilderT = typename AutomatonT::BuilderT;
 		using OptimizerT = typename AutomatonT::OptimizerT;
