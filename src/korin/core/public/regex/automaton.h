@@ -7,7 +7,7 @@
 #include "./regex_types.h"
 #include "./state.h"
 
-namespace NFA
+namespace Re
 {
 	template<typename> class AutomatonBuilder;
 	template<typename> class AutomatonOptimizer;
@@ -20,7 +20,7 @@ namespace NFA
 	 * 
 	 * Example:
 	 * ```cpp
-	 * using namespace NFA;
+	 * using namespace Re;
 	 * Automaton<char> automaton;
 	 * AutomatonBuilder<char> builder{automaton}; // Building regex `(a|b)+`
 	 * 
@@ -42,7 +42,7 @@ namespace NFA
 	{
 		friend AutomatonBuilder<AlphaT>;
 		friend AutomatonOptimizer<AlphaT>;
-		friend Regex;
+		friend Re::Regex;
 
 		/// State types definitions
 		/// @{
@@ -551,4 +551,4 @@ namespace NFA
 
 		return *this;
 	}
-} // namespace NFA
+} // namespace Re

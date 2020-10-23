@@ -18,7 +18,7 @@
 	DECLARE_STATE_TYPE(T, AlphaT)\
 	virtual FORCE_INLINE String getDisplayName() const override { return String::format("%s#%u", *debugName, this->id); }
 
-namespace NFA
+namespace Re
 {
 	/**
 	 * Base class for all states classes.
@@ -330,4 +330,4 @@ namespace NFA
 	{
 		return outNumRead = (*input != AlphabetTraitsT::terminalSymbol);
 	}
-} // namespace NFA
+} // namespace Re

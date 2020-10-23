@@ -1,55 +1,58 @@
 #include "regex/regex.h"
 
-void Regex::compile(const ansichar * pattern, sizet patternLen)
+namespace Re
 {
-	BuilderT builder{automaton};
-
-	for (sizet idx = 0; idx < patternLen; ++idx)
+	void Regex::compile(const ansichar * pattern, sizet patternLen)
 	{
-		switch (pattern[idx])
+		BuilderT builder{automaton};
+
+		for (sizet idx = 0; idx < patternLen; ++idx)
 		{
-			case '(':
+			switch (pattern[idx])
 			{
-				builder.beginGroup();
-				break;
-			}
+				case '(':
+				{
+					builder.beginGroup();
+					break;
+				}
 
-			case ')':
-			{
-				builder.beginGroup();
-				break;
-			}
+				case ')':
+				{
+					builder.beginGroup();
+					break;
+				}
 
-			case '|':
-			{
-				builder.pushBranch();
-				break;
-			}
+				case '|':
+				{
+					builder.pushBranch();
+					break;
+				}
 
-			case '+':
-			{
-				builder.pushJump();
-				break;
-			}
+				case '+':
+				{
+					builder.pushJump();
+					break;
+				}
 
-			case '.':
-			{
-				builder.pushState<AnySymbolT>();
-				break;
-			}
-			
-			default:
-			{
-				builder.pushState<SymbolT>(pattern[idx]);
-				break;
+				case '.':
+				{
+					builder.pushState<AnySymbolT>();
+					break;
+				}
+				
+				default:
+				{
+					builder.pushState<SymbolT>(pattern[idx]);
+					break;
+				}
 			}
 		}
+
+		// End main group
+		builder.endGroup();
+
+		// TODO: Move in own function
+		OptimizerT optimizer{automaton};
+		optimizer.removeEpsilons();
 	}
-
-	// End main group
-	builder.endGroup();
-
-	// TODO: Move in own function
-	OptimizerT optimizer{automaton};
-	optimizer.removeEpsilons();
-}
+} // namespace Re
