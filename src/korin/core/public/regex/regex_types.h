@@ -33,6 +33,12 @@ struct AlphabetTraits
 	/// Alphabet string type
 	using StringT = const AlphaT*;
 
+	/// Terminal symbol
+	static constexpr AlphaT terminalSymbol{};
+
+	/// Empty string
+	static constexpr const AlphaT emptyString[1] = {};
+
 	/**
 	 * 
 	 */

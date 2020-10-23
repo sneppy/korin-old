@@ -9,7 +9,7 @@
 struct NullCompare
 {
 	template<typename A, typename B>
-	FORCE_INLINE int32 operator()(const A&&, const B&&) const
+	FORCE_INLINE int32 operator()(A&&, B&&) const
 	{
 		return 0;
 	}

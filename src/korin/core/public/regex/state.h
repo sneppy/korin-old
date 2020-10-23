@@ -303,4 +303,31 @@ namespace NFA
 	{
 		return String::format("StateSymbol<%c>#%u", symbol, this->id);
 	}
+
+	/**
+	 * A state symbol that reads
+	 * any symbol (except the
+	 * terminal symbol) and always
+	 * consumes one input symbol.
+	 * 
+	 * @param AlphaT type of the
+	 * 	alphabet
+	 */
+	template<typename AlphaT>
+	struct StateAny : StateBase<AlphaT>
+	{
+		DECLARE_STATE_TYPE_DEFAULT(StateAny, AlphaT)
+
+		//////////////////////////////////////////////////
+		// StateBase interface
+		//////////////////////////////////////////////////
+		
+		virtual bool enterState(const AlphaStringT&, int32&) const override;
+	};
+
+	template<typename AlphaT>
+	FORCE_INLINE bool StateAny<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead) const
+	{
+		return outNumRead = (*input != AlphabetTraitsT::terminalSymbol);
+	}
 } // namespace NFA

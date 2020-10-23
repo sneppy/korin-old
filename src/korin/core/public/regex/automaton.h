@@ -2,6 +2,8 @@
 
 #include "core_types.h"
 #include "containers/list.h"
+#include "containers/pair.h"
+#include "containers/set.h"
 #include "./regex_types.h"
 #include "./state.h"
 
@@ -45,18 +47,19 @@ namespace NFA
 		/// State types definitions
 		/// @{
 		using StateT = StateBase<AlphaT>;
-		using NullT = StateBase<AlphaT>;
+		using FindStateT = typename StateT::FindState;
 		using EpsilonT = StateEpsilon<AlphaT>;
 		using AnyT = StateAny<AlphaT>;
 		using SymbolT = StateSymbol<AlphaT>;
 		using StringT = StateString<AlphaT>;
 		/// @}
 
-		using FindStateT = typename StateT::FindState;
 		using AlphabetTraitsT = AlphabetTraits<AlphaT>;
 		using AlphaSymbolT = typename AlphabetTraitsT::SymbolT;
 		using AlphaStringT = typename AlphabetTraitsT::StringT;
+
 		using BuilderT = AutomatonBuilder<AlphaT>;
+		using OptimizerT = AutomatonOptimizer<AlphaT>;
 	
 	private:
 		/**
@@ -290,7 +293,9 @@ namespace NFA
 			else
 			{
 				// State already visited
-				out += String::format("<repeated %s> ...\n", *(currState->getDisplayName()));
+				out += String::format("%s (repeated)\n", *(currState->getDisplayName()));
+				for (sizet depth = 0; depth < currDepth + 1; ++depth) out += "| ";
+				out += "...\n";
 			}
 		} while (visitQueue.popBack(currVisit));
 		
