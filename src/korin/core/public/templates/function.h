@@ -282,12 +282,20 @@ struct FunctionBase<StorageT, RetT(Args...)>
 
 	/**
 	 * 
+	 * @{
 	 */
+	FORCE_INLINE RetT operator()(Args ... args) const
+	{
+		// Perform the call
+		return callable(storage.getAddress(), args...);
+	}
+
 	FORCE_INLINE RetT operator()(Args ... args)
 	{
 		// Perform the call
 		return callable(storage.getAddress(), args...);
 	}
+	/** @} */
 
 protected:
 	/// Ptr function that invokes the call operator

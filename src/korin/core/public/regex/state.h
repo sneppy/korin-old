@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core_types.h"
+#include "templates/function.h"
 #include "containers/set.h"
 #include "./regex_types.h"
 
@@ -305,10 +306,10 @@ namespace Re
 	}
 
 	/**
-	 * A state symbol that reads
-	 * any symbol (except the
-	 * terminal symbol) and always
-	 * consumes one input symbol.
+	 * A state that reads any symbol
+	 * (except the terminal symbol)
+	 * and always consumes one input
+	 * symbol.
 	 * 
 	 * @param AlphaT type of the
 	 * 	alphabet
@@ -329,5 +330,50 @@ namespace Re
 	FORCE_INLINE bool StateAny<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead) const
 	{
 		return outNumRead = (*input != AlphabetTraitsT::terminalSymbol);
+	}
+
+	/**
+	 * Flexible state that accepts a
+	 * lambda function.
+	 * 
+	 * @param AlphaT type of the
+	 * 	alphabet
+	 */
+	template<typename AlphaT>
+	struct StateLambda : StateBase<AlphaT>
+	{
+		DECLARE_STATE_TYPE_DEFAULT(StateLambda, AlphaT)
+
+		using LambdaT = Function<bool(const AlphaStringT&, int32&)>;
+
+		/**
+		 * Construct a new lambda state with
+		 * the given lambda function.
+		 * 
+		 * @param inLambda lambda function to
+		 * 	be called when state is entered
+		 */
+		template<typename LambdaAnyT>
+		FORCE_INLINE StateLambda(LambdaAnyT && inLambda)
+			: lambda{forward<LambdaAnyT>(inLambda)}
+		{
+			//
+		}
+
+		//////////////////////////////////////////////////
+		// StateBase interface
+		//////////////////////////////////////////////////
+		
+		virtual bool enterState(const AlphaStringT&, int32&) const override;
+
+	protected:
+		/// Lambda enter function
+		LambdaT lambda;
+	};
+
+	template<typename AlphaT>
+	FORCE_INLINE bool StateLambda<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead) const
+	{
+		return lambda(input, outNumRead);
 	}
 } // namespace Re
