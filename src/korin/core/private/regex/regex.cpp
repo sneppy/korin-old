@@ -18,7 +18,7 @@ namespace Re
 
 				case ')':
 				{
-					builder.beginGroup();
+					builder.endGroup();
 					break;
 				}
 
