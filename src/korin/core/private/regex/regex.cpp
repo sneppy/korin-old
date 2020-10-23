@@ -4,7 +4,8 @@ namespace Re
 {
 	void Regex::compile(const ansichar * pattern, sizet patternLen)
 	{
-		BuilderT builder{automaton};
+		// Create new builder
+		BuilderT builder = automaton.createBuilder();
 
 		for (sizet idx = 0; idx < patternLen; ++idx)
 		{

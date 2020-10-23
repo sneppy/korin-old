@@ -74,6 +74,11 @@ namespace Re
 		template<typename StateAnyT, typename ...CreateStateArgsT>
 		FORCE_INLINE StateAnyT * createState(CreateStateArgsT && ...createStateArgs)
 		{
+			// TODO {
+			// 	I'd like to use a smart allocator
+			// 	but I guess each state class should
+			// 	have its own allocator
+			// }
 			return new (MallocObject<StateAnyT>{}.alloc()) StateAnyT{forward<CreateStateArgsT>(createStateArgs)...};
 		}
 
@@ -100,25 +105,6 @@ namespace Re
 		 * all states.
 		 */
 		~Automaton();
-
-		/**
-		 * Returns true if the provided
-		 * sequence of symbols is accepted
-		 * by the automaton, i.e. if
-		 * the automaton can consume all
-		 * the input symbols and terminate
-		 * on the accepted state.
-		 * 
-		 * Example:
-		 * ```
-		 * (ab)+ acceptString "abc" = false
-		 * (abc)+ acceptString "abc" = true
-		 * ```
-		 * 
-		 * @param input sequence of input
-		 * 	symbols
-		 */
-		bool acceptString(const AlphaStringT & input) const;
 
 		/**
 		 * Returns a pointer to the start
@@ -157,6 +143,24 @@ namespace Re
 		}
 
 		/**
+		 * Creates and return a new builder
+		 * for this automaton.
+		 */
+		FORCE_INLINE BuilderT createBuilder()
+		{
+			return BuilderT{*this};
+		}
+
+		/**
+		 * Creates and returns a new optimizer
+		 * for this automaton.
+		 */
+		FORCE_INLINE OptimizerT createOptimizer()
+		{
+			return OptimizerT{*this};
+		}
+
+		/**
 		 * Create a new state and add to
 		 * the list of allocated states.
 		 * 
@@ -175,6 +179,25 @@ namespace Re
 			allocatedStates.pushBack(state);
 			return state;
 		}
+
+		/**
+		 * Returns true if the provided
+		 * sequence of symbols is accepted
+		 * by the automaton, i.e. if
+		 * the automaton can consume all
+		 * the input symbols and terminate
+		 * on the accepted state.
+		 * 
+		 * Example:
+		 * ```
+		 * (ab)+ acceptString "abc" = false
+		 * (abc)+ acceptString "abc" = true
+		 * ```
+		 * 
+		 * @param input sequence of input
+		 * 	symbols
+		 */
+		bool acceptString(const AlphaStringT & input) const;
 
 		/**
 		 * Returns a string representation
