@@ -283,84 +283,59 @@ namespace Re
 	template<typename AlphaT>
 	String Automaton<AlphaT>::toString() const
 	{
-		using Visit = Tuple<const StateT* /* Current state */, uint8 /* Branch idx = 0 */, bool /* isBranch = false */>;
+		using Visit = Tuple<const StateT* /* Current state */, uint32 /* Current depth = 0 */>;
 
 		String out;
-		List<String> lines;
-		lines.pushBack("");
-
-		// Keep track of visit queue and
-		// visited states
+		
+		// Keeps track of the visit queue
+		// and already visited states
 		List<Visit> visitQueue;
+		Visit currVisit{startState, 0u};
 		Set<const StateT*, typename StateT::FindState> visitedStates;
-		Visit currVisit{startState, 0, false};
-		sizet branchOffsets[255] = {};
-
+		Set<uint32> branches;
+		
 		do
 		{
-			const StateT * currState = currVisit.template get<const StateT*>();
-			uint8 currBranch = currVisit.template get<1>();
-			bool currIsBranch = currVisit.template get<2>();
+			const StateT * currState = currVisit.template get<0>();
+			uint32 currDepth = currVisit.template get<1>();
 
-			if (currIsBranch)
-			{
-				// Create a new line for branch
-				String & line = lines.pushBack(String{branchOffsets[currBranch - 1], ' '});
-				line += " \\=> ";
+			// Create new line
+			ansichar * line = &out[out.getLength()];
+			out += String{currDepth * 2, ' '};
 
-				// Add bars to connect branches
-				for (uint8 branchIdx = 0; branchIdx < currBranch - 1; ++branchIdx)
-				{
-					line[branchOffsets[branchIdx] + 1] = '|';
-				}
-			}
-			else
+			for (auto branchIt = branches.begin(); branchIt != branches.end() && *branchIt < currDepth; ++branchIt)
 			{
-				// Get current line
-				String & line = lines.getTail()->data;
-				line += " ==> ";
+				const uint32 branchDepth = *branchIt;
+				line[branchDepth * 2] = '|';
+				line[branchDepth * 2 + 1] = branchDepth + 1 == currDepth ? '-' : ' ';
 			}
 
 			if (!visitedStates.get(currState))
 			{
-				// Not already visited, add to set
+				// State not yet visited
 				visitedStates.set(currState);
 
-				// Get current line
-				String & line = lines.getTail()->data;
-				line += currState->getDisplayName();
+				out += currState->getDisplayName();
+				out += '\n';
 
-				// Get number of branches
-				uint8 numNextStates = currState->getNextStates().getCount();
-				if (numNextStates > 1)
+				if (currState->getNextStates().getCount() > 1)
 				{
-					// If we have multiple branches, add to offset list
-					branchOffsets[currBranch] = line.getLength();
+					// Branch here
+					branches.set(currDepth);
 				}
 
-				uint8 stateIdx = numNextStates;
-				uint8 nextBranch = currBranch + (numNextStates > 1);
 				for (const StateT * nextState : currState->getNextStates())
 				{
-					// Push on visit queue
-					visitQueue.pushBack(Visit{nextState, nextBranch, --stateIdx != 0});
+					visitQueue.pushBack(Visit{nextState, currDepth + 1});
 				}
 			}
 			else
 			{
 				// State already visited
-				String & line = lines.getTail()->data;
-				line += currState->getDisplayName();
-				line += " (repeated) ==> ...";
+				out += currState->getDisplayName();
+				out += " (repeated)\n";
 			}
-
 		} while (visitQueue.popBack(currVisit));
-
-		for (String & line : lines)
-		{
-			// Append line to output
-			out += line + '\n';
-		}
 
 		return out;
 	}
