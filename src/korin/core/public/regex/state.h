@@ -50,7 +50,7 @@ namespace Re
 			}
 		};
 		
-		DECLARE_STATE_TYPE(StateBase, AlphaT)
+		DECLARE_STATE_TYPE(Base, AlphaT)
 
 		/**
 		 * Construct a new state. Assigns
@@ -217,7 +217,7 @@ namespace Re
 		 */
 		virtual String getDisplayName() const
 		{
-			return String::format("State#%u", id);
+			return String::format("?#%u", id);
 		}
 
 	protected:
@@ -240,7 +240,7 @@ namespace Re
 	template<typename AlphaT>
 	struct StateEpsilon : public StateBase<AlphaT>
 	{
-		DECLARE_STATE_TYPE_DEFAULT(StateEpsilon, AlphaT)
+		DECLARE_STATE_TYPE_DEFAULT(Epsilon, AlphaT)
 
 		//////////////////////////////////////////////////
 		// StateBase interface
@@ -268,7 +268,7 @@ namespace Re
 	template<typename AlphaT>
 	struct StateSymbol : public StateBase<AlphaT>
 	{
-		DECLARE_STATE_TYPE(StateSymbol, AlphaT)
+		DECLARE_STATE_TYPE(Symbol, AlphaT)
 
 		/**
 		 * Construct a new state with the
@@ -304,7 +304,7 @@ namespace Re
 	template<typename AlphaT>
 	FORCE_INLINE String StateSymbol<AlphaT>::getDisplayName() const
 	{
-		return String::format("StateSymbol<%c>#%u", symbol, this->id);
+		return String::format("Sym<%c>#%u", symbol, this->id);
 	}
 
 	/**
@@ -319,7 +319,7 @@ namespace Re
 	template<typename AlphaT>
 	struct StateAny : StateBase<AlphaT>
 	{
-		DECLARE_STATE_TYPE_DEFAULT(StateAny, AlphaT)
+		DECLARE_STATE_TYPE_DEFAULT(Any, AlphaT)
 
 		//////////////////////////////////////////////////
 		// StateBase interface
@@ -344,7 +344,7 @@ namespace Re
 	template<typename AlphaT>
 	struct StateLambda : StateBase<AlphaT>
 	{
-		DECLARE_STATE_TYPE_DEFAULT(StateLambda, AlphaT)
+		DECLARE_STATE_TYPE(StateLambda, AlphaT)
 
 		using LambdaT = Function<bool(const AlphaStringT&, int32&, int32)>;
 
@@ -353,11 +353,13 @@ namespace Re
 		 * the given lambda function.
 		 * 
 		 * @param inLambda lambda function to
+		 * @param inName optional lambda name
 		 * 	be called when state is entered
 		 */
 		template<typename LambdaAnyT>
-		FORCE_INLINE StateLambda(LambdaAnyT && inLambda)
+		FORCE_INLINE StateLambda(LambdaAnyT && inLambda, const String & inName = "")
 			: lambda{forward<LambdaAnyT>(inLambda)}
+			, name{inName}
 		{
 			//
 		}
@@ -367,15 +369,25 @@ namespace Re
 		//////////////////////////////////////////////////
 		
 		virtual bool enterState(const AlphaStringT&, int32&, int32) const override;
+		virtual String getDisplayName() const override;
 
 	protected:
 		/// Lambda enter function
 		LambdaT lambda;
+
+		/// Optional lambda name
+		String name;
 	};
 
 	template<typename AlphaT>
 	FORCE_INLINE bool StateLambda<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead, int32 numRead) const
 	{
 		return lambda(input, outNumRead, numRead);
+	}
+
+	template<typename AlphaT>
+	FORCE_INLINE String StateLambda<AlphaT>::getDisplayName() const
+	{
+		return String::format("Lambda<%s>#%u", *name, this->id);
 	}
 } // namespace Re

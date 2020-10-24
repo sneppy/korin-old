@@ -152,7 +152,7 @@ namespace Re
 
 								outNumRead = 0;
 								return isWord(*input) && (numRead == 0 || !isWord(*(input - 1))) || !isWord(*input) && (numRead > 0 && isWord(*(input - 1)));
-							});
+							}, "WordBoundaries");
 							break;
 						}
 
@@ -164,7 +164,7 @@ namespace Re
 
 								outNumRead = 0;
 								return isWord(*input) && (numRead > 0 && isWord(*(input - 1)));
-							});
+							}, "NonWordBoundaries");
 							break;
 						}
 
@@ -174,7 +174,7 @@ namespace Re
 							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = isDigit(*input);
-							});
+							}, "Digit");
 							break;
 						}
 
@@ -184,7 +184,7 @@ namespace Re
 							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = !isDigit(*input);
-							});
+							}, "NonDigit");
 							break;
 						}
 
@@ -194,7 +194,7 @@ namespace Re
 							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = isWhiteSpace(*input);
-							});
+							}, "WhiteSpace");
 							break;
 						}
 
@@ -204,7 +204,7 @@ namespace Re
 							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = !isWhiteSpace(*input);
-							});
+							}, "NonWhiteSpace");
 							break;
 						}
 
@@ -214,7 +214,7 @@ namespace Re
 							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = isWord(*input);
-							});
+							}, "Word");
 							break;
 						}
 
@@ -224,7 +224,7 @@ namespace Re
 							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = !isWord(*input);
-							});
+							}, "NonWord");
 							break;
 						}
 

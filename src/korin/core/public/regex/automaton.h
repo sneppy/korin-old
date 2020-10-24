@@ -283,48 +283,85 @@ namespace Re
 	template<typename AlphaT>
 	String Automaton<AlphaT>::toString() const
 	{
-		// TODO: Remove compare type, not needed
-		using Visit = Tuple<const StateT*, int32>;
-		
-		String out;
+		using Visit = Tuple<const StateT* /* Current state */, uint8 /* Branch idx = 0 */, bool /* isBranch = false */>;
 
-		// Create visit queue, and list of
-		// already visited states
+		String out;
+		List<String> lines;
+		lines.pushBack("");
+
+		// Keep track of visit queue and
+		// visited states
 		List<Visit> visitQueue;
 		Set<const StateT*, typename StateT::FindState> visitedStates;
-		Visit currVisit{startState, 0};
-		
+		Visit currVisit{startState, 0, false};
+		sizet branchOffsets[255] = {};
+
 		do
 		{
 			const StateT * currState = currVisit.template get<const StateT*>();
-			int32 currDepth = currVisit.template get<int32>();
+			uint8 currBranch = currVisit.template get<1>();
+			bool currIsBranch = currVisit.template get<2>();
 
-			for (int32 depth = 0; depth < currDepth; ++depth) out += "| ";
+			if (currIsBranch)
+			{
+				// Create a new line for branch
+				String & line = lines.pushBack(String{branchOffsets[currBranch - 1], ' '});
+				line += " \\=> ";
+
+				// Add bars to connect branches
+				for (uint8 branchIdx = 0; branchIdx < currBranch - 1; ++branchIdx)
+				{
+					line[branchOffsets[branchIdx] + 1] = '|';
+				}
+			}
+			else
+			{
+				// Get current line
+				String & line = lines.getTail()->data;
+				line += " ==> ";
+			}
 
 			if (!visitedStates.get(currState))
 			{
-				// State not already visited, add
-				// to visited set and add next
-				// states to visit queue
+				// Not already visited, add to set
 				visitedStates.set(currState);
 
+				// Get current line
+				String & line = lines.getTail()->data;
+				line += currState->getDisplayName();
+
+				// Get number of branches
+				uint8 numNextStates = currState->getNextStates().getCount();
+				if (numNextStates > 1)
+				{
+					// If we have multiple branches, add to offset list
+					branchOffsets[currBranch] = line.getLength();
+				}
+
+				uint8 stateIdx = numNextStates;
+				uint8 nextBranch = currBranch + (numNextStates > 1);
 				for (const StateT * nextState : currState->getNextStates())
 				{
-					visitQueue.pushBack(Visit{nextState, currDepth + 1});
+					// Push on visit queue
+					visitQueue.pushBack(Visit{nextState, nextBranch, --stateIdx != 0});
 				}
-				
-				out += currState->getDisplayName();
-				out += '\n';
 			}
 			else
 			{
 				// State already visited
-				out += String::format("%s (repeated)\n", *(currState->getDisplayName()));
-				for (sizet depth = 0; depth < currDepth + 1; ++depth) out += "| ";
-				out += "...\n";
+				String & line = lines.getTail()->data;
+				line += currState->getDisplayName();
+				line += " (repeated) ==> ...";
 			}
+
 		} while (visitQueue.popBack(currVisit));
-		
+
+		for (String & line : lines)
+		{
+			// Append line to output
+			out += line + '\n';
+		}
+
 		return out;
 	}
 	

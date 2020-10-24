@@ -85,9 +85,10 @@ public:
 		return item;
 	}
 
-	template<uint64 idx, typename = typename EnableIf<(idx > inIdx)>::Type>
+	template<uint64 idx, typename = typename EnableIf<(idx != inIdx)>::Type>
 	constexpr FORCE_INLINE const auto & get() const
 	{
+		static_assert(idx > inIdx, "Item with idx not found");
 		return BaseT::template get<idx>();
 	}
 
@@ -97,9 +98,10 @@ public:
 		return item;
 	}
 
-	template<uint64 idx, typename = typename EnableIf<(idx > inIdx)>::Type>
+	template<uint64 idx, typename = typename EnableIf<(idx != inIdx)>::Type>
 	constexpr FORCE_INLINE auto & get()
 	{
+		static_assert(idx > inIdx, "Item with idx not found");
 		return BaseT::template get<idx>();
 	}
 	/** @} */
@@ -232,16 +234,17 @@ public:
 	 * @return ref to item
 	 * @{
 	 */
-	template<typename ItemT, typename = typename EnableIf<IsSameType<ItemT, HeadT>::value>::Type>
+	template<typename ItemT>
 	constexpr FORCE_INLINE const HeadT & get() const
 	{
+		static_assert(IsSameType<ItemT, HeadT>::value, "Item with type not found");
 		return item;
 	}
 
-
-	template<typename ItemT, typename = typename EnableIf<IsSameType<ItemT, HeadT>::value>::Type>
+	template<typename ItemT>
 	constexpr FORCE_INLINE HeadT & get()
 	{
+		static_assert(IsSameType<ItemT, HeadT>::value, "Item with type not found");
 		return item;
 	}
 	/** @} */
