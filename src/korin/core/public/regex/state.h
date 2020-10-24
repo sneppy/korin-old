@@ -204,10 +204,12 @@ namespace Re
 		 * 	symbols, i.e. input string
 		 * @param outNumRead returned number
 		 * 	of symbols read from input string
+		 * @param numRead number of symbols
+		 * 	already read
 		 * @return true if input read, false
 		 * 	otherwise
 		 */
-		virtual bool enterState(const AlphaStringT & input, int32 & outNumRead) const = 0;
+		virtual bool enterState(const AlphaStringT & input, int32 & outNumRead, int32 numRead = 0) const = 0;
 
 		/**
 		 * Returns a string representation
@@ -244,11 +246,11 @@ namespace Re
 		// StateBase interface
 		//////////////////////////////////////////////////
 		
-		virtual bool enterState(const AlphaStringT&, int32&) const override;
+		virtual bool enterState(const AlphaStringT&, int32&, int32) const override;
 	};
 
 	template<typename AlphaT>
-	FORCE_INLINE bool StateEpsilon<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead) const
+	FORCE_INLINE bool StateEpsilon<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead, int32 /* numRead */) const
 	{
 		// Always reads zero symbols and returns true
 		return (outNumRead = 0, true);
@@ -285,7 +287,7 @@ namespace Re
 		// StateBase interface
 		//////////////////////////////////////////////////
 		
-		virtual bool enterState(const AlphaStringT&, int32&) const override;
+		virtual bool enterState(const AlphaStringT&, int32&, int32) const override;
 		virtual String getDisplayName() const override;
 
 	protected:
@@ -294,7 +296,7 @@ namespace Re
 	};
 
 	template<typename AlphaT>
-	FORCE_INLINE bool StateSymbol<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead) const
+	FORCE_INLINE bool StateSymbol<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead, int32 /* numRead */) const
 	{
 		return outNumRead = (*input == symbol);
 	}
@@ -323,11 +325,11 @@ namespace Re
 		// StateBase interface
 		//////////////////////////////////////////////////
 		
-		virtual bool enterState(const AlphaStringT&, int32&) const override;
+		virtual bool enterState(const AlphaStringT&, int32&, int32) const override;
 	};
 
 	template<typename AlphaT>
-	FORCE_INLINE bool StateAny<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead) const
+	FORCE_INLINE bool StateAny<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead, int32 /* numRead */) const
 	{
 		return outNumRead = (*input != AlphabetTraitsT::terminalSymbol);
 	}
@@ -344,7 +346,7 @@ namespace Re
 	{
 		DECLARE_STATE_TYPE_DEFAULT(StateLambda, AlphaT)
 
-		using LambdaT = Function<bool(const AlphaStringT&, int32&)>;
+		using LambdaT = Function<bool(const AlphaStringT&, int32&, int32)>;
 
 		/**
 		 * Construct a new lambda state with
@@ -364,7 +366,7 @@ namespace Re
 		// StateBase interface
 		//////////////////////////////////////////////////
 		
-		virtual bool enterState(const AlphaStringT&, int32&) const override;
+		virtual bool enterState(const AlphaStringT&, int32&, int32) const override;
 
 	protected:
 		/// Lambda enter function
@@ -372,8 +374,8 @@ namespace Re
 	};
 
 	template<typename AlphaT>
-	FORCE_INLINE bool StateLambda<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead) const
+	FORCE_INLINE bool StateLambda<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead, int32 numRead) const
 	{
-		return lambda(input, outNumRead);
+		return lambda(input, outNumRead, numRead);
 	}
 } // namespace Re

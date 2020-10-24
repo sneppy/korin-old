@@ -4,6 +4,7 @@
 #include "containers/list.h"
 #include "containers/pair.h"
 #include "containers/set.h"
+#include "containers/tuple.h"
 #include "./regex_types.h"
 #include "./state.h"
 
@@ -245,17 +246,18 @@ namespace Re
 	template<typename AlphaT>
 	bool Automaton<AlphaT>::acceptString(const AlphaStringT & input) const
 	{
-		using Visit = Pair<const StateT*, AlphaStringT>;
+		using Visit = Tuple<const StateT*, AlphaStringT, int32>;
 
 		// Create state queue
 		List<Visit> visitQueue;
-		Visit currVisit{startState, input};
+		Visit currVisit{startState, input, 0};
 		
 		do
 		{
 			int32 numRead = 0;
-			const StateT * currState = currVisit.first;
-			AlphaStringT & currInput = currVisit.second;
+			const StateT * currState = currVisit.template get<const StateT*>();
+			AlphaStringT & currInput = currVisit.template get<AlphaStringT>();
+			int32 currNumRead = currVisit.template get<int32>();
 
 			if (AlphabetTraitsT::isEOF(currInput) && isAcceptedState(currState))
 			{
@@ -265,12 +267,12 @@ namespace Re
 			}
 
 			// Try enter current state
-			if (currState->enterState(currInput, numRead))
+			if (currState->enterState(currInput, numRead, currNumRead))
 			{
 				// Push next states to visit queue
 				for (const StateT * nextState : currState->getNextStates())
 				{
-					visitQueue.pushBack(Visit{nextState, AlphabetTraitsT::consumeInput(currInput, numRead)});
+					visitQueue.pushBack(Visit{nextState, AlphabetTraitsT::consumeInput(currInput, numRead), currNumRead + numRead});
 				}
 			}
 		} while (visitQueue.popBack(currVisit));
@@ -282,7 +284,7 @@ namespace Re
 	String Automaton<AlphaT>::toString() const
 	{
 		// TODO: Remove compare type, not needed
-		using Visit = Pair<const StateT*, sizet, typename StateT::FindState>;
+		using Visit = Tuple<const StateT*, int32>;
 		
 		String out;
 
@@ -290,14 +292,14 @@ namespace Re
 		// already visited states
 		List<Visit> visitQueue;
 		Set<const StateT*, typename StateT::FindState> visitedStates;
-		Visit currVisit{startState, 0ull};
+		Visit currVisit{startState, 0};
 		
 		do
 		{
-			const StateT * currState = currVisit.first;
-			sizet currDepth = currVisit.second;
+			const StateT * currState = currVisit.template get<const StateT*>();
+			int32 currDepth = currVisit.template get<int32>();
 
-			for (sizet depth = 0; depth < currDepth; ++depth) out += "| ";
+			for (int32 depth = 0; depth < currDepth; ++depth) out += "| ";
 
 			if (!visitedStates.get(currState))
 			{

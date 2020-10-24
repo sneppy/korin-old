@@ -119,10 +119,11 @@ namespace Re
 
 				case '^':
 				{
-					builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+					// Matches beginning of string
+					builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 numRead) -> bool {
 
 						outNumRead = 0;
-						return false; // FIXME: We need num of read characters
+						return numRead == 0;
 					});
 					break;
 				}
@@ -130,10 +131,10 @@ namespace Re
 				case '$':
 				{
 					// Matches end of the string
-					builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+					builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 						outNumRead = 0;
-						return false; // FIXME: We need num of read characters
+						return *input == '\0';
 					});
 					break;
 				}
@@ -147,10 +148,10 @@ namespace Re
 						{
 							// Matches, without consuming, a word
 							// boundary (e.g. `Hello>|<, world!`)
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 numRead) -> bool {
 
 								outNumRead = 0;
-								return false; // FIXME: We need the number of characters read
+								return isWord(*input) && (numRead == 0 || !isWord(*(input - 1))) || !isWord(*input) && (numRead > 0 && isWord(*(input - 1)));
 							});
 							break;
 						}
@@ -159,10 +160,10 @@ namespace Re
 						{
 							// Matches, without consuming, a position
 							// between two word characters
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 numRead) -> bool {
 
 								outNumRead = 0;
-								return false; // FIXME: We need the number of characters read
+								return isWord(*input) && (numRead > 0 && isWord(*(input - 1)));
 							});
 							break;
 						}
@@ -170,7 +171,7 @@ namespace Re
 						case 'd':
 						{
 							// Matches any single digit character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = isDigit(*input);
 							});
@@ -180,7 +181,7 @@ namespace Re
 						case 'D':
 						{
 							// Matches any single non-digit character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = !isDigit(*input);
 							});
@@ -190,7 +191,7 @@ namespace Re
 						case 's':
 						{
 							// Matches any single whitespace character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = isWhiteSpace(*input);
 							});
@@ -200,7 +201,7 @@ namespace Re
 						case 'S':
 						{
 							// Matches any single non-whitespace character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = !isWhiteSpace(*input);
 							});
@@ -210,7 +211,7 @@ namespace Re
 						case 'w':
 						{
 							// Matches any single word character (i.e. [a-zA-Z0-9_])
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = isWord(*input);
 							});
@@ -220,7 +221,7 @@ namespace Re
 						case 'W':
 						{
 							// Matches any single non-word character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead) -> bool {
+							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
 
 								return outNumRead = !isWord(*input);
 							});
