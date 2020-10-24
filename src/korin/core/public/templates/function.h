@@ -193,19 +193,19 @@ struct FunctionCaller<FunctorT, RetT(Args...)>
 	/**
 	 * Execute function call
 	 */
-	static FORCE_INLINE RetT call(void * fn, Args && ... args)
+	static FORCE_INLINE RetT call(void * fn, Args & ...args)
 	{
 		return invoke(*(FunctorT*)fn, forward<Args>(args)...);
 	}
 };
 
-template<typename FunctorT, typename ... Args>
+template<typename FunctorT, typename ...Args>
 struct FunctionCaller<FunctorT, void(Args...)>
 {
 	/**
 	 * Execute function call
 	 */
-	static FORCE_INLINE void call(void * fn, Args && ... args)
+	static FORCE_INLINE void call(void * fn, Args & ...args)
 	{
 		invoke(*(FunctorT*)fn, forward<Args>(args)...);
 	}
