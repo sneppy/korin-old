@@ -10,6 +10,7 @@ template<typename, typename = void>											class List;
 template<typename, typename = ThreeWayCompare>								class BinaryNode;
 template<typename, typename = ThreeWayCompare, typename = void>				class BinaryTree;
 template<typename, typename, typename = NullCompare>						class Pair;
+template<uint64, typename...>												class TupleBase;
 template<typename, typename, typename = ThreeWayCompare, typename = void>	class Map;
 template<typename, typename = ThreeWayCompare, typename = void>				class Set;
 

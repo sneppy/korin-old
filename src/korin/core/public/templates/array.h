@@ -108,10 +108,3 @@ constexpr FORCE_INLINE StaticArray<T, inSize> makeStaticArray(const T (&inList)[
 {
 	return StaticArray<T, inSize>(static_cast<const T*>(inList));
 }
-
-/**
- * StaticArray alias.
- * @see StaticArray
- */
-template<typename T, uint64 size>
-using Tuple = StaticArray<T, size>;
