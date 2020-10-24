@@ -2,10 +2,13 @@
 
 namespace Re
 {
+	/**
+	 * @defgroup RegexSpecialFunctions
+	 */
 	namespace
 	{
 		/**
-		 * @defgroup RegexSpecialFunctions
+		 * ...
 		 * @{
 		 */
 		constexpr FORCE_INLINE bool isWhiteSpace(ansichar cc)
@@ -39,6 +42,126 @@ namespace Re
 		}
 		/** @} */
 	} // namespace
+
+	/**
+	 * Parse an escape sequence and
+	 * updates builder accordingly.
+	 * Returns number of read
+	 * characters.
+	 * 
+	 * @param builder ref to
+	 * 	automaton builder
+	 * @param sequence sequence string
+	 * 	(which includes '\')
+	 * @return number of read
+	 * 	characters (excluding '\')
+	 */
+	sizet parseEscapeSequence(Regex::BuilderT & builder, const ansichar * sequence)
+	{
+		using SymbolT = Regex::SymbolT;
+		using LambdaT = Regex::LambdaT;
+
+		sizet idx = 0;
+
+		CHECK(sequence[idx] == '\\');
+
+		// Switch on second symbol
+		switch (sequence[++idx])
+		{
+			case 'b':
+			{
+				// Matches, without consuming, a word
+				// boundary (e.g. `Hello>|<, world!`)
+				builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 numRead) -> bool {
+
+					outNumRead = 0;
+					return isWord(*input) && (numRead == 0 || !isWord(*(input - 1))) || !isWord(*input) && (numRead > 0 && isWord(*(input - 1)));
+				}, "WordBoundaries");
+				break;
+			}
+
+			case 'B':
+			{
+				// Matches, without consuming, a position
+				// between two word characters
+				builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 numRead) -> bool {
+
+					outNumRead = 0;
+					return isWord(*input) && (numRead > 0 && isWord(*(input - 1)));
+				}, "NonWordBoundaries");
+				break;
+			}
+
+			case 'd':
+			{
+				// Matches any single digit character
+				builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
+
+					return outNumRead = isDigit(*input);
+				}, "Digit");
+				break;
+			}
+
+			case 'D':
+			{
+				// Matches any single non-digit character
+				builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
+
+					return outNumRead = !isDigit(*input);
+				}, "NonDigit");
+				break;
+			}
+
+			case 's':
+			{
+				// Matches any single whitespace character
+				builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
+
+					return outNumRead = isWhiteSpace(*input);
+				}, "WhiteSpace");
+				break;
+			}
+
+			case 'S':
+			{
+				// Matches any single non-whitespace character
+				builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
+
+					return outNumRead = !isWhiteSpace(*input);
+				}, "NonWhiteSpace");
+				break;
+			}
+
+			case 'w':
+			{
+				// Matches any single word character (i.e. [a-zA-Z0-9_])
+				builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
+
+					return outNumRead = isWord(*input);
+				}, "Word");
+				break;
+			}
+
+			case 'W':
+			{
+				// Matches any single non-word character
+				builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
+
+					return outNumRead = !isWord(*input);
+				}, "NonWord");
+				break;
+			}
+
+			default:
+			{
+				// Escaped special character
+				builder.pushState<SymbolT>(sequence[idx]);
+				break;
+			}
+		}
+
+		return idx;
+	}
 	
 
 	void Regex::compile(const ansichar * pattern, sizet patternLen)
@@ -140,8 +263,7 @@ namespace Re
 						if (pattern[idx] == '\\')
 						{
 							// Parse escape sequence
-							// FIXME: Create an apposite function since we need this in multiple points
-							idx += 2;
+							idx += parseEscapeSequence(builder, pattern + idx) + 1;
 						}
 						else if (pattern[idx + 1] == '-' && pattern[idx + 2] != ']')
 						{
@@ -232,100 +354,7 @@ namespace Re
 
 				case '\\':
 				{
-					// Switch on second symbol
-					switch (pattern[++idx])
-					{
-						case 'b':
-						{
-							// Matches, without consuming, a word
-							// boundary (e.g. `Hello>|<, world!`)
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 numRead) -> bool {
-
-								outNumRead = 0;
-								return isWord(*input) && (numRead == 0 || !isWord(*(input - 1))) || !isWord(*input) && (numRead > 0 && isWord(*(input - 1)));
-							}, "WordBoundaries");
-							break;
-						}
-
-						case 'B':
-						{
-							// Matches, without consuming, a position
-							// between two word characters
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 numRead) -> bool {
-
-								outNumRead = 0;
-								return isWord(*input) && (numRead > 0 && isWord(*(input - 1)));
-							}, "NonWordBoundaries");
-							break;
-						}
-
-						case 'd':
-						{
-							// Matches any single digit character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
-
-								return outNumRead = isDigit(*input);
-							}, "Digit");
-							break;
-						}
-
-						case 'D':
-						{
-							// Matches any single non-digit character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
-
-								return outNumRead = !isDigit(*input);
-							}, "NonDigit");
-							break;
-						}
-
-						case 's':
-						{
-							// Matches any single whitespace character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
-
-								return outNumRead = isWhiteSpace(*input);
-							}, "WhiteSpace");
-							break;
-						}
-
-						case 'S':
-						{
-							// Matches any single non-whitespace character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
-
-								return outNumRead = !isWhiteSpace(*input);
-							}, "NonWhiteSpace");
-							break;
-						}
-
-						case 'w':
-						{
-							// Matches any single word character (i.e. [a-zA-Z0-9_])
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
-
-								return outNumRead = isWord(*input);
-							}, "Word");
-							break;
-						}
-
-						case 'W':
-						{
-							// Matches any single non-word character
-							builder.pushState<LambdaT>([](const ansichar * input, int32 & outNumRead, int32 /* numRead */) -> bool {
-
-								return outNumRead = !isWord(*input);
-							}, "NonWord");
-							break;
-						}
-
-						default:
-						{
-							// Escaped special character
-							builder.pushState<SymbolT>(pattern[idx]);
-							break;
-						}
-					}
+					idx += parseEscapeSequence(builder, pattern + idx);
 					break;
 				}
 				

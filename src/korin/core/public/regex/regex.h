@@ -43,6 +43,8 @@ namespace Re
 		using BuilderT = typename AutomatonT::BuilderT;
 		using OptimizerT = typename AutomatonT::OptimizerT;
 
+		friend sizet parseEscapeSequence(BuilderT&, const ansichar*);
+
 		/**
 		 * Compile this regex using the
 		 * provided pattern string.
