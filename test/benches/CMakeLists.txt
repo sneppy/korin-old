@@ -9,6 +9,7 @@ set(BENCHES
 	"map"
 	"sort"
 	"set"
+	"regex"
 )
 
 ## Create and build all benches
@@ -41,6 +42,19 @@ foreach(BENCH ${BENCHES})
 			"\n"
 			"#include \"benchmark/benchmark.h\"\n"
 			"#include \"./bench_util.h\"\n"
+			"\n"
+			"/**\n"
+			" * \n"
+			" */\n"
+			"void bench(benchmark::State & state)\n"
+			"{\n"
+			"\tfor (auto _ : state)\n"
+			"\t{\n"
+			"\t\t// Test body\n"
+			"\t}\n"
+			"}\n"
+			"\n"
+			"BENCHMARK(bench);\n"
 		)
 		
 	endif()

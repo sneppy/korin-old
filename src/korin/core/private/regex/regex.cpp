@@ -337,7 +337,7 @@ namespace Re
 
 						outNumRead = 0;
 						return numRead == 0;
-					});
+					}, "BeginBoundary");
 					break;
 				}
 
@@ -348,7 +348,7 @@ namespace Re
 
 						outNumRead = 0;
 						return *input == '\0';
-					});
+					}, "EndBoundary");
 					break;
 				}
 

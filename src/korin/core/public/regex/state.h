@@ -431,6 +431,7 @@ namespace Re
 		LambdaT lambda;
 
 		/// Optional lambda name
+		// FIXME: Investigate possible memory leak
 		String name;
 	};
 

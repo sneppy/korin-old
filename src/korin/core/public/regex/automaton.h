@@ -301,8 +301,9 @@ namespace Re
 			uint32 currDepth = currVisit.template get<1>();
 
 			// Create new line
-			ansichar * line = &out[out.getLength()];
+			sizet currLen = out.getLength();
 			out += String{currDepth * 2, ' '};
+			ansichar * line = &out[currLen];
 
 			for (auto branchIt = branches.begin(); branchIt != branches.end() && *branchIt < currDepth; ++branchIt)
 			{
