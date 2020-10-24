@@ -4,6 +4,10 @@ namespace Re
 {
 	namespace
 	{
+		/**
+		 * @defgroup RegexSpecialFunctions
+		 * @{
+		 */
 		constexpr FORCE_INLINE bool isWhiteSpace(ansichar cc)
 		{
 			return cc == ' ' || cc == '\t' || cc == '\r' || cc == '\n' || cc == '\v' || cc == '\f';
@@ -33,6 +37,7 @@ namespace Re
 		{
 			return isDigit(cc) || isAlpha(cc) || cc == '_';
 		}
+		/** @} */
 	} // namespace
 	
 
@@ -66,11 +71,7 @@ namespace Re
 				// TODO: Negative Lookahead, `(?!...)`
 				// TODO: Positive Lookbehind, `(?<=...)`
 				// TODO: Negative Lookbehind, `(?<!...)`
-				// TODO: A single character of: a, b or c, `[abc]`
 				// TODO: A character except: a, b or c, `[^abc]`
-				// TODO: A character in the range: a-z, `[a-z]`
-				// TODO: A character not in the range: a-z, `[^a-z]`
-				// TODO: A character in the range: a-z or A-Z, `[a-zA-Z]`
 				case '(':
 				{
 					builder.beginGroup();
@@ -80,6 +81,96 @@ namespace Re
 				case ')':
 				{
 					builder.endGroup();
+					break;
+				}
+
+				case '[':
+				{
+					// Inverted flag, false by default
+					bool invertedFlag = false;
+
+					// Get index of open and close brackets
+					sizet openBracketIdx = idx;
+					sizet closeBracketIdx = idx;
+					for (; (pattern[closeBracketIdx] != ']' || pattern[closeBracketIdx - 1] == '\\') && closeBracketIdx < patternLen ; ++closeBracketIdx);
+					
+					if (closeBracketIdx == patternLen)
+					{
+						// If no close bracket found, interpret
+						// this as square bracket symbol, and
+						// throw a warning
+						// TODO: Throw warning
+						builder.pushState<SymbolT>('[');
+						break;
+					}
+
+					if (openBracketIdx + 1 == closeBracketIdx)
+					{
+						// If square bracket group is empty
+						// just ignore it, and throw a warning
+						// TODO: Throw warning
+						idx = closeBracketIdx;
+						break;
+					}
+
+					// Check if NOT operation
+					if (pattern[++idx] == '^')
+					{
+						if (idx + 1 == closeBracketIdx)
+						{
+							// `[^]` is equivalent to a ANY state
+							builder.pushState<AnySymbolT>();
+							idx = closeBracketIdx;
+							break;
+						}
+						else
+						{
+							// TODO: Not implemented at the moment, just skip
+							// Set inverted flag
+							invertedFlag = true;
+							++idx;
+						}
+					}
+
+					// Start group
+					builder.beginGroup();
+
+					for (;;)
+					{
+						if (pattern[idx] == '\\')
+						{
+							// Parse escape sequence
+							// FIXME: Create an apposite function since we need this in multiple points
+							idx += 2;
+						}
+						else if (pattern[idx + 1] == '-' && pattern[idx + 2] != ']')
+						{
+							// Range specifier
+							CHECKF(pattern[idx] < pattern[idx + 2], "Character range out of order");
+							builder.pushState<RangeT>(pattern[idx], pattern[idx + 2]);
+							idx += 3;
+						}
+						else
+						{
+							// Non range, consume only one symbol
+							builder.pushState<SymbolT>(pattern[idx]);
+							++idx;
+						}
+
+						if (idx != closeBracketIdx)
+						{
+							// Push new branch
+							builder.pushBranch();
+						}
+						else break;
+					}
+
+					// Sanity check
+					CHECK(pattern[idx] == ']')
+
+					// End group
+					builder.endGroup();
+
 					break;
 				}
 

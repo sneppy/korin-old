@@ -53,6 +53,7 @@ namespace Re
 		using AnyT = StateAny<AlphaT>;
 		using SymbolT = StateSymbol<AlphaT>;
 		using StringT = StateString<AlphaT>;
+		using RangeT = StateRange<AlphaT>;
 		using LambdaT = StateLambda<AlphaT>;
 		/// @}
 
@@ -626,11 +627,13 @@ namespace Re
 				{
 					// Merge into previous state
 					epsilon->mergePrevState();
+					// TODO: Dealloc state
 				}
 				else if (epsilon->getNextStates().getCount() == 1)
 				{
 					// Merge into next state
 					epsilon->mergeNextState();
+					// TODO: Dealloc state
 				}
 			}
 		}

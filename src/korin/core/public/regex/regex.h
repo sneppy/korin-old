@@ -39,6 +39,7 @@ namespace Re
 		using SymbolT = typename AutomatonT::SymbolT;
 		using LambdaT = typename AutomatonT::LambdaT;
 		using AnySymbolT = typename AutomatonT::AnyT;
+		using RangeT = typename AutomatonT::RangeT;
 		using BuilderT = typename AutomatonT::BuilderT;
 		using OptimizerT = typename AutomatonT::OptimizerT;
 

@@ -292,7 +292,7 @@ namespace Re
 
 	protected:
 		/// Symbol to be matched against
-		const AlphaT symbol;
+		const AlphaSymbolT symbol;
 	};
 
 	template<typename AlphaT>
@@ -304,7 +304,62 @@ namespace Re
 	template<typename AlphaT>
 	FORCE_INLINE String StateSymbol<AlphaT>::getDisplayName() const
 	{
-		return String::format("Sym<%c>#%u", symbol, this->id);
+		return String{"Symbol<"} + symbol + ">#" + this->id;
+	}
+
+	/**
+	 * Reads a subset of symbol,
+	 * specified as a range (i.e.
+	 * `a-z` in regex syntax).
+	 * The range is inclusive.
+	 * 
+	 * @param AlphaT type fo the
+	 * 	alphabet
+	 */
+	template<typename AlphaT>
+	struct StateRange : StateBase<AlphaT>
+	{
+		DECLARE_STATE_TYPE(Range, AlphaT)
+
+		/**
+		 * Initialize with min and
+		 * max symbols.
+		 * 
+		 * @param inMin min symbol
+		 * @param inMax max symbol
+		 */
+		FORCE_INLINE explicit StateRange(const AlphaSymbolT & inMin, const AlphaSymbolT & inMax)
+			: min{inMin}
+			, max{inMax}
+		{
+			//
+		}
+
+		//////////////////////////////////////////////////
+		// StateBase interface
+		//////////////////////////////////////////////////
+		
+		virtual bool enterState(const AlphaStringT&, int32&, int32) const override;
+		virtual String getDisplayName() const override;
+
+	protected:
+		/// Min and max range
+		/// @{
+		AlphaSymbolT min;
+		AlphaSymbolT max;
+		/// @}
+	};
+
+	template<typename AlphaT>
+	FORCE_INLINE bool StateRange<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead, int32 /* numRead */) const
+	{
+		return outNumRead = (*input >= min && *input <= max);
+	}
+
+	template<typename AlphaT>
+	FORCE_INLINE String StateRange<AlphaT>::getDisplayName() const
+	{
+		return String{"Range<"} + min + '-' + max + ">#" + this->id;
 	}
 
 	/**

@@ -13,6 +13,25 @@ namespace Re
 	template<typename> struct StateAny;
 	template<typename> struct StateSymbol;
 	template<typename> struct StateString;
+	template<typename> struct StateRange;
+	template<typename> struct StateLambda;
+
+	/**
+	 * TODO: This is how I want to organize states
+	 * @defgroup State
+	 */
+	namespace State
+	{
+		template<typename> struct Base;
+		template<typename> struct Null;
+		template<typename> struct Epsilon;
+		template<typename> struct Any;
+		template<typename> struct Symbol;
+		template<typename> struct String;
+		template<typename> struct Range;
+		template<typename> struct Lambda;
+	} // namespace State
+	
 
 	/**
 	 * A struct that contains informations
