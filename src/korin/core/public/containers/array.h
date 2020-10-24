@@ -564,7 +564,10 @@ public:
 	 * ref to idx-th position (non constructed).
 	 * 
 	 * @param idx item position
+	 * @param initValue if item does not
+	 * 	exist, init with value
 	 * @return ref to item or to created space
+	 * @{
 	 */
 	FORCE_INLINE T & operator()(uint64 idx)
 	{
@@ -575,6 +578,18 @@ public:
 		return buffer[idx];
 	}
 
+	template<typename ItemT>
+	FORCE_INLINE T & operator()(uint64 idx, ItemT && initValue)
+	{
+		if (idx >= count)
+		{
+			return *(new (&(operator()(idx))) T{forward<ItemT>(initValue)});
+		}
+		
+		return operator()(idx);
+	}
+	/** @} */
+
 	/**
 	 * Returns a new iterator that points
 	 * to the first element
@@ -582,12 +597,12 @@ public:
 	 */
 	FORCE_INLINE ConstIterator begin() const
 	{
-		return ConstIterator{buffer};
+		return ConstIterator{*this, 0};
 	}
 
 	FORCE_INLINE Iterator begin()
 	{
-		return Iterator{buffer};
+		return Iterator{*this, 0};
 	}
 	/** @} */
 
@@ -598,12 +613,12 @@ public:
 	 */
 	FORCE_INLINE ConstIterator end() const
 	{
-		return ConstIterator{buffer + count};
+		return ConstIterator{*this, static_cast<int64>(count)};
 	}
 
 	FORCE_INLINE Iterator end()
 	{
-		return Iterator{buffer + count};
+		return Iterator{*this, static_cast<int64>(count)};
 	}
 	/** @} */
 
