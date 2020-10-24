@@ -38,6 +38,26 @@ public:
 	}
 
 	/**
+	 * Fills a string with @c inLength
+	 * characters @c inChar.
+	 * 
+	 * @param inLength string length
+	 * @param inChar character to fill
+	 * 	the string with
+	 */
+	explicit FORCE_INLINE StringBase(sizet inLength, CharT inChar)
+		: array{nullptr, inLength + 1}
+	{
+		for (sizet idx = 0; idx < inLength; ++idx)
+		{
+			array[idx] = inChar;
+		}
+
+		// Terminate
+		array(inLength) = '\0';
+	}
+
+	/**
 	 * Buffer constructor.
 	 * 
 	 * @param src stream of characters
