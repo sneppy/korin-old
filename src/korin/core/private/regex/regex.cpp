@@ -182,8 +182,6 @@ namespace Re
 				// TODO: Octal character ddd, `\ddd`
 				// TODO: Control character Y, `\cY`
 				// TODO: Backspace character, `[\b]`
-				// TODO: 3 or more of a, `a{3,}`
-				// TODO: Between 3 and 6 of a, `a{3, 6}`
 				// TODO: Greedy quantifier, `a*`
 				// TODO: Lazy quantifier, `a*?`
 				// TODO: Capture everything enclosed, `(...)`
@@ -307,7 +305,7 @@ namespace Re
 					{
 						// Closing bracket not found, treat
 						// as literal and throw warning
-						CHECKF(false, "When parsing regex '%s' at pos %llu: Closing bracket '}' not found (to remove this warning escape the bracket '\\{').", pattern, openBracketPos);
+						CHECKF(false, "When parsing regex '%s' at pos %llu: Closing bracket '}' not found (to remove this warning escape the bracket '\\\\{').", pattern, openBracketPos);
 						builder.pushState<SymbolT>('{');
 						break;
 					}
@@ -323,10 +321,43 @@ namespace Re
 					if (idx == closeBracketPos)
 					{
 						// Exact repetition
-						builder.pushRepeat(min);
+						builder.pushRepeat(min, min);
 						break;
 					}
 
+					if (pattern[idx] != ',')
+					{
+						// Next character is neither the
+						// closing bracket, nor comma
+						CHECKF(false, "When parsing regex '%s' at pos %llu: failed to parse quantifier '%.*s' (to remove this warning escape the bracket '\\\\{').", pattern, openBracketPos, static_cast<int32>(closeBracketPos - openBracketPos) + 1, pattern + openBracketPos);
+						idx = openBracketPos;
+						break;
+					}
+
+					if (idx + 1 == closeBracketPos)
+					{
+						// Repeat at least min times
+						builder.pushRepeat(min, 0);
+						idx = closeBracketPos;
+						break;
+					}
+
+					while (isDigit(pattern[++idx]))
+					{
+						// Parse max specifier
+						max = (max * 10) + (pattern[idx] - '0');
+					}
+
+					if (idx == closeBracketPos)
+					{
+						// At least min, at most max repetitions
+						builder.pushRepeat(min, max);
+						break;
+					}
+					
+					// Failed to parse quantifier
+					CHECKF(false, "When parsing regex '%s' at pos %llu: failed to parse quantifier '%.*s' (to remove this warning escape the bracket '\\\\{').", pattern, openBracketPos, static_cast<int32>(closeBracketPos - openBracketPos) + 1, pattern + openBracketPos);
+					idx = openBracketPos;
 					break;
 				}
 

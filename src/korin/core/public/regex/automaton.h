@@ -318,8 +318,20 @@ namespace Re
 				// State not yet visited
 				visitedStates.set(currState);
 
-				out += currState->getDisplayName();
-				out += '\n';
+				// TODO: Replace with start and accept state that derive StateEpsilon
+				if (isStartState(currState))
+				{
+					out += "[Start]\n";
+				}
+				else if (isAcceptedState(currState))
+				{
+					out += "[Accept]\n";
+				}
+				else
+				{
+					out += currState->getDisplayName();
+					out += '\n';
+				}
 
 				if (currState->getNextStates().getCount() > 1)
 				{
@@ -335,8 +347,16 @@ namespace Re
 			else
 			{
 				// State already visited
-				out += currState->getDisplayName();
-				out += " (repeated)\n";
+
+				if (isAcceptedState(currState))
+				{
+					out += "[Accept]\n";
+				}
+				else
+				{
+					out += currState->getDisplayName();
+					out += " (repeated)\n";
+				}
 			}
 		} while (visitQueue.popBack(currVisit));
 
@@ -636,22 +656,52 @@ namespace Re
 		 * 	repetitions (default 1)
 		 * @return ref to self
 		 */
-		FORCE_INLINE AutomatonBuilder & pushRepeat(int32 numRepeats = 1)
+		FORCE_INLINE AutomatonBuilder & pushRepeat(int32 minRepeats = 1, int32 maxRepeats = 1)
 		{
-			CHECK(numRepeats > 0);
+			// Create epsilon state as future group end
+			// and also to skip groups
+			StateT * epsilon = automaton.template pushState<EpsilonT>();
+			StateT * prevState;
 
-			for (int32 repeatIdx = 1; repeatIdx < numRepeats; ++repeatIdx)
+			for (int32 repeatIdx = 1; repeatIdx < minRepeats; ++repeatIdx)
 			{
+				// Process min repetitions first.
+				// Insert an epsilon state between
+				// clones so that we can create a
+				// jump circuit if necessary
+				// (otherwise we have problems
+				// with symbol states vs. proper
+				// groups)
+				prevState = currentState = currentState->addNextState(automaton.template pushState<EpsilonT>());
+				
 				// Create a clone of the group
 				cloneGroup();
+			}
+
+			if (maxRepeats == 0)
+			{
+				// Create jump circuit
+				currentState->addNextState(prevState);
+			}
+			else
+			{
+				CHECK(minRepeats <= maxRepeats);
+
+				for (int32 repeatIdx = minRepeats; repeatIdx < maxRepeats; ++repeatIdx)
+				{
+					// Groups here can be skipped.
+					currentState->addNextState(epsilon);
+
+					// Create group clone
+					cloneGroup();
+				}
 			}
 
 			// Define current group as entire
 			// repetition group, such that
 			// following operations address
-			// the repetition group as the
-			// current group.
-			groupEnd[currentGroup] = currentState;
+			// it
+			groupEnd[currentGroup] = currentState = currentState->addNextState(epsilon);
 
 			return *this;
 		}
