@@ -1526,6 +1526,7 @@ public:
 			
 			// Insert new node
 			NodeT * node = parent->insert(createNode(forward<DataT>(data)));
+			root = root->getRoot();
 
 			++numNodes;
 			return node->data;
