@@ -182,7 +182,6 @@ namespace Re
 				// TODO: Octal character ddd, `\ddd`
 				// TODO: Control character Y, `\cY`
 				// TODO: Backspace character, `[\b]`
-				// TODO: Exactly 3 of a, `a{3}`
 				// TODO: 3 or more of a, `a{3,}`
 				// TODO: Between 3 and 6 of a, `a{3, 6}`
 				// TODO: Greedy quantifier, `a*`
@@ -292,6 +291,41 @@ namespace Re
 
 					// End group
 					builder.endGroup();
+
+					break;
+				}
+
+				case '{':
+				{
+					// Get position of open and
+					// closing brackets
+					sizet openBracketPos = idx;
+					sizet closeBracketPos = idx;
+					for (; (pattern[closeBracketPos] != '}' || pattern[closeBracketPos - 1] == '\\') && closeBracketPos < patternLen; ++closeBracketPos);
+
+					if (closeBracketPos == patternLen)
+					{
+						// Closing bracket not found, treat
+						// as literal and throw warning
+						CHECKF(false, "When parsing regex '%s' at pos %llu: Closing bracket '}' not found (to remove this warning escape the bracket '\\{').", pattern, openBracketPos);
+						builder.pushState<SymbolT>('{');
+						break;
+					}
+					
+					int32 min = 0, max = 0;
+
+					while (isDigit(pattern[++idx]))
+					{
+						// Parse min specifier
+						min = (min * 10) + (pattern[idx] - '0');
+					}
+					
+					if (idx == closeBracketPos)
+					{
+						// Exact repetition
+						builder.pushRepeat(min);
+						break;
+					}
 
 					break;
 				}

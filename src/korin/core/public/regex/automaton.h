@@ -5,6 +5,7 @@
 #include "containers/pair.h"
 #include "containers/set.h"
 #include "containers/tuple.h"
+#include "containers/map.h"
 #include "./regex_types.h"
 #include "./state.h"
 
@@ -366,6 +367,62 @@ namespace Re
 		using StateT = typename AutomatonT::StateT;
 		using EpsilonT = typename AutomatonT::EpsilonT;
 
+		/**
+		 * 
+		 */
+		void cloneGroup()
+		{
+			using Visit = Tuple<StateT*, StateT*>;
+
+			// Get start and end states and
+			// create duplicates
+			StateT * startState = groupStart[currentGroup];
+			StateT * endState = groupEnd[currentGroup];
+
+			// Keep track of to visit state
+			// and already visited states
+			List<Visit> visitQueue;
+			Visit currVisit{startState, currentState};
+			Map<StateT*, StateT*, typename StateT::FindState> visitedStates;
+
+			do
+			{
+				// Get current state and previous state
+				StateT * currState = currVisit.template get<0>();
+				StateT * prevState = currVisit.template get<1>();
+
+				if (!visitedStates.find(currState, currentState))
+				{
+					// State not already seen.
+					// Duplicate state
+					currentState = currState->cloneState(automaton);
+					
+					// Add to next states
+					prevState->addNextState(currentState);
+
+					if (currState != endState)
+					{
+						// If current visit state is not
+						// end state, add out connections
+
+						for (StateT * nextState : currState->getNextStates())
+						{
+							visitQueue.pushBack(Visit{nextState, currentState});
+						}
+					}
+
+					// Add to visited states
+					visitedStates.insert(currState, currentState);
+				}
+				else
+				{
+					// State already visited, just
+					// add connection to prev state
+					prevState->addNextState(currentState);
+				}
+			} while (visitQueue.popBack(currVisit));
+		}
+
 	public:
 		/**
 		 * Create a builder for the
@@ -559,6 +616,42 @@ namespace Re
 			// Jump from end of current group
 			// to the beginning of the group
 			groupEnd[currentGroup]->addNextState(groupStart[currentGroup]);
+
+			return *this;
+		}
+
+		/**
+		 * Repeats the last inserted state or
+		 * group @c n times (equivalent to
+		 * `{n}` in regex syntax).
+		 * 
+		 * Example:
+		 * ```
+		 * before: e->(1)->|
+		 * 
+		 * after: e->1->e->1->e->(1)->|
+		 * ```
+		 * 
+		 * @param numRepeats number of group
+		 * 	repetitions (default 1)
+		 * @return ref to self
+		 */
+		FORCE_INLINE AutomatonBuilder & pushRepeat(int32 numRepeats = 1)
+		{
+			CHECK(numRepeats > 0);
+
+			for (int32 repeatIdx = 1; repeatIdx < numRepeats; ++repeatIdx)
+			{
+				// Create a clone of the group
+				cloneGroup();
+			}
+
+			// Define current group as entire
+			// repetition group, such that
+			// following operations address
+			// the repetition group as the
+			// current group.
+			groupEnd[currentGroup] = currentState;
 
 			return *this;
 		}

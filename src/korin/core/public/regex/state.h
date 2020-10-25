@@ -5,7 +5,7 @@
 #include "containers/set.h"
 #include "./regex_types.h"
 
-#define DECLARE_STATE_TYPE(T, AlphaT)\
+#define DECLARE_STATE_TYPE(Type, AlphaT)\
 	using StateT = StateBase<AlphaT>;\
 	using StatePtrT = StateT*;\
 	using AutomatonT = Automaton<AlphaT>;\
@@ -13,10 +13,16 @@
 	using AlphaSymbolT = typename AlphabetTraitsT::SymbolT;\
 	using AlphaStringT = typename AlphabetTraitsT::StringT;\
 	using SetT = Set<StateT*, typename StateT::FindState>;\
-	static constexpr Name debugName = #T;\
+	\
+	static constexpr Name debugName = #Type;\
+	\
+	virtual FORCE_INLINE StateT * cloneState(AutomatonT & automaton) const override\
+	{\
+		return automaton.template pushState<State##Type>(*this);\
+	}
 
-#define DECLARE_STATE_TYPE_DEFAULT(T, AlphaT)\
-	DECLARE_STATE_TYPE(T, AlphaT)\
+#define DECLARE_STATE_TYPE_DEFAULT(Type, AlphaT)\
+	DECLARE_STATE_TYPE(Type, AlphaT)\
 	virtual FORCE_INLINE String getDisplayName() const override { return String::format("%s#%u", *debugName, this->id); }
 
 namespace Re
@@ -31,8 +37,6 @@ namespace Re
 	template<typename AlphaT>
 	struct StateBase
 	{
-		template<typename> friend class Automaton;
-
 		/**
 		 * Compare type used to find states
 		 * inside set.
@@ -49,8 +53,21 @@ namespace Re
 				return (*this)(*a, *b);
 			}
 		};
-		
-		DECLARE_STATE_TYPE(Base, AlphaT)
+
+		using StateT = StateBase;
+		using StatePtrT = StateT*;
+		using AutomatonT = Automaton<AlphaT>;
+		using AlphabetTraitsT = AlphabetTraits<AlphaT>;
+		using AlphaSymbolT = typename AlphabetTraitsT::SymbolT;
+		using AlphaStringT = typename AlphabetTraitsT::StringT;
+		using SetT = Set<StateT*, typename StateT::FindState>;
+
+		friend AutomatonT;
+
+		/**
+		 * State class name, for debug purpose.
+		 */
+		static constexpr Name debugName = "Base";
 
 		/**
 		 * Construct a new state. Assigns
@@ -64,6 +81,17 @@ namespace Re
 			// Generate unique id
 			static uint64 counter = 0;
 			id = ++counter;
+		}
+
+		/**
+		 * When copying a state, the id
+		 * and the sets of connections
+		 * are not copied.
+		 */
+		FORCE_INLINE StateBase(const StateBase & other)
+			: StateBase{}
+		{
+			//
 		}
 
 		/**
@@ -210,6 +238,16 @@ namespace Re
 		 * 	otherwise
 		 */
 		virtual bool enterState(const AlphaStringT & input, int32 & outNumRead, int32 numRead = 0) const = 0;
+
+		/**
+		 * Clone this state, and push it
+		 * to automaton.
+		 * 
+		 * @param automaton automaton onto
+		 * 	which to push the cloned state
+		 * @return ptr to created state
+		 */
+		virtual StateT * cloneState(AutomatonT & automaton) const = 0;
 
 		/**
 		 * Returns a string representation
@@ -399,7 +437,7 @@ namespace Re
 	template<typename AlphaT>
 	struct StateLambda : StateBase<AlphaT>
 	{
-		DECLARE_STATE_TYPE(StateLambda, AlphaT)
+		DECLARE_STATE_TYPE(Lambda, AlphaT)
 
 		using LambdaT = Function<bool(const AlphaStringT&, int32&, int32)>;
 

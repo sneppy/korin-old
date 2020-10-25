@@ -94,7 +94,7 @@ TEST(regex, quantifiers)
 		// Match at least one
 		Re::Regex regex{"a+"};
 
-		for (int32 num = 1; num < 1000; ++num)
+		for (sizet num = 1; num < 1000; ++num)
 		{
 			ASSERT_TRUE(regex.accept(String{num, 'a'}));
 			ASSERT_FALSE(regex.accept(String{num, 'b'}));
@@ -125,6 +125,36 @@ TEST(regex, quantifiers)
 		ASSERT_FALSE(regex.accept("ababab"));
 	}
 
+	{
+		Re::Regex regex{"a{3}"};
+
+		ASSERT_TRUE(regex.accept("aaa"));
+		ASSERT_FALSE(regex.accept("aa"));
+		ASSERT_FALSE(regex.accept("aaaa"));
+	}
+
+	{
+		// Not default behaviour, some engines
+		// refuse to compile this because they
+		// say 'there is nothing to repeat'.
+		// I agree to disagree...
+		Re::Regex regex{"a{3}+"};
+		
+		for (sizet i = 1; i < 1000; ++i)
+		{
+			if (i % 3 == 0)
+			{
+				// Should accept any string which is
+				// a multiple of `aaa`
+				ASSERT_TRUE(regex.accept(String{i, 'a'}));
+			}
+			else
+			{
+				ASSERT_FALSE(regex.accept(String{i, 'a'}));
+			}
+		}
+	}
+
 	SUCCEED();
 }
 
@@ -140,6 +170,16 @@ TEST(regex, groups)
 		ASSERT_FALSE(regex.accept("aaaa"));
 		ASSERT_FALSE(regex.accept("abba"));
 		ASSERT_TRUE(regex.accept("ababab"));
+	}
+
+	{
+		// Match at least one
+		Re::Regex regex{"(ab){4}"};
+
+		ASSERT_FALSE(regex.accept("ab"));
+		ASSERT_FALSE(regex.accept("aaabbbb"));
+		ASSERT_TRUE(regex.accept("abababab"));
+		ASSERT_FALSE(regex.accept("ababababab"));
 	}
 
 	SUCCEED();
