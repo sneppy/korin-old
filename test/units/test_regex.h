@@ -134,6 +134,42 @@ TEST(regex, quantifiers)
 	}
 
 	{
+		Re::Regex regex{"a{10,}"};
+		
+		for (sizet i = 0; i < 100; ++i)
+		{
+			if (i >= 10)
+			{
+				// Should accept any string which is
+				// a multiple of `aaa`
+				ASSERT_TRUE(regex.accept(String{i, 'a'}));
+			}
+			else
+			{
+				ASSERT_FALSE(regex.accept(String{i, 'a'}));
+			}
+		}
+	}
+
+	{
+		Re::Regex regex{"a{10,20}"};
+		
+		for (sizet i = 0; i < 100; ++i)
+		{
+			if (i >= 10 && i <= 20)
+			{
+				// Should accept any string which is
+				// a multiple of `aaa`
+				ASSERT_TRUE(regex.accept(String{i, 'a'}));
+			}
+			else
+			{
+				ASSERT_FALSE(regex.accept(String{i, 'a'}));
+			}
+		}
+	}
+
+	{
 		// Not default behaviour, some engines
 		// refuse to compile this because they
 		// say 'there is nothing to repeat'.
