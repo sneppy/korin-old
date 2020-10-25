@@ -21,19 +21,19 @@ namespace Re
 			return cc >= '0' && cc <= '9';
 		}
 
-		constexpr FORCE_INLINE bool isAlphaLower(ansichar cc)
-		{
-			return cc >= 'a' && cc <= 'z';
-		}
-
 		constexpr FORCE_INLINE bool isAlphaUpper(ansichar cc)
 		{
 			return cc >= 'A' && cc <= 'Z';
 		}
 
+		constexpr FORCE_INLINE bool isAlphaLower(ansichar cc)
+		{
+			return cc >= 'a' && cc <= 'z';
+		}
+
 		constexpr FORCE_INLINE bool isAlpha(ansichar cc)
 		{
-			return isAlphaLower(cc) || isAlphaLower(cc);
+			return isAlphaUpper(cc) || isAlphaLower(cc);
 		}
 
 		constexpr FORCE_INLINE bool isWord(ansichar cc)
