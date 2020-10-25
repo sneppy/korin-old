@@ -6,6 +6,7 @@ set(UNITS
 	"memory"
 	"math"
 	"containers"
+	"regex"
 )
 
 list(LENGTH UNIT NUM_UNITS)
