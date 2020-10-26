@@ -35,11 +35,7 @@ namespace Re
 	{
 		using AutomatonT = Automaton<ansichar>;
 		using StateT = typename AutomatonT::StateT;
-		using EpsilonT = typename AutomatonT::EpsilonT;
-		using SymbolT = typename AutomatonT::SymbolT;
-		using LambdaT = typename AutomatonT::LambdaT;
-		using AnySymbolT = typename AutomatonT::AnyT;
-		using RangeT = typename AutomatonT::RangeT;
+		using State = typename AutomatonT::State;
 		using BuilderT = typename AutomatonT::BuilderT;
 		using OptimizerT = typename AutomatonT::OptimizerT;
 

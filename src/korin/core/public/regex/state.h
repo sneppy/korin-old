@@ -5,26 +5,6 @@
 #include "containers/set.h"
 #include "./regex_types.h"
 
-#define DECLARE_STATE_TYPE(Type, AlphaT)\
-	using StateT = StateBase<AlphaT>;\
-	using StatePtrT = StateT*;\
-	using AutomatonT = Automaton<AlphaT>;\
-	using AlphabetTraitsT = AlphabetTraits<AlphaT>;\
-	using AlphaSymbolT = typename AlphabetTraitsT::SymbolT;\
-	using AlphaStringT = typename AlphabetTraitsT::StringT;\
-	using SetT = Set<StateT*, typename StateT::FindState>;\
-	\
-	static constexpr Name debugName = #Type;\
-	\
-	virtual FORCE_INLINE StateT * cloneState(AutomatonT & automaton) const override\
-	{\
-		return automaton.template pushState<State##Type>(*this);\
-	}
-
-#define DECLARE_STATE_TYPE_DEFAULT(Type, AlphaT)\
-	DECLARE_STATE_TYPE(Type, AlphaT)\
-	virtual FORCE_INLINE String getDisplayName() const override { return String::format("%s#%u", *debugName, this->id); }
-
 namespace Re
 {
 	/**
@@ -55,7 +35,6 @@ namespace Re
 		};
 
 		using StateT = StateBase;
-		using StatePtrT = StateT*;
 		using AutomatonT = Automaton<AlphaT>;
 		using AlphabetTraitsT = AlphabetTraits<AlphaT>;
 		using AlphaSymbolT = typename AlphabetTraitsT::SymbolT;
@@ -268,7 +247,29 @@ namespace Re
 		/// Set of prev states
 		SetT prevStates;
 	};
-		
+
+#define DECLARE_STATE_TYPE(Type, AlphaT)\
+	using StateT = StateBase<AlphaT>;\
+	using typename StateT::AutomatonT;\
+	using typename StateT::AlphabetTraitsT;\
+	using typename StateT::AlphaSymbolT;\
+	using typename StateT::AlphaStringT;\
+	using typename StateT::SetT;\
+	\
+	static constexpr Name debugName = #Type;\
+	\
+	virtual FORCE_INLINE StateT * cloneState(AutomatonT & automaton) const override\
+	{\
+		return automaton.template pushState<State##Type>(*this);\
+	}\
+
+#define DECLARE_STATE_TYPE_DEFAULT(Type)\
+	DECLARE_STATE_TYPE(Type, AlphaT)\
+	\
+	virtual FORCE_INLINE String getDisplayName() const override\
+	{\
+		return String::format("%s#%u", *debugName, this->id);\
+	}
 
 	/**
 	 * An epsilon state is a state that
@@ -278,7 +279,7 @@ namespace Re
 	template<typename AlphaT>
 	struct StateEpsilon : public StateBase<AlphaT>
 	{
-		DECLARE_STATE_TYPE_DEFAULT(Epsilon, AlphaT)
+		DECLARE_STATE_TYPE_DEFAULT(Epsilon)
 
 		//////////////////////////////////////////////////
 		// StateBase interface
@@ -412,7 +413,7 @@ namespace Re
 	template<typename AlphaT>
 	struct StateAny : StateBase<AlphaT>
 	{
-		DECLARE_STATE_TYPE_DEFAULT(Any, AlphaT)
+		DECLARE_STATE_TYPE_DEFAULT(Any)
 
 		//////////////////////////////////////////////////
 		// StateBase interface

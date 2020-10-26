@@ -8,6 +8,7 @@
 #include "containers/map.h"
 #include "./regex_types.h"
 #include "./state.h"
+#include "./executor.h"
 
 namespace Re
 {
@@ -41,30 +42,37 @@ namespace Re
 	 */
 	template<typename AlphaT>
 	class Automaton
-	{
-		friend AutomatonBuilder<AlphaT>;
-		friend AutomatonOptimizer<AlphaT>;
-		friend Re::Regex;
-
-		/// State types definitions
-		/// @{			
+	{		
 		using StateT = StateBase<AlphaT>;
 		using FindStateT = typename StateT::FindState;
-		using EpsilonT = StateEpsilon<AlphaT>;
-		using AnyT = StateAny<AlphaT>;
-		using SymbolT = StateSymbol<AlphaT>;
-		using StringT = StateString<AlphaT>;
-		using RangeT = StateRange<AlphaT>;
-		using LambdaT = StateLambda<AlphaT>;
-		/// @}
 
 		using AlphabetTraitsT = AlphabetTraits<AlphaT>;
 		using AlphaSymbolT = typename AlphabetTraitsT::SymbolT;
 		using AlphaStringT = typename AlphabetTraitsT::StringT;
 
+		using ExecutorT = Executor<AlphaT>;
 		using BuilderT = AutomatonBuilder<AlphaT>;
 		using OptimizerT = AutomatonOptimizer<AlphaT>;
+
+		friend ExecutorT;
+		friend BuilderT;
+		friend OptimizerT;
+		friend Regex;
 	
+	protected:		
+		/// State types definitions
+		/// @{
+		struct State
+		{
+			using EpsilonT = StateEpsilon<AlphaT>;
+			using AnyT = StateAny<AlphaT>;
+			using SymbolT = StateSymbol<AlphaT>;
+			using StringT = StateString<AlphaT>;
+			using RangeT = StateRange<AlphaT>;
+			using LambdaT = StateLambda<AlphaT>;
+		};
+		/// @}
+
 	private:
 		/**
 		 * Allocates and constructs a new state
@@ -144,6 +152,15 @@ namespace Re
 		FORCE_INLINE bool isAcceptedState(const StateT * other) const
 		{
 			return FindStateT{}(other, acceptedState) == 0;
+		}
+
+		/**
+		 * Creates an executor that execute
+		 * this automaton.
+		 */
+		FORCE_INLINE ExecutorT createExecutor(const AlphaStringT & input) const
+		{
+			return ExecutorT{startState, acceptedState, input};
 		}
 
 		/**
@@ -227,8 +244,8 @@ namespace Re
 		, acceptedState{nullptr}
 	{
 		// Create start and accepted states
-		startState = createState<EpsilonT>();
-		acceptedState = createState<EpsilonT>();
+		startState = createState<typename State::EpsilonT>();
+		acceptedState = createState<typename State::EpsilonT>();
 	}
 
 	template<typename AlphaT>
@@ -248,38 +265,14 @@ namespace Re
 	template<typename AlphaT>
 	bool Automaton<AlphaT>::acceptString(const AlphaStringT & input) const
 	{
-		using Visit = Tuple<const StateT*, AlphaStringT, int32>;
-
-		// Create state queue
-		List<Visit> visitQueue;
-		Visit currVisit{startState, input, 0};
+		ExecutorT executor = createExecutor(input);
 		
-		do
-		{
-			int32 numRead = 0;
-			const StateT * currState = currVisit.template get<const StateT*>();
-			AlphaStringT & currInput = currVisit.template get<AlphaStringT>();
-			int32 currNumRead = currVisit.template get<int32>();
+		// Step until string is either accepted
+		// or rejected
+		bool isAccepted;
+		while (!executor.step(isAccepted));
 
-			if (AlphabetTraitsT::isEOF(currInput) && isAcceptedState(currState))
-			{
-				// If input string has reached EOF and
-				// we are in accepted state, return true
-				return true;
-			}
-
-			// Try enter current state
-			if (currState->enterState(currInput, numRead, currNumRead))
-			{
-				// Push next states to visit queue
-				for (const StateT * nextState : currState->getNextStates())
-				{
-					visitQueue.pushBack(Visit{nextState, AlphabetTraitsT::consumeInput(currInput, numRead), currNumRead + numRead});
-				}
-			}
-		} while (visitQueue.popBack(currVisit));
-
-		return false;
+		return isAccepted;
 	}
 
 	template<typename AlphaT>
@@ -385,12 +378,13 @@ namespace Re
 	{
 		using AutomatonT = Automaton<AlphaT>;
 		using StateT = typename AutomatonT::StateT;
-		using EpsilonT = typename AutomatonT::EpsilonT;
-
+		using State = typename AutomatonT::State;
+		
 		/**
-		 * 
+		 * Clones current group and pushes
+		 * it onto the current state.
 		 */
-		void cloneGroup()
+		void cloneCurrentGroup()
 		{
 			using Visit = Tuple<StateT*, StateT*>;
 
@@ -478,7 +472,7 @@ namespace Re
 		{
 			// Create state and epsilon node
 			// to create temporary group
-			StateT * epsilon = automaton.template pushState<EpsilonT>();
+			StateT * epsilon = automaton.template pushState<typename State::EpsilonT>();
 			StateT * state = automaton.template pushState<StateAnyT>(forward<CreateStateArgsT>(createStateArgs)...);
 
 			// Link to current state and set current
@@ -502,8 +496,8 @@ namespace Re
 		{
 			// Push new epsilon state for start
 			// group and end group states
-			StateT * startState = automaton.template pushState<EpsilonT>();
-			StateT * endState = automaton.template pushState<EpsilonT>();
+			StateT * startState = automaton.template pushState<typename State::EpsilonT>();
+			StateT * endState = automaton.template pushState<typename State::EpsilonT>();
 
 			currentState->addNextState(startState);
 			currentState = startState;
@@ -603,7 +597,7 @@ namespace Re
 		{
 			// We need an epsilon state to
 			// skip the current group
-			StateT * epsilon = automaton.template pushState<EpsilonT>();
+			StateT * epsilon = automaton.template pushState<typename State::EpsilonT>();
 			
 			currentState->addNextState(epsilon);
 			currentState = epsilon;
@@ -652,15 +646,20 @@ namespace Re
 		 * after: e->1->e->1->e->(1)->|
 		 * ```
 		 * 
-		 * @param numRepeats number of group
-		 * 	repetitions (default 1)
+		 * @param minRepeats minimum number
+		 * 	of group repetitions (default 1)
+		 * @param maxRepeats maximum number
+		 * 	of group repetitions. If this
+		 * 	value is zero, @c minRepeats is
+		 * 	treated as `at least` lower
+		 * 	bound
 		 * @return ref to self
 		 */
 		FORCE_INLINE AutomatonBuilder & pushRepeat(int32 minRepeats = 1, int32 maxRepeats = 1)
 		{
 			// Create epsilon state as future group end
 			// and also to skip groups
-			StateT * epsilon = automaton.template pushState<EpsilonT>();
+			StateT * epsilon = automaton.template pushState<typename State::EpsilonT>();
 			StateT * prevState;
 
 			for (int32 repeatIdx = 1; repeatIdx < minRepeats; ++repeatIdx)
@@ -672,10 +671,10 @@ namespace Re
 				// (otherwise we have problems
 				// with symbol states vs. proper
 				// groups)
-				prevState = currentState = currentState->addNextState(automaton.template pushState<EpsilonT>());
+				prevState = currentState = currentState->addNextState(automaton.template pushState<typename State::EpsilonT>());
 				
 				// Create a clone of the group
-				cloneGroup();
+				cloneCurrentGroup();
 			}
 
 			if (maxRepeats == 0)
@@ -693,7 +692,7 @@ namespace Re
 					currentState->addNextState(epsilon);
 
 					// Create group clone
-					cloneGroup();
+					cloneCurrentGroup();
 				}
 			}
 
@@ -734,7 +733,7 @@ namespace Re
 	{
 		using AutomatonT = Automaton<AlphaT>;
 		using StateT = typename AutomatonT::StateT;
-		using EpsilonT = typename AutomatonT::EpsilonT;
+		using State = typename AutomatonT::State;
 
 	public:
 		/**
@@ -765,7 +764,7 @@ namespace Re
 	{
 		for (StateT * state : automaton.allocatedStates)
 		{
-			if (EpsilonT * epsilon = state->template as<EpsilonT>())
+			if (auto * epsilon = state->template as<typename State::EpsilonT>())
 			{
 				if (epsilon->getPrevStates().getCount() == 1)
 				{

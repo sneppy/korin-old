@@ -58,8 +58,8 @@ namespace Re
 	 */
 	sizet parseEscapeSequence(Regex::BuilderT & builder, const ansichar * sequence)
 	{
-		using SymbolT = Regex::SymbolT;
-		using LambdaT = Regex::LambdaT;
+		using SymbolT = typename Regex::State::SymbolT;
+		using LambdaT = typename Regex::State::LambdaT;
 
 		sizet idx = 0;
 
@@ -166,6 +166,11 @@ namespace Re
 
 	void Regex::compile(const ansichar * pattern, sizet patternLen)
 	{
+		using SymbolT = typename Regex::State::SymbolT;
+		using AnyT = typename Regex::State::AnyT;
+		using RangeT = typename Regex::State::RangeT;
+		using LambdaT = typename Regex::State::LambdaT;
+
 		// Create new builder
 		BuilderT builder = automaton.createBuilder();
 
@@ -239,7 +244,7 @@ namespace Re
 						if (idx + 1 == closeBracketIdx)
 						{
 							// `[^]` is equivalent to a ANY state
-							builder.pushState<AnySymbolT>();
+							builder.pushState<AnyT>();
 							idx = closeBracketIdx;
 							break;
 						}
@@ -348,16 +353,18 @@ namespace Re
 						max = (max * 10) + (pattern[idx] - '0');
 					}
 
-					if (idx == closeBracketPos)
+					if (idx != closeBracketPos)
 					{
-						// At least min, at most max repetitions
-						builder.pushRepeat(min, max);
+						// Failed to parse quantifier
+						CHECKF(false, "When parsing regex '%s' at pos %llu: failed to parse quantifier '%.*s' (to remove this warning escape the bracket '\\\\{').", pattern, openBracketPos, static_cast<int32>(closeBracketPos - openBracketPos) + 1, pattern + openBracketPos);
+						idx = openBracketPos;
 						break;
 					}
+
+					// At least min, at most max repetitions
+					builder.pushRepeat(min, max);
+					break;
 					
-					// Failed to parse quantifier
-					CHECKF(false, "When parsing regex '%s' at pos %llu: failed to parse quantifier '%.*s' (to remove this warning escape the bracket '\\\\{').", pattern, openBracketPos, static_cast<int32>(closeBracketPos - openBracketPos) + 1, pattern + openBracketPos);
-					idx = openBracketPos;
 					break;
 				}
 
@@ -391,7 +398,7 @@ namespace Re
 				case '.':
 				{
 					// Matches any character
-					builder.pushState<AnySymbolT>();
+					builder.pushState<AnyT>();
 					break;
 				}
 

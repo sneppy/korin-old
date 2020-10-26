@@ -22,12 +22,11 @@ namespace Re
 	template<typename AlphaT>
 	class Executor
 	{
-		using AutomatonT = Automaton<AlphaT>;
-		using StateT = typename AutomatonT::StateT;
+		using StateT = StateBase<AlphaT>;
 		using FindStateT = typename StateT::FindState;
-		using AlphabetTraitsT = AlphabetTraits<AlphaT>;
-		using AlphaSymbolT = typename AlphabetTraitsT::SymbolT;
-		using AlphaStringT = typename AlphabetTraitsT::StringT;
+		using AlphabetTraitsT = typename StateT::AlphabetTraitsT;
+		using AlphaSymbolT = typename StateT::AlphaSymbolT;
+		using AlphaStringT = typename StateT::AlphaStringT;
 		using VisitT = Tuple<const StateT* /* currentState */, AlphaStringT /* input */, int32 /* totRead */>;
 
 	public:
@@ -114,7 +113,7 @@ namespace Re
 		 * @return false if string is
 		 * 	rejected
 		 */
-		bool step();
+		bool step(bool & outIsAccepted);
 
 	protected:
 		/// Start state
@@ -137,13 +136,15 @@ namespace Re
 	};
 
 	template<typename AlphaT>
-	bool Executor<AlphaT>::step()
+	bool Executor<AlphaT>::step(bool & outIsAccepted)
 	{
+		outIsAccepted = false;
+
 		int32 numRead = 0;
 
 		// Get current state and input
 		const StateT * currState = currVisit.template get<0>();
-		AlphaStringT currInput = currVisit.template get<1>();
+		AlphaStringT & currInput = currVisit.template get<1>();
 		int32 currNumRead = currVisit.template get<2>();
 
 		if (currState->enterState(currInput, numRead, currNumRead))
@@ -154,7 +155,22 @@ namespace Re
 			}
 		}
 
+
 		// Pop next to-visit state from queue
-		return visitQueue.popBack(currVisit);
+		if (!visitQueue.popBack(currVisit))
+		{
+			// If queue is empty, reject the string
+			return true;
+		}
+		
+		if (outIsAccepted = AlphabetTraitsT::isEOF(currVisit.template get<1>()) && isAcceptedState())
+		{
+			// If string is terminated and state
+			// is accepted state, set accepted flag
+			return outIsAccepted;
+		}
+
+		// Neither accepted, nor rejected
+		return false;
 	}
 } // namespace Re
