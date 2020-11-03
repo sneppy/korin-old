@@ -70,6 +70,9 @@ namespace Re
 			using StringT = StateString<AlphaT>;
 			using RangeT = StateRange<AlphaT>;
 			using LambdaT = StateLambda<AlphaT>;
+			using MacroT = StateMacro<AlphaT>;
+			using PositiveLookahedT = StatePositiveLookahed<AlphaT>;
+			using NegativeLookahedT = StateNegativeLookahed<AlphaT>;
 		};
 		/// @}
 
@@ -224,7 +227,10 @@ namespace Re
 		 * Returns a string representation
 		 * of the automaton (depth first).
 		 */
-		String toString() const;
+		FORCE_INLINE String toString() const
+		{
+			return printStateGraph(startState, acceptedState);
+		}
 
 	protected:
 		/// List of allocated states
@@ -273,87 +279,6 @@ namespace Re
 		while (!executor.step(isAccepted));
 
 		return isAccepted;
-	}
-
-	template<typename AlphaT>
-	String Automaton<AlphaT>::toString() const
-	{
-		using Visit = Tuple<const StateT* /* Current state */, uint32 /* Current depth = 0 */>;
-
-		String out;
-		
-		// Keeps track of the visit queue
-		// and already visited states
-		List<Visit> visitQueue;
-		Visit currVisit{startState, 0u};
-		Set<const StateT*, typename StateT::FindState> visitedStates;
-		Set<uint32> branches;
-		
-		do
-		{
-			const StateT * currState = currVisit.template get<0>();
-			uint32 currDepth = currVisit.template get<1>();
-
-			// Create new line
-			sizet currLen = out.getLength();
-			out += String{currDepth * 2, ' '};
-			ansichar * line = &out[currLen];
-
-			for (auto branchIt = branches.begin(); branchIt != branches.end() && *branchIt < currDepth; ++branchIt)
-			{
-				const uint32 branchDepth = *branchIt;
-				line[branchDepth * 2] = '|';
-				line[branchDepth * 2 + 1] = branchDepth + 1 == currDepth ? '-' : ' ';
-			}
-
-			if (!visitedStates.get(currState))
-			{
-				// State not yet visited
-				visitedStates.set(currState);
-
-				// TODO: Replace with start and accept state that derive StateEpsilon
-				if (isStartState(currState))
-				{
-					out += "[Start]\n";
-				}
-				else if (isAcceptedState(currState))
-				{
-					out += "[Accept]\n";
-				}
-				else
-				{
-					out += currState->getDisplayName();
-					out += '\n';
-				}
-
-				if (currState->getNextStates().getCount() > 1)
-				{
-					// Branch here
-					branches.set(currDepth);
-				}
-
-				for (const StateT * nextState : currState->getNextStates())
-				{
-					visitQueue.pushBack(Visit{nextState, currDepth + 1});
-				}
-			}
-			else
-			{
-				// State already visited
-
-				if (isAcceptedState(currState))
-				{
-					out += "[Accept]\n";
-				}
-				else
-				{
-					out += currState->getDisplayName();
-					out += " (repeated)\n";
-				}
-			}
-		} while (visitQueue.popBack(currVisit));
-
-		return out;
 	}
 	
 	/**
@@ -532,6 +457,55 @@ namespace Re
 				currentGroup -= 1;	
 			}
 			else ; // TODO: Error
+
+			return *this;
+		}
+		
+		/**
+		 * Begins a new macro state group.
+		 * 
+		 * @param MacroAnyT type of the
+		 * 	macro state
+		 * @return ref to self
+		 */
+		template<typename MacroAnyT>
+		FORCE_INLINE AutomatonBuilder & beginMacro()
+		{
+			static_assert(IsBaseOf<typename State::MacroT, MacroAnyT>::value, "MacroT must be a derived type of StateMacro");
+
+			// Create start and accepted state for macro
+			StateT * startState = automaton.template pushState<typename State::EpsilonT>();
+			StateT * acceptedState = automaton.template pushState<typename State::EpsilonT>();
+
+			// Push macro state
+			pushState<MacroAnyT>(startState, acceptedState);
+
+			// Create macro frame
+			// TODO: Check max groups
+			currentGroup += 2;
+			groupStart[currentGroup - 1] = startState;
+			groupEnd[currentGroup - 1] = acceptedState;
+
+			// Set start state as current state
+			currentState = startState;
+
+			return *this;
+		}
+
+		/**
+		 * Ends current macro group.
+		 * 
+		 * @return ref to self
+		 */
+		FORCE_INLINE AutomatonBuilder & endMacro()
+		{
+			// TODO: Check we are inside macro
+			// Terminate macro automaton
+			endGroup();
+
+			// Pop macro frame and set macro state as current
+			currentGroup -= 1;
+			currentState = groupEnd[currentGroup];
 
 			return *this;
 		}
@@ -766,13 +740,13 @@ namespace Re
 		{
 			if (auto * epsilon = state->template as<typename State::EpsilonT>())
 			{
-				if (epsilon->getPrevStates().getCount() == 1)
+				if (epsilon->getPrevStates().getCount() == 1 && epsilon->getNextStates().getCount() > 0)
 				{
 					// Merge into previous state
 					epsilon->mergePrevState();
 					// TODO: Dealloc state
 				}
-				else if (epsilon->getNextStates().getCount() == 1)
+				else if (epsilon->getNextStates().getCount() == 1 && epsilon->getPrevStates().getCount() > 0)
 				{
 					// Merge into next state
 					epsilon->mergeNextState();

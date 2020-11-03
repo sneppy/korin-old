@@ -41,15 +41,56 @@ namespace Re
 		 * 	state
 		 * @param inInput input string bound
 		 * 	to this instance
+		 * @param inNumRead number of symbols
+		 * 	already consumed (required by
+		 * 	certain states to work correctly)
 		 */
-		FORCE_INLINE Executor(const StateT * inStartState, const StateT * inAcceptedState, const AlphaStringT & inInput)
+		FORCE_INLINE Executor(const StateT * inStartState, const StateT * inAcceptedState, const AlphaStringT & inInput, int32 inNumRead = 0)
 			: startState{inStartState}
 			, acceptedState{inAcceptedState}
 			, input{inInput}
 			, visitQueue{}
-			, currVisit{inStartState, inInput, 0}
+			, currVisit{inStartState, inInput, inNumRead}
 		{
 			//
+		}
+
+		/**
+		 * Returns current state.
+		 * @{
+		 */
+		FORCE_INLINE const StateT * getCurrentState() const
+		{
+			return currVisit.template get<0>();
+		}
+
+		FORCE_INLINE StateT * getCurrentState()
+		{
+			return currVisit.template get<0>();
+		}
+		/** @} */
+
+		/**
+		 * Returns current input.
+		 * @{
+		 */
+		FORCE_INLINE const AlphaStringT & getCurrentInput() const
+		{
+			return currVisit.template get<1>();
+		}
+
+		FORCE_INLINE AlphaStringT & getCurrentInput()
+		{
+			return currVisit.template get<1>();
+		}
+		/** @} */
+
+		/**
+		 * Returns number of read symbols.
+		 */
+		FORCE_INLINE int32 getNumRead() const
+		{
+			return currVisit.template get<2>();
 		}
 
 		/**
@@ -81,11 +122,11 @@ namespace Re
 		 * 
 		 * @param inInput change input string
 		 * 	with this one
+		 * @param inNumRead set initial number
+		 * 	of symbols read
 		 */
 		FORCE_INLINE void reset()
 		{
-			totRead = 0;
-
 			// Empty visit queue
 			visitQueue.empty();
 
@@ -124,9 +165,6 @@ namespace Re
 
 		/// Original input
 		AlphaStringT input;
-
-		/// Total num read characters
-		int32 totRead;
 
 		/// Queue of states to visit
 		List<VisitT> visitQueue;

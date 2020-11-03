@@ -1,5 +1,8 @@
 #pragma once
 
+#include "core_types.h"
+#include "containers/string.h"
+
 /**
  * @defgroup Re
  */
@@ -8,6 +11,7 @@ namespace Re
 	class Regex;
 
 	template<typename> class Automaton;
+	template<typename> class Executor;
 
 	template<typename> struct StateBase;
 	template<typename> struct StateNull;
@@ -16,8 +20,23 @@ namespace Re
 	template<typename> struct StateSymbol;
 	template<typename> struct StateString;
 	template<typename> struct StateRange;
-	template<typename> struct StateMacro;
 	template<typename> struct StateLambda;
+	template<typename> struct StateMacro;
+	template<typename> struct StatePositiveLookahed;
+	template<typename> struct StateNegativeLookahed;
+
+	/**
+	 * Print a graph of the states
+	 * spawning from the start state.
+	 * 
+	 * @param startState starting state
+	 * @param acceptedState optional
+	 * 	accepted state
+	 * @return string that represent
+	 * 	state graph
+	 */
+	template<typename AlphaT>
+	String printStateGraph(const StateBase<AlphaT> * startState, const StateBase<AlphaT> * acceptedState = nullptr);
 
 	/**
 	 * A struct that contains informations

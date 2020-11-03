@@ -2,6 +2,8 @@
 
 #include "core_types.h"
 #include "templates/function.h"
+#include "containers/list.h"
+#include "containers/tuple.h"
 #include "containers/set.h"
 #include "./regex_types.h"
 
@@ -248,7 +250,90 @@ namespace Re
 		SetT prevStates;
 	};
 
-#define DECLARE_STATE_TYPE(Type, AlphaT)\
+	template<typename AlphaT>
+	String printStateGraph(const StateBase<AlphaT> * startState, const StateBase<AlphaT> * acceptedState)
+	{
+		using State = StateBase<AlphaT>;
+		using Visit = Tuple<const State* /* Current state */, uint32 /* Current depth = 0 */>;
+
+		String out;
+		
+		// Keeps track of the visit queue
+		// and already visited states
+		List<Visit> visitQueue;
+		Visit currVisit{startState, 0u};
+		Set<const State*, typename State::FindState> visitedStates;
+		Set<uint32> branches;
+		
+		do
+		{
+			const State * currState = currVisit.template get<0>();
+			uint32 currDepth = currVisit.template get<1>();
+
+			// Create new line
+			sizet currLen = out.getLength();
+			out += String{currDepth * 2, ' '};
+			ansichar * line = &out[currLen];
+
+			for (auto branchIt = branches.begin(); branchIt != branches.end() && *branchIt < currDepth; ++branchIt)
+			{
+				const uint32 branchDepth = *branchIt;
+				line[branchDepth * 2] = '|';
+				line[branchDepth * 2 + 1] = branchDepth + 1 == currDepth ? '-' : ' ';
+			}
+
+			if (!visitedStates.get(currState))
+			{
+				// State not yet visited
+				visitedStates.set(currState);
+
+				// TODO: Replace with start and accept state that derive StateEpsilon
+				if (currState == startState)
+				{
+					out += "[Start]\n";
+				}
+				else if (currState == acceptedState)
+				{
+					out += "[Accept]\n";
+				}
+				else
+				{
+					out += currState->getDisplayName();
+					out += '\n';
+				}
+
+				if (currState->getNextStates().getCount() > 1)
+				{
+					// Branch here
+					branches.set(currDepth);
+				}
+
+				for (const State * nextState : currState->getNextStates())
+				{
+					visitQueue.pushBack(Visit{nextState, currDepth + 1});
+				}
+			}
+			else
+			{
+				// State already visited
+
+				if (currState == acceptedState)
+				{
+					out += "[Accept]\n";
+				}
+				else
+				{
+					out += currState->getDisplayName();
+					out += " (repeated)\n";
+				}
+			}
+		} while (visitQueue.popBack(currVisit));
+
+		return out;
+	}
+
+
+#define DECLARE_VIRTUAL_STATE_TYPE(Type, AlphaT)\
 	using StateT = StateBase<AlphaT>;\
 	using typename StateT::AutomatonT;\
 	using typename StateT::AlphabetTraitsT;\
@@ -258,10 +343,18 @@ namespace Re
 	\
 	static constexpr Name debugName = #Type;\
 	\
+	virtual const Name & getDebugName() const\
+	{\
+		return debugName;\
+	}
+
+#define DECLARE_STATE_TYPE(Type, AlphaT)\
+	DECLARE_VIRTUAL_STATE_TYPE(Type, AlphaT)\
+	\
 	virtual FORCE_INLINE StateT * cloneState(AutomatonT & automaton) const override\
 	{\
 		return automaton.template pushState<State##Type>(*this);\
-	}\
+	}
 
 #define DECLARE_STATE_TYPE_DEFAULT(Type)\
 	DECLARE_STATE_TYPE(Type, AlphaT)\
@@ -484,5 +577,146 @@ namespace Re
 	FORCE_INLINE String StateLambda<AlphaT>::getDisplayName() const
 	{
 		return String::format("Lambda<%s>#%u", *name, this->id);
+	}
+
+	/**
+	 * Base class for states that
+	 * require a nested automaton
+	 * (e.g. positive/negative
+	 * lookahed). This class is
+	 * abstract. You must derive
+	 * it and override the
+	 * @c execute method.
+	 * 
+	 * @param AlphaT type of the
+	 * 	alphabet
+	 */
+	template<typename AlphaT>
+	struct StateMacro : StateBase<AlphaT>
+	{
+		DECLARE_VIRTUAL_STATE_TYPE(Macro, AlphaT)
+
+		using ExecutorT = Executor<AlphaT>;
+
+		StateMacro() = delete;
+
+		/**
+		 * 
+		 */
+		FORCE_INLINE explicit StateMacro(const StateT * inStartState, const StateT * inAcceptedState)
+			: startState{inStartState}
+			, acceptedState{inAcceptedState}
+		{
+			//
+		}
+
+		/**
+		 * 
+		 */
+		virtual bool execute(ExecutorT && executor, int32 & outNumRead) const = 0;
+
+		//////////////////////////////////////////////////
+		// StateBase interface
+		//////////////////////////////////////////////////
+		
+		virtual bool enterState(const AlphaStringT&, int32&, int32) const override;
+		virtual String getDisplayName() const;
+
+	protected:
+
+		/// Automaton start state
+		const StateT * startState;
+
+		/// Automaton accepted state
+		const StateT * acceptedState;
+	};
+
+	template<typename AlphaT>
+	bool StateMacro<AlphaT>::enterState(const AlphaStringT & input, int32 & outNumRead, int32 numRead) const
+	{
+		return execute(ExecutorT{startState, acceptedState, input, numRead}, outNumRead);
+	}
+
+	template<typename AlphaT>
+	String StateMacro<AlphaT>::getDisplayName() const
+	{
+		String name = getDebugName();
+		name += "<\n";
+		name += printStateGraph(startState, acceptedState);
+		name += ">";
+		name += String::format("#%llu", this->id);
+
+		return name;
+	}
+
+#define DECLARE_STATE_MACRO(Type, AlphaT)\
+	DECLARE_STATE_TYPE(Type, AlphaT)\
+	\
+	using MacroT = StateMacro<AlphaT>;\
+	using MacroT::MacroT;\
+	using typename MacroT::ExecutorT;
+
+#define DECLARE_STATE_MACRO_DEFAULT(Type)\
+	DECLARE_STATE_MACRO(Type, AlphaT)
+
+	/**
+	 * A macro state that looks
+	 * ahead without consuming
+	 * any symbol.
+	 * 
+	 * @param AlphaT type of the
+	 * 	alphabet
+	 */
+	template<typename AlphaT>
+	struct StatePositiveLookahed : public StateMacro<AlphaT>
+	{
+		DECLARE_STATE_MACRO_DEFAULT(PositiveLookahed)
+
+		//////////////////////////////////////////////////
+		// StateMacro interface
+		//////////////////////////////////////////////////
+		
+		virtual bool execute(ExecutorT&&, int32&) const override;
+	};
+
+	template<typename AlphaT>
+	bool StatePositiveLookahed<AlphaT>::execute(ExecutorT && executor, int32 & outNumRead) const
+	{
+		bool isAccepted = false;
+		while (!executor.step(isAccepted));
+
+		outNumRead = 0;
+		return isAccepted;
+	}
+
+	/**
+	 * Like a positive lookahed, but
+	 * enters state only if the given
+	 * subautomaton does not accept
+	 * the input string.
+	 * 
+	 * @param AlphaT type of the
+	 * 	alphabet
+	 */
+	template<typename AlphaT>
+	struct StateNegativeLookahed : public StateMacro<AlphaT>
+	{
+		DECLARE_STATE_MACRO_DEFAULT(NegativeLookahed)
+
+		//////////////////////////////////////////////////
+		// StateMacro interface
+		//////////////////////////////////////////////////
+		
+		virtual bool execute(ExecutorT&&, int32&) const override;
+	};
+
+	template<typename AlphaT>
+	bool StateNegativeLookahed<AlphaT>::execute(ExecutorT && executor, int32 & outNumRead) const
+	{
+		bool isAccepted = false;
+		while (!executor.step(isAccepted));
+
+		outNumRead = 0;
+		return !isAccepted;
 	}
 } // namespace Re

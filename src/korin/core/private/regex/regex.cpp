@@ -257,8 +257,14 @@ namespace Re
 						}
 					}
 
-					// Start group
+					// Start non-capturing group
 					builder.beginGroup();
+
+					if (invertedFlag)
+					{
+						// Start negative lookahead macro
+						builder.beginMacro<typename State::NegativeLookahedT>();
+					}
 
 					for (;;)
 					{
@@ -292,6 +298,13 @@ namespace Re
 					// Sanity check
 					CHECK(pattern[idx] == ']')
 
+					if (invertedFlag)
+					{
+						// End macro and push a wildcard state
+						builder.endMacro();
+						builder.pushState<AnyT>();
+					}
+					
 					// End group
 					builder.endGroup();
 
