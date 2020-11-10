@@ -162,11 +162,11 @@ struct BinaryNode
 	template<typename U>
 	const BinaryNode * find(const U & key) const
 	{
-		const int32 cmp = CompareT()(key, this->data);
+		const int32 cmp = CompareT{}(this->data, key);
 
-		if (cmp < 0)
+		if (cmp > 0)
 			return left ? left->find(key) : nullptr;
-		else if (cmp > 0)
+		else if (cmp < 0)
 			return right ? right->find(key) : nullptr;
 		else
 			return this;
@@ -597,9 +597,9 @@ public:
 	 */
 	BinaryNode * insert(BinaryNode * node)
 	{
-		int32 cmp = CompareT()(node->data, this->data);
+		int32 cmp = CompareT{}(this->data, node->data);
 
-		if (cmp < 0)
+		if (cmp > 0)
 		{
 			if (left)
 				return left->insert(node);
@@ -637,9 +637,9 @@ public:
 	 */
 	BinaryNode * insertUnique(BinaryNode * node)
 	{
-		int32 cmp = CompareT()(node->data, this->data);
+		int32 cmp = CompareT()(this->data, node->data);
 
-		if (cmp < 0)
+		if (cmp > 0)
 		{
 			if (left)
 				return left->insertUnique(node);
@@ -652,7 +652,7 @@ public:
 				return node;
 			}
 		}
-		else if (cmp > 0)
+		else if (cmp < 0)
 		{
 			if (right)
 				return right->insertUnique(node);
@@ -1449,12 +1449,12 @@ public:
 			{
 				parent = it;
 
-				int32 cmp = CompareT{}(data, it->data);
-				if (cmp < 0)
+				int32 cmp = CompareT{}(it->data, data);
+				if (cmp > 0)
 				{
 					it = it->left;
 				}
-				else if (cmp > 0)
+				else if (cmp < 0)
 				{
 					it = it->right;
 				}
@@ -1510,12 +1510,12 @@ public:
 			{
 				parent = it;
 
-				int32 cmp = CompareT{}(data, it->data);
-				if (cmp < 0)
+				int32 cmp = CompareT{}(it->data, data);
+				if (cmp > 0)
 				{
 					it = it->left;
 				}
-				else if (cmp > 0)
+				else if (cmp < 0)
 				{
 					it = it->right;
 				}
