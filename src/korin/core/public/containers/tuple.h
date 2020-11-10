@@ -149,9 +149,6 @@ public:
 	/** @} */
 
 protected:
-	/// Tuple length
-	constexpr static uint64 length = BaseT::length;
-
 	/// Contained item
 	HeadT item;
 };
@@ -189,17 +186,17 @@ public:
 	 */
 	constexpr uint64 getCount() const
 	{
-		return length;
+		return inIdx + 1;
 	}
 
 	constexpr uint64 getLength() const
 	{
-		return length;
+		return inIdx + 1;
 	}
 
 	constexpr sizet getSize() const
 	{
-		return length;
+		return inIdx + 1;
 	}
 	/** @} */
 
@@ -250,9 +247,6 @@ public:
 	/** @} */
 
 protected:
-	/// Tuple length
-	constexpr static uint64 length = inIdx + 1;
-
 	/// Contained item
 	HeadT item;
 };

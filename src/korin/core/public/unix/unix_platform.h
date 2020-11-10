@@ -29,6 +29,16 @@ struct UnixPlatformTypes : public GenericPlatformTypes
 	#define PLATFORM_USE_SIMD 0
 #endif
 
+#if BUILD_DEBUG
+	#define DEFINE_DEBUG_SCRIPT(script, type)\
+		asm(\
+			".pushsection \".debug_gdb_scripts\", \"MS\", @progbits, 1\n"\
+			".byte " type "\n"\
+			".asciz \"" script "\"\n"\
+			".popsection\n"\
+		);
+#endif
+
 // Compiler macros
 
 #if BUILD_DEBUG
@@ -44,3 +54,10 @@ struct UnixPlatformTypes : public GenericPlatformTypes
 
 #define ALIGN(n) __attribute__((aligned(n)))
 #define PACK(n) __attribute__((packed, aligned(n)))
+
+// Unix specific macros
+
+#define GDB_SCRIPT_TYPE_PYTHON_FILE "1 /* Python file */"
+#define GDB_SCRIPT_TYPE_SCHEME_FILE "3 /* Scheme file */"
+#define GDB_SCRIPT_TYPE_PYTHON_INLINE "5 /* Python inline */"
+#define GDB_SCRIPT_TYPE_SCHEME_INLINE "7 /* Scheme inline */"

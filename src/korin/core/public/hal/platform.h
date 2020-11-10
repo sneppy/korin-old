@@ -50,6 +50,10 @@
 	#define PLATFORM_USE_PTHREADS 0
 #endif
 
+#ifndef DEFINE_DEBUG_SCRIPT
+	#define DEFINE_DEBUG_SCRIPT
+#endif
+
 // Set to default undefined compiler properties
 
 #ifndef FORCE_INLINE
