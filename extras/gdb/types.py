@@ -309,6 +309,37 @@ class SetPrinter:
 
 		return 'Set %s[%d]' % (self._item_type, self.size)
 
+class OptionalPrinter:
+	"""  """
+
+	def __init__(self, typename: str, value: gdb.Value) -> None:
+		"""  """
+
+		self._typename = typename
+		self._value = value
+		self._optional_type = value.type.template_argument(0)
+
+		self.has_value = value['engaged']
+		self.value = value['storage']['value']
+	
+	def display_hint(self) -> str:
+		"""  """
+
+		visualizer = gdb.default_visualizer(self.value)
+
+		if visualizer is not None:
+			return visualizer.display_hint()
+		else:
+			return None
+	
+	def to_string(self) -> str:
+		"""  """
+
+		if self.has_value:
+			return str(self.value)
+		else:
+			return '(nil)'
+
 class VecPrinter:
 	"""  """
 
@@ -438,6 +469,7 @@ def build_korin_printer() -> None:
 	korin_printer.add('Tuple', TuplePrinter)
 	korin_printer.add('Map', MapPrinter)
 	korin_printer.add('Set', SetPrinter)
+	korin_printer.add('Optional', OptionalPrinter)
 	korin_printer.add('Vec2', VecPrinter)
 	korin_printer.add('Vec3', VecPrinter)
 	korin_printer.add('Vec4', VecPrinter)
