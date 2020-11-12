@@ -45,6 +45,29 @@ template<typename T> struct IsPointer<T*> { enum {value = true}; };
 /// @}
 
 /**
+ * Sets value to true if type is a
+ * pointer to @c PtrT
+ * @{
+ */
+template<typename T, typename PtrT>
+struct IsPointerOf
+{
+	enum {value = false};
+};
+
+template<typename T> struct IsPointerOf<T*, T>					{ enum {value = true}; };
+template<typename T> struct IsPointerOf<const T*, T>			{ enum {value = true}; };
+template<typename T> struct IsPointerOf<volatile T*, T>			{ enum {value = true}; };
+template<typename T> struct IsPointerOf<const volatile T*, T>	{ enum {value = true}; };
+/** @} */
+
+/**
+ * Same as `IsPointerOf<T, void>`.
+ */
+template<typename T>
+using IsVoidPointer = IsPointerOf<T, void>;
+
+/**
  * Sets value to true if type is a reference
  * @{
  */

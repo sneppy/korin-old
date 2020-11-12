@@ -45,6 +45,62 @@ def make_tree_iterator(tree: gdb.Value):
 	# Yield nodes, from left to right
 	yield from make_node_iterator(node_ptr)
 
+class AtomicPrinter:
+	"""  """
+
+	def __init__(self, typename: str, value: gdb.Value) -> None:
+		"""  """
+
+		self._typename = typename
+		self._value = value
+		self._value_visualizer = gdb.default_visualizer(value['value'])
+
+		self.value = value['value']
+	
+	def display_hint(self) -> str:
+		"""  """
+		
+		if self._value_visualizer is not None:
+			return self._value_visualizer.display_hint()
+		else:
+			return None
+	
+	def to_string(self) -> str:
+		"""  """
+		
+		return str(self.value)
+
+class OptionalPrinter:
+	"""  """
+
+	def __init__(self, typename: str, value: gdb.Value) -> None:
+		"""  """
+
+		self._typename = typename
+		self._value = value
+		self._optional_type = value.type.template_argument(0)
+
+		self.has_value = value['engaged']
+		self.value = value['storage']['value']
+	
+	def display_hint(self) -> str:
+		"""  """
+
+		visualizer = gdb.default_visualizer(self.value)
+
+		if visualizer is not None:
+			return visualizer.display_hint()
+		else:
+			return None
+	
+	def to_string(self) -> str:
+		"""  """
+
+		if self.has_value:
+			return str(self.value)
+		else:
+			return '(nil)'
+
 class ArrayPrinter:
 	"""  """
 
@@ -309,37 +365,6 @@ class SetPrinter:
 
 		return 'Set %s[%d]' % (self._item_type, self.size)
 
-class OptionalPrinter:
-	"""  """
-
-	def __init__(self, typename: str, value: gdb.Value) -> None:
-		"""  """
-
-		self._typename = typename
-		self._value = value
-		self._optional_type = value.type.template_argument(0)
-
-		self.has_value = value['engaged']
-		self.value = value['storage']['value']
-	
-	def display_hint(self) -> str:
-		"""  """
-
-		visualizer = gdb.default_visualizer(self.value)
-
-		if visualizer is not None:
-			return visualizer.display_hint()
-		else:
-			return None
-	
-	def to_string(self) -> str:
-		"""  """
-
-		if self.has_value:
-			return str(self.value)
-		else:
-			return '(nil)'
-
 class VecPrinter:
 	"""  """
 
@@ -463,13 +488,14 @@ def build_korin_printer() -> None:
 	global korin_printer
 
 	korin_printer = Printer('korin')
+	korin_printer.add('Atomic', AtomicPrinter)
+	korin_printer.add('Optional', OptionalPrinter)
 	korin_printer.add('Array', ArrayPrinter)
 	korin_printer.add('StringBase', StringPrinter)
 	korin_printer.add('List', ListPrinter)
 	korin_printer.add('Tuple', TuplePrinter)
 	korin_printer.add('Map', MapPrinter)
 	korin_printer.add('Set', SetPrinter)
-	korin_printer.add('Optional', OptionalPrinter)
 	korin_printer.add('Vec2', VecPrinter)
 	korin_printer.add('Vec3', VecPrinter)
 	korin_printer.add('Vec4', VecPrinter)

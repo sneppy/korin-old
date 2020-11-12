@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "templates/types.h"
+#include "templates/atomic.h"
 #include "templates/optional.h"
 
 TEST(templates, types)
@@ -45,6 +46,51 @@ TEST(templates, types)
 	ASSERT_TRUE((IsSameType<int*, RemoveConst<int* const>::Type>::value));
 	ASSERT_FALSE((IsSameType<int&, RemoveConst<const int&>::Type>::value));
 	ASSERT_FALSE((IsSameType<int*, RemoveConst<const int*>::Type>::value));
+}
+
+TEST(templates, atomic)
+{
+	Atomic<int32> a = 2;
+
+	ASSERT_EQ(a.load(), 2);
+
+	a.store(10);
+
+	ASSERT_EQ(a.load(), 10);
+
+	a = 0;
+
+	ASSERT_EQ(a.load(), 0);
+	
+	a = 0;
+
+	ASSERT_EQ(++a, 1);
+	ASSERT_EQ(a.load(), 1);
+	ASSERT_EQ(a++, 1);
+	ASSERT_EQ(a.load(), 2);
+	
+	a = 0;
+
+	ASSERT_EQ(--a, -1);
+	ASSERT_EQ(a.load(), -1);
+	ASSERT_EQ(a--, -1);
+	ASSERT_EQ(a.load(), -2);
+
+	a = 0;
+
+	ASSERT_EQ(a += 5, 5);
+	ASSERT_EQ(a.load(), 5);
+
+	a = 0;
+
+	ASSERT_EQ(a -= 5, -5);
+	ASSERT_EQ(a.load(), -5);
+
+	a = 11;
+
+	ASSERT_EQ(static_cast<int32>(a), 11);
+
+	SUCCEED();
 }
 
 TEST(templates, optional)
