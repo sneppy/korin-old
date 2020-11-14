@@ -57,6 +57,20 @@ struct GenericPlatformMemory
 	}
 
 	/**
+	 * Returns true if address is in the
+	 * provided range (lower inclusive,
+	 * upper exclusive).
+	 * 
+	 * @param ptr pointer to test
+	 * @param min,max lower and upper range
+	 * 	bounds
+	 */
+	static constexpr FORCE_INLINE bool isInRange(const void * ptr, const void * min, const void * max)
+	{
+		return reinterpret_cast<uintp>(ptr) >= reinterpret_cast<uintp>(min) && reinterpret_cast<uintp>(ptr) < reinterpret_cast<uintp>(max);
+	}
+
+	/**
 	 * Default constructs elements in range
 	 * 
 	 * @param begin,end array range
