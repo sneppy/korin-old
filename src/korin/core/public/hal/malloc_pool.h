@@ -3,6 +3,7 @@
 #include "core_types.h"
 #include "misc/assert.h"
 #include "misc/build.h"
+#include "templates/types.h"
 #include "./platform.h"
 #include "./platform_memory.h"
 #include "./platform_math.h"
@@ -14,17 +15,24 @@ class MallocPool;
  * that consists of memory blocks
  * organized in a linked list.
  */
-struct MemoryPool final
+struct MemoryPool : public NonCopyable
 {
 	friend MallocPool;
+	friend class MultiMemoryPool;
 
 	MemoryPool() = delete;
+
+	/**
+	 * Destroys pool and deallocates
+	 * managed buffer.
+	 */
+	void destroy();
 
 public:
 	/**
 	 * Memory pool setup data.
 	 */
-	struct SetupData
+	struct SetupInfo
 	{
 		/// Number of blocks
 		uint32 numBlocks;
@@ -33,24 +41,91 @@ public:
 		sizet dataSize;
 
 		/// Alignment of the data
-		sizet dataAlignment;
+		sizet dataAlignment = DEFAULT_ALIGNMENT;
 	};
+
+	/**
+	 * 
+	 */
+	static constexpr FORCE_INLINE sizet getActualBlockSize(const SetupInfo & setupInfo)
+	{
+		return PlatformMath::align2Up(setupInfo.dataSize + blockLogicSize - 1, setupInfo.dataAlignment);
+	}
 
 	/**
 	 * Create a new pool with the given setup.
 	 * 
-	 * @param inSetupData pool setup data
+	 * @param inSetupInfo pool setup data
 	 * @param inBuffer if provided, a pointer
 	 * 	to an external buffer managed by a
 	 * 	third party
 	 */
-	explicit MemoryPool(const SetupData & inSetupData, void * inBuffer = nullptr);
+	explicit MemoryPool(const SetupInfo & inSetupInfo, void * inBuffer = nullptr);
+
+	/**
+	 * Move constructor.
+	 */
+	FORCE_INLINE MemoryPool(MemoryPool && other)
+		: buffer{other.buffer}
+		, hasOwnBuffer{other.hasOwnBuffer}
+		, head{other.head}
+		, numFreeBlocks{other.numFreeBlocks}
+		, numBlocks{other.numBlocks}
+		, blockDataSize{other.blockDataSize}
+		, blockAlignment{other.blockAlignment}
+		, blockSize{other.blockSize}
+	{
+		other.buffer = other.head = nullptr;
+		other.hasOwnBuffer = false;
+		other.numFreeBlocks = 0;
+	}
+
+	/**
+	 * Move assignment.
+	 */
+	FORCE_INLINE MemoryPool & operator=(MemoryPool && other)
+	{
+		// Destroy this pool first
+		destroy();
+
+		swap(buffer, other.buffer);
+		swap(hasOwnBuffer, other.hasOwnBuffer);
+		swap(head, other.head);
+		swap(numFreeBlocks, other.numFreeBlocks);
+		numBlocks = other.numBlocks;
+		blockDataSize = other.blockDataSize;
+		blockAlignment = other.blockAlignment;
+		blockSize = other.blockSize;
+
+		return *this;
+	}
 
 	/**
 	 * Destructor, destroys managed buffer
 	 * if any.
 	 */
-	~MemoryPool();
+	FORCE_INLINE ~MemoryPool()
+	{
+		destroy();
+	}
+
+	/**
+	 * Returns true if there are no free
+	 * blocks available in this pool.
+	 */
+	FORCE_INLINE bool isExhausted()
+	{
+		return !head;
+	}
+
+	/**
+	 * Returns the number of free blocks
+	 * in this pool.
+	 */
+	FORCE_INLINE uint32 getNumFreeBlocks()
+	{
+		return numFreeBlocks;
+	}
 
 	/**
 	 * 
@@ -67,7 +142,7 @@ public:
 	 */
 	FORCE_INLINE bool isBlockInRange(const void * block)
 	{
-		return Memory::isInRange(block, buffer, reinterpret_cast<char*>(buffer) + (numBlocks * blockSize));
+		return Memory::isInRange(block, buffer, reinterpret_cast<ubyte*>(buffer) + (numBlocks * blockSize));
 	}
 
 private:
@@ -84,19 +159,19 @@ private:
 	uint32 numFreeBlocks;
 
 	/// Number of total blocks in the pool
-	const uint32 numBlocks;
+	uint32 numBlocks;
 
 	/// Size of the data of a block
-	const sizet blockDataSize;
+	sizet blockDataSize;
 
 	/// Size of the logical part of a block
 	static constexpr sizet blockLogicSize = sizeof(void*);
 
 	/// Required data alignment
-	const sizet blockAlignment;
+	sizet blockAlignment;
 
 	/// Actual block size
-	const sizet blockSize;
+	sizet blockSize;
 };
 
 /**
@@ -105,11 +180,12 @@ private:
  */
 struct MallocPool : MallocBase
 {
+public:
 	/**
 	 * Initialize memory pool
 	 */
-	FORCE_INLINE MallocPool(const MemoryPool::SetupData & inSetup, void * inBuffer = nullptr)
-		: pool{inSetup, inBuffer}
+	FORCE_INLINE MallocPool(const MemoryPool::SetupInfo & inSetupInfo, void * inBuffer = nullptr)
+		: pool{inSetupInfo, inBuffer}
 	{
 		//
 	}

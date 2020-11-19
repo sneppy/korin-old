@@ -368,6 +368,9 @@ public:
  */
 struct NonCopyable
 {
+	NonCopyable() = default;
+	~NonCopyable() = default;
+
 private:
 	NonCopyable(const NonCopyable&) = delete;
 	NonCopyable& operator=(const NonCopyable&) = delete;
@@ -378,6 +381,9 @@ private:
  */
 struct NonMovable
 {
+	NonMovable() = default;
+	~NonMovable() = default;
+
 private:
 	NonMovable(NonMovable&&) = delete;
 	NonMovable& operator=(NonMovable&&) = delete;
