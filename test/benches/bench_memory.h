@@ -5,25 +5,15 @@
 #include "core_types.h"
 #include "hal/malloc_ansi.h"
 #include "hal/malloc_pool.h"
-#include "hal/malloc_binned.h"
-
-#ifndef DO_NOT_OPTIMIZE_AWAY_IMPL
-#define DO_NOT_OPTIMIZE_AWAY_IMPL
-
-	static FORCE_INLINE void doNotOptimizeAway(void * p)
-	{
-		asm volatile("" : : "g" (p) : "memory");
-	}
-
-#endif
+#include "hal/malloc_multi_pool.h"
+#include "containers/list.h"
 
 template<typename MallocT>
 MallocBase * createAllocator(uint32 n, sizet size, sizet align = sizeof(uintp));
 
-FORCE_INLINE MallocBase * destroyAllocator(MallocBase * malloc)
+FORCE_INLINE void destroyAllocator(MallocBase * malloc)
 {
 	delete malloc;
-	return nullptr;
 }
 
 template<>
@@ -35,19 +25,13 @@ FORCE_INLINE MallocBase * createAllocator<MallocAnsi>(uint32 n, sizet size, size
 template<>
 FORCE_INLINE MallocBase * createAllocator<MallocPool>(uint32 n, sizet size, sizet align)
 {
-	return new MallocPool{n, size, align};
+	return new MallocPool{{n, size, align}};
 }
 
 template<>
-FORCE_INLINE MallocBase * createAllocator<MallocPooled>(uint32 n, sizet size, sizet align)
+FORCE_INLINE MallocBase * createAllocator<MallocMultiPool>(uint32 n, sizet size, sizet align)
 {
-	return new MallocPooled{n / 8, size, align};
-}
-
-template<>
-FORCE_INLINE MallocBase * createAllocator<MallocBinned>(uint32 n, sizet size, sizet align)
-{
-	return new MallocBinned;
+	return new MallocMultiPool{{n / 8, size, align}};
 }
 
 template<typename MallocT>
@@ -103,10 +87,8 @@ void ListAlloc(benchmark::State & state)
 
 BENCHMARK_TEMPLATE(uniformAlloc, MallocAnsi)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
 BENCHMARK_TEMPLATE(uniformAlloc, MallocPool)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
-BENCHMARK_TEMPLATE(uniformAlloc, MallocPooled)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
-BENCHMARK_TEMPLATE(uniformAlloc, MallocBinned)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
+BENCHMARK_TEMPLATE(uniformAlloc, MallocMultiPool)->Ranges({{1u << 3, 1u << 15}, {1u << 3, 1u << 9}});
 
 BENCHMARK_TEMPLATE(ListAlloc, MallocAnsi)->Ranges({{1u << 3, 1u << 15}});
 BENCHMARK_TEMPLATE(ListAlloc, MallocPool)->Ranges({{1u << 3, 1u << 15}});
-BENCHMARK_TEMPLATE(ListAlloc, MallocPooled)->Ranges({{1u << 3, 1u << 15}});
-BENCHMARK_TEMPLATE(ListAlloc, MallocBinned)->Ranges({{1u << 3, 1u << 15}});
+BENCHMARK_TEMPLATE(ListAlloc, MallocMultiPool)->Ranges({{1u << 3, 1u << 15}});

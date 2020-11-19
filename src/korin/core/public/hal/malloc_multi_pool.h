@@ -98,6 +98,14 @@ public:
 	}
 
 	/**
+	 * Returns number of pools.
+	 */
+	FORCE_INLINE uint32 getNumPools() const
+	{
+		return numPools;
+	}
+
+	/**
 	 * Acquire a block of memory from the
 	 * first non-exhausted pool. If no
 	 * suitable pool exists, creates a new
@@ -125,6 +133,9 @@ private:
 	/// Tail of pools stack
 	PoolLogicT * tail;
 
+	/// Number of created pools
+	uint32 numPools;
+
 	/// Pool setup info
 	MemoryPool::SetupInfo setupInfo;
 };
@@ -145,6 +156,14 @@ public:
 		//
 	}
 
+	/**
+	 * Returns multi pool instance.
+	 */
+	FORCE_INLINE const MultiMemoryPool & getPools() const
+	{
+		return multiPool;
+	}
+
 	//////////////////////////////////////////////////
 	// MallocBase interface
 	//////////////////////////////////////////////////
@@ -153,7 +172,7 @@ public:
 	virtual void * realloc(void*, sizet, sizet = DEFAULT_ALIGNMENT) override;
 	virtual void free(void*) override;
 
-protected:
+private:
 	/// The memory pool
 	MultiMemoryPool multiPool;
 };

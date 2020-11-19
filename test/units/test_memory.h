@@ -5,7 +5,7 @@
 #include "hal/platform_memory.h"
 #include "hal/malloc_ansi.h"
 #include "hal/malloc_pool.h"
-#include "hal/malloc_binned.h"
+#include "hal/malloc_multi_pool.h"
 #include "hal/malloc_object.h"
 
 TEST(memory, malloc_ansi)
@@ -41,15 +41,15 @@ TEST(memory, memory_pool)
 	const uint32 blockSize = 1024;
 	const uint32 blockAlignment = 64;
 
-	MemoryPool * pool = new MemoryPool(numBlocks, blockSize, blockAlignment, nullptr);
+	MemoryPool * pool = new MemoryPool{{numBlocks, blockSize, blockAlignment}};
 	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks);
 
-	void * block = pool->acquireBlock();
+	void * block = pool->acquire();
 	ASSERT_TRUE(block != nullptr);
 	ASSERT_EQ((uintp)block & (blockAlignment - 1), 0);
 	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks - 1);
 
-	pool->releaseBlock(block);
+	pool->release(block);
 	ASSERT_EQ(pool->getNumFreeBlocks(), numBlocks);
 
 	struct 
@@ -59,13 +59,13 @@ TEST(memory, memory_pool)
 		 */
 		void operator()(MemoryPool * pool, uint32 & numBlocks) const
 		{
-			void * block = pool->acquireBlock();
+			void * block = pool->acquire();
 
 			if (LIKELY(block != nullptr))
 			{
 				++numBlocks;
 				operator()(pool, numBlocks);
-				pool->releaseBlock(block);
+				pool->release(block);
 			}
 		}
 	} cycleBlocks;
@@ -84,7 +84,7 @@ TEST(memory, memory_pool)
 	SUCCEED();
 }
 
-TEST(memory, malloc_pooled)
+TEST(memory, malloc_multi_pool)
 {
 	struct Foo
 	{
@@ -92,7 +92,7 @@ TEST(memory, malloc_pooled)
 		void * next;
 	} * foo;
 	
-	MallocPooled * malloc = new MallocPooled(65536, sizeof(Foo), alignof(Foo), 8);
+	MallocMultiPool * malloc = new MallocMultiPool{{65536, sizeof(Foo), alignof(Foo)}};
 
 	foo = reinterpret_cast<Foo*>(malloc->alloc(sizeof(Foo), alignof(Foo)));
 	foo->next = foo;
@@ -106,34 +106,7 @@ TEST(memory, malloc_pooled)
 		foo->vec[0] = (float32)i;
 	}
 	
-	ASSERT_EQ(malloc->getNumPools(), 16);
-
-	SUCCEED();
-}
-
-TEST(memory, malloc_binned)
-{
-	struct Foo
-	{
-		float32 vec[4];
-		void * next;
-	} * foo;
-
-	MallocBinned * malloc = new MallocBinned;
-
-	foo = reinterpret_cast<Foo*>(malloc->alloc(sizeof(Foo), alignof(Foo)));
-	foo->next = foo;
-	foo->vec[0] = 3.14f;
-
-	ASSERT_TRUE(foo != nullptr);
-
-	for (uint32 i = 0; i < 65536 * 15; ++i)
-	{
-		foo = reinterpret_cast<Foo*>(malloc->alloc(sizeof(Foo), alignof(Foo)));
-		foo->vec[0] = (float32)i;
-	}
-
-	delete malloc;
+	ASSERT_EQ(malloc->getPools().getNumPools(), 16);
 
 	SUCCEED();
 }
