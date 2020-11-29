@@ -7,13 +7,19 @@ file(GLOB_RECURSE PRIVATE_FILES
 	"private/*.c"
 	"private/*.cpp"
 	"private/*.cxx"
+	"private/*.h"
+	"private/*.hpp"
+	"private/*.tpp"
 )
 
 file(GLOB_RECURSE PUBLIC_FILES
 
-	"public/*.h"
-	"public/*.hpp"
-	"public/*.tpp"
+	"private/*.c"
+	"private/*.cpp"
+	"private/*.cxx"
+	"private/*.h"
+	"private/*.hpp"
+	"private/*.tpp"
 )
 
 ## Create library target
@@ -39,4 +45,6 @@ target_include_directories(${MODULE_NAME}
 
 	PUBLIC
 		"public"
+	PRIVATE
+		"private"
 )
