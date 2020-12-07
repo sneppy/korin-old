@@ -16,14 +16,14 @@ struct Quat : public Vec4<float32>
 	/**
 	 * Default constructor
 	 */
-	FORCE_INLINE Quat()
+	constexpr FORCE_INLINE Quat()
 		: Vec4{0.f, 0.f, 0.f, 1.f}
 	{
 		//
 	}
 
 private:
-	/// Privately inherit vec4 constructors
+	/// Privately inherit Vec4 constructors
 	using Vec4::Vec4;
 
 public:
@@ -33,7 +33,7 @@ public:
 	 * @param [in] inAngle rotation angle
 	 * @param [in] axis normalized rotation axis
 	 */
-	FORCE_INLINE Quat(float32 inAngle, Vec3<float32> inAxis)
+	constexpr FORCE_INLINE Quat(float32 inAngle, Vec3<float32> inAxis)
 	{
 		inAngle *= 0.5f;
 		inAxis *= PlatformMath::sin(inAngle);
@@ -91,6 +91,24 @@ public:
 	FORCE_INLINE Quat operator-() const
 	{
 		return Quat{this->x, this->y, this->z, -this->w};
+	}
+
+	/**
+	 * @brief Normalizes quaternion, a rotation
+	 * quaternion must be a unit quaternion. 
+	 */
+	FORCE_INLINE Quat & normalize()
+	{
+		return static_cast<Quat&>(static_cast<Vec4&>(*this).normalize());
+	}
+
+	/**
+	 * @brief Returns a normalized copy of
+	 * the quaternion. 
+	 */
+	FORCE_INLINE Quat getNormal() const
+	{
+		return Quat{*this}.normalize();
 	}
 
 	/**
