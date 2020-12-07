@@ -11,7 +11,8 @@
  */
 struct GenericPlatformMath
 {
-	/// Trigonometric functions @{
+	/// Trigonometric functions
+	/// @{
 	static FORCE_INLINE float32 sin(float32 v)	{ return ::sinf(v); }
 	static FORCE_INLINE float32 cos(float32 v)	{ return ::cosf(v); }
 	static FORCE_INLINE float32 tan(float32 v)	{ return ::tanf(v); }
@@ -21,7 +22,8 @@ struct GenericPlatformMath
 	static FORCE_INLINE float32 atan(float32 v)	{ return ::atanf(v); }
 	/// @}
 
-	/// Pow functions @{
+	/// Pow functions
+	/// @{
 	static FORCE_INLINE float32 pow(float32 b, float32 e) { return ::powf(b, e); }
 
 	static FORCE_INLINE float32 sqrt(float32 v) { return ::sqrtf(v); }
@@ -38,6 +40,24 @@ struct GenericPlatformMath
 		return y & 0x1 ? z * z * x : z * z;
 	}
 	/// @}
+
+	/**
+	 * @brief Returns the factorial of an
+	 * integer number.
+	 * 
+	 * @param n input value
+	 * @return n!
+	 */
+	static constexpr FORCE_INLINE uint64 fact(uint64 n)
+	{
+		uint64 x = 1;
+		for (; n > 0; --n)
+		{
+			x *= n;
+		}
+
+		return x;
+	}
 
 	/**
 	 * Remove sign
@@ -86,7 +106,7 @@ struct GenericPlatformMath
 
 	/**
 	 * Perform logarithm in base 2.
-	 * If argument is integer, return
+	 * If argument is integer, returns
 	 * floor(log2(x)).
 	 * 
 	 * @param n numeric value
