@@ -420,7 +420,7 @@ private:
 
 			for (uint8 j = 0; j < 16; ++j)
 			{
-				row[j / 4] += mat[i][j / 4] * other.vec[j];
+				row[j / 4] += mat[i][j % 4] * other.vec[j];
 			}
 
 			PlatformMemory::memcpy(mat[i], row, sizeof(mat[i]));
@@ -507,11 +507,11 @@ public:
 	{
 		Vec4<T> u = 0.f;
 
-		for (uint8 row = 0; row < 4; ++row)
+		for (uint8 i = 0; i < 4; ++i)
 		{
-			for (uint8 col = 0; col < 4; ++col)
+			for (uint8 j = 0; j < 4; ++j)
 			{
-				u[row] += mat[row][col] * v[col];
+				u[i] += mat[i][j] * v[j];
 			}
 		}
 
