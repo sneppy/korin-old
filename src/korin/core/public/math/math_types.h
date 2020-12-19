@@ -14,6 +14,8 @@ template<typename T>	struct Vector;
 template<typename T>	struct Mat3;
 template<typename T>	struct Mat4;
 template<typename T>	struct Matrix;
+						struct TransformMatrix;
+						struct PerspectiveMatrix;
 
 //////////////////////////////////////////////////
 // Type aliases
