@@ -197,7 +197,7 @@ protected:
 	 * @brief Returns matrix of algebraic 
 	 * complements. 
 	 */
-	Mat4 getComplements() const
+	constexpr Mat4 getInverseComplements() const
 	{
 		const T * lower = vec + 0;
 		const T * upper = vec + 8;
@@ -218,22 +218,34 @@ protected:
 
 		return {
 			+(lower[5] * kplo - lower[6] * jpln + lower[7] * jokn),
-			-(lower[4] * kplo - lower[6] * iplm + lower[7] * iokm),
-			+(lower[4] * jpln - lower[5] * iplm + lower[7] * injm),
-			-(lower[4] * jokn - lower[5] * iokm + lower[6] * injm),
-			+(lower[1] * kplo - lower[2] * jpln + lower[3] * jokn),
-			-(lower[0] * kplo - lower[2] * iplm + lower[3] * iokm),
-			+(lower[0] * jpln - lower[1] * iplm + lower[3] * injm),
-			-(lower[0] * jokn - lower[1] * iokm + lower[2] * injm),
+			-(lower[1] * kplo - lower[2] * jpln + lower[3] * jokn),
 			+(upper[5] * chdg - upper[6] * bhdf + upper[7] * bgcf),
+			-(upper[1] * chdg - upper[2] * bhdf + upper[3] * bgcf),
+
+			-(lower[4] * kplo - lower[6] * iplm + lower[7] * iokm),
+			+(lower[0] * kplo - lower[2] * iplm + lower[3] * iokm),
 			-(upper[4] * chdg - upper[6] * ahde + upper[7] * agce),
+			+(upper[0] * chdg - upper[2] * ahde + upper[3] * agce),
+
+			+(lower[4] * jpln - lower[5] * iplm + lower[7] * injm),
+			-(lower[0] * jpln - lower[1] * iplm + lower[3] * injm),
 			+(upper[4] * bhdf - upper[5] * ahde + upper[7] * afbe),
+			-(upper[0] * bhdf - upper[1] * ahde + upper[3] * afbe),
+
+			-(lower[4] * jokn - lower[5] * iokm + lower[6] * injm),
+			+(lower[0] * jokn - lower[1] * iokm + lower[2] * injm),
 			-(upper[4] * bgcf - upper[5] * agce + upper[6] * afbe),
-			+(upper[1] * chdg - upper[2] * bhdf + upper[3] * bgcf),
-			-(upper[0] * chdg - upper[2] * ahde + upper[3] * agce),
-			+(upper[0] * bhdf - upper[1] * ahde + upper[3] * afbe),
-			-(upper[0] * bgcf - upper[1] * agce + upper[2] * afbe)
+			+(upper[0] * bgcf - upper[1] * agce + upper[2] * afbe)
 		};
+	}
+
+	/**
+	 * @brief Returns matrix of algebraic
+	 * complements.
+	 */
+	constexpr FORCE_INLINE Mat4 getComplements() const
+	{
+		return getInverseComplements().invert();
 	}
 	
 public:
@@ -251,17 +263,17 @@ public:
 	 * @brief Returns the inverse of the
 	 * matrix as a copy.
 	 */
-	const Mat4 getInverse() const
+	constexpr Mat4 getInverse() const
 	{
 		// Get complements matrix and
-		Mat4 comp = getComplements();
+		Mat4 invcomp = getInverseComplements();
 
 		// compute determinant
-		const T * row = comp[0];
+		const T * row = invcomp[0];
 		const T invdet = 1.f / (vec[0] * row[0] + vec[1] * row[1] + vec[2] * row[2] + vec[3] * row[3]);
 
 		// Return transposed multiplied by inverse determinant
-		return comp.transpose() * invdet;
+		return invcomp * invdet;
 	}
 
 	/**
@@ -503,7 +515,7 @@ public:
 	 * @return multiplied vector
 	 * @{
 	 */
-	const Vec4<T> operator&(const Vec4<T> & v) const
+	Vec4<T> operator&(const Vec4<T> & v) const
 	{
 		Vec4<T> u = 0.f;
 
@@ -518,7 +530,7 @@ public:
 		return u;
 	}
 
-	FORCE_INLINE const Vec3<T> operator&(const Vec3<T> & v) const
+	FORCE_INLINE Vec3<T> operator&(const Vec3<T> & v) const
 	{
 		return (*this) & Vec4<T>{v, 1.f};
 	}
@@ -534,12 +546,12 @@ public:
 	 * @param v vector to transform
 	 * @return transformed vector
 	 */
-	FORCE_INLINE const Vec4<T> transformVector(const Vec4<T> & v) const
+	FORCE_INLINE Vec4<T> transformVector(const Vec4<T> & v) const
 	{
 		return (*this) & v;
 	}
 
-	FORCE_INLINE const Vec3<T> transformVector(const Vec3<T> & v) const
+	FORCE_INLINE Vec3<T> transformVector(const Vec3<T> & v) const
 	{
 		return (*this) & v;
 	}
