@@ -15,7 +15,7 @@ struct PerspectiveMatrix : Mat4<float32>
 	 * @brief Create a perspective matrix given
 	 * projection box extents.
 	 */
-	FORCE_INLINE PerspectiveMatrix(float32 right, float32 left, float32 top, float32 bottom, float32 nearZ, float32 farZ)
+	constexpr FORCE_INLINE PerspectiveMatrix(float32 right, float32 left, float32 top, float32 bottom, float32 nearZ, float32 farZ)
 		: Mat4{
 			(2.f * nearZ) / (right - left), 0.f, (right + left) / (left - right), 0.f,
 			0.f, (2.f * nearZ) / (top - bottom), (top + bottom) / (bottom - top), 0.f,
@@ -31,7 +31,7 @@ struct PerspectiveMatrix : Mat4<float32>
 	 * with a 16:9 aspect ratio and a 90 degrees
 	 * FOV. 
 	 */
-	FORCE_INLINE PerspectiveMatrix()
+	constexpr FORCE_INLINE PerspectiveMatrix()
 		: PerspectiveMatrix{8.f, -8.f, 4.5f, -4.5f, 0.5f, 1000.f}
 	{
 		//
@@ -43,7 +43,7 @@ private:
 	/**
 	 * @brief Internal construction method. 
 	 */
-	PerspectiveMatrix(float32 ratio, float32 invfov, float32 nearZ, float32 farZ)
+	constexpr PerspectiveMatrix(float32 ratio, float32 invfov, float32 nearZ, float32 farZ)
 		: Mat4{
 			invfov, 0.f, 0.f, 0.f,
 			0.f, invfov * ratio, 0.f, 0.f,
@@ -64,7 +64,7 @@ public:
 	 * @param nearZ distance of the near plane
 	 * @param farZ distance of the far plane
 	 */
-	FORCE_INLINE explicit PerspectiveMatrix(float32 width, float32 height, float32 fov, float32 nearZ, float32 farZ)
+	constexpr FORCE_INLINE explicit PerspectiveMatrix(float32 width, float32 height, float32 fov, float32 nearZ, float32 farZ)
 		: PerspectiveMatrix{width / height, 1.f / PlatformMath::tan(fov / 2.f), nearZ, farZ}
 	{
 		//

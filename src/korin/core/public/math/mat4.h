@@ -99,12 +99,12 @@ struct Mat4
 	 * @return pointer to row
 	 * @{
 	 */
-	FORCE_INLINE const T * operator[](uint32 idx) const
+	constexpr FORCE_INLINE const T * operator[](uint32 idx) const
 	{
 		return mat[idx];
 	}
 
-	FORCE_INLINE T * operator[](uint32 idx)
+	constexpr FORCE_INLINE T * operator[](uint32 idx)
 	{
 		return mat[idx];
 	}
@@ -139,10 +139,12 @@ struct Mat4
 	 * @param other comparison operand
 	 * @return bit vector
 	 */
-	uint16 cmpeq(const Mat4 & other) const
+	constexpr uint16 cmpeq(const Mat4 & other) const
 	{
 		uint16 out = 0; for (uint32 i = 0; i < 16; ++i)
+		{
 			out = (out << 1u) | (uint16)(vec[i] == other.vec[i]);
+		}
 		
 		return out;
 	}
@@ -156,12 +158,12 @@ struct Mat4
 	 * 	equals
 	 * @{
 	 */
-	FORCE_INLINE bool operator==(const Mat4 & other) const
+	constexpr FORCE_INLINE bool operator==(const Mat4 & other) const
 	{
 		return cmp(other) == (uint16)0xffffu;
 	}
 
-	FORCE_INLINE bool operator!=(const Mat4 & other) const
+	constexpr FORCE_INLINE bool operator!=(const Mat4 & other) const
 	{
 		return !operator==(other);
 	}
@@ -171,7 +173,7 @@ struct Mat4
 	 * @brief Tranposes matrix in place and returns
 	 * ref to self.
 	 */
-	FORCE_INLINE Mat4 & transpose()
+	constexpr FORCE_INLINE Mat4 & transpose()
 	{
 		swap(vec[1], vec[4]);
 		swap(vec[2], vec[8]);
@@ -187,7 +189,7 @@ struct Mat4
 	 * @brief Returns a copy of the matrix
 	 * transposed.
 	 */
-	FORCE_INLINE Mat4 getTransposed() const
+	constexpr FORCE_INLINE Mat4 getTransposed() const
 	{
 		return Mat4{*this}.transpose();
 	}
@@ -252,10 +254,16 @@ public:
 	/**
 	 * @brief Invert matrix in place.
 	 */
-	FORCE_INLINE Mat4 & invert()
+	constexpr FORCE_INLINE Mat4 & invert()
 	{
+		Mat4 inverse = getInverse();
+
 		// Get inverse and copy values
-		PlatformMemory::memcpy(vec, getInverse().vec, sizeof(vec));
+		for (uint8 i = 0; i < 16; ++i)
+		{
+			vec[i] = inverse.vec[i];
+		}
+
 		return *this;
 	}
 
@@ -329,7 +337,7 @@ public:
 	 * @param v column vector
 	 * @return ref to self
 	 */
-	Mat4 & operator*=(const Vec4<T> & v)
+	constexpr Mat4 & operator*=(const Vec4<T> & v)
 	{
 		for (uint8 j = 0; j < 16; ++j)
 		{
@@ -350,7 +358,7 @@ public:
 	 * @param m matrix operand
 	 * @return new matrix
 	 */
-	Mat4 operator*(const Vec4<T> & v) const
+	constexpr Mat4 operator*(const Vec4<T> & v) const
 	{
 		return (Mat4{*this} *= v);
 	}
@@ -363,7 +371,7 @@ public:
 	 * @param m matrix operand
 	 * @return new matrix
 	 */
-	friend Mat4 operator*(const Vec4<T> & v, const Mat4 & m)
+	friend constexpr Mat4 operator*(const Vec4<T> & v, const Mat4 & m)
 	{
 		Mat4 n{m};
 		
@@ -382,7 +390,7 @@ public:
 	 * @param other other matrix
 	 * @return ref to self
 	 */
-	Mat4 & operator*=(const Mat4 & other)
+	constexpr Mat4 & operator*=(const Mat4 & other)
 	{
 		for (uint8 idx = 0; idx < 16; ++idx)
 		{
@@ -399,32 +407,20 @@ public:
 	 * @param other other matrix
 	 * @return new multiplied matrix
 	 */
-	FORCE_INLINE Mat4 operator*(const Mat4 & other)
+	constexpr FORCE_INLINE Mat4 operator*(const Mat4 & other)
 	{
 		return (Mat4{*this} *= other);
-	}
-
-	/**
-	 * @brief Alias for element-wise matrix
-	 * multiplication.
-	 * 
-	 * @param other other matrix
-	 * @return ref to self
-	 */
-	FORCE_INLINE Mat4 & mul(const Mat4 & other)
-	{
-		return (*this *= other);
 	}
 
 private:
 	/**
 	 * @brief Multiply this matrix by a
-	 * transpoed matrix.
+	 * transposed matrix.
 	 * 
 	 * @param other transposed matrix
 	 * @return ref to self 
 	 */
-	Mat4 & multiplyTransposed(const Mat4 & other)
+	constexpr Mat4 & multiplyTransposed(const Mat4 & other)
 	{
 		for (uint8 i = 0; i < 4; ++i)
 		{
@@ -462,12 +458,12 @@ public:
 	 * @return ref to self
 	 * @{
 	 */
-	FORCE_INLINE Mat4 & operator&=(const Mat4 & other)
+	constexpr FORCE_INLINE Mat4 & operator&=(const Mat4 & other)
 	{
 		return multiplyTransposed(other.getTransposed());
 	}
 
-	FORCE_INLINE Mat4 & operator&=(Mat4 && other)
+	constexpr FORCE_INLINE Mat4 & operator&=(Mat4 && other)
 	{
 		// Avoid making a copy for trasnposed matrix
 		return multiplyTransposed(other.transpose());
@@ -482,27 +478,16 @@ public:
 	 * @return resulting matrix
 	 * @{
 	 */
-	FORCE_INLINE Mat4 operator&(const Mat4 & other) const
+	constexpr FORCE_INLINE Mat4 operator&(const Mat4 & other) const
 	{
 		return (Mat4{*this} &= other);
 	}
 
-	FORCE_INLINE Mat4 operator&(Mat4 && other) const
+	constexpr FORCE_INLINE Mat4 operator&(Mat4 && other) const
 	{
 		return (Mat4{*this} &= move(other));
 	}
 	/// @}
-
-	/**
-	 * @brief Alias for matrix-matrix multiplication.
-	 * 
-	 * @param other other matrix
-	 * @return ref to self
-	 */
-	Mat4 & dot(const Mat4 & other)
-	{
-		return (*this &= other);
-	}
 
 	/**
 	 * @brief Multiply a vector by this
@@ -515,7 +500,7 @@ public:
 	 * @return multiplied vector
 	 * @{
 	 */
-	Vec4<T> operator&(const Vec4<T> & v) const
+	constexpr Vec4<T> operator&(const Vec4<T> & v) const
 	{
 		Vec4<T> u = 0.f;
 
@@ -530,7 +515,7 @@ public:
 		return u;
 	}
 
-	FORCE_INLINE Vec3<T> operator&(const Vec3<T> & v) const
+	constexpr FORCE_INLINE Vec3<T> operator&(const Vec3<T> & v) const
 	{
 		return (*this) & Vec4<T>{v, 1.f};
 	}
@@ -546,12 +531,12 @@ public:
 	 * @param v vector to transform
 	 * @return transformed vector
 	 */
-	FORCE_INLINE Vec4<T> transformVector(const Vec4<T> & v) const
+	constexpr FORCE_INLINE Vec4<T> transformVector(const Vec4<T> & v) const
 	{
 		return (*this) & v;
 	}
 
-	FORCE_INLINE Vec3<T> transformVector(const Vec3<T> & v) const
+	constexpr FORCE_INLINE Vec3<T> transformVector(const Vec3<T> & v) const
 	{
 		return (*this) & v;
 	}

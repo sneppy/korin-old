@@ -14,7 +14,7 @@
 struct Quat : public Vec4<float32>
 {
 	/**
-	 * Default constructor
+	 * @brief Default constructor.
 	 */
 	constexpr FORCE_INLINE Quat()
 		: Vec4{0.f, 0.f, 0.f, 1.f}
@@ -22,42 +22,50 @@ struct Quat : public Vec4<float32>
 		//
 	}
 
-private:
-	/// Privately inherit Vec4 constructors
-	using Vec4::Vec4;
+	/**
+	 * @brief Initialize quaternion components
+	 * 
+	 * @param inX,inY,inZ,inW quaternion components
+	 */
+	constexpr FORCE_INLINE Quat(float32 inX, float32 inY, float32 inZ, float32 inW)
+		: Vec4{inX, inY, inZ, inW}
+	{
+		//
+	}
 
-public:
 	/**
 	 * Angle and axis constructor
 	 * 
-	 * @param [in] inAngle rotation angle
-	 * @param [in] axis normalized rotation axis
+	 * @param inAngle rotation angle
+	 * @param axis normalized rotation axis
 	 */
 	constexpr FORCE_INLINE Quat(float32 inAngle, Vec3<float32> inAxis)
 	{
 		inAngle *= 0.5f;
 		inAxis *= PlatformMath::sin(inAngle);
 
-		this->x = inAxis.x;
-		this->y = inAxis.y;
-		this->z = inAxis.z;
-		this->w = PlatformMath::cos(inAngle);
+		x = inAxis.x;
+		y = inAxis.y;
+		z = inAxis.z;
+		w = PlatformMath::cos(inAngle);
 	}
 
 	/**
-	 * Constructs from physics rotation vector
+	 * @brief Constructs from physics rotation vector.
+	 * 
+	 * @param inRotvec physics angular rotation vector
 	 */
-	FORCE_INLINE Quat(Vec3<float32> v)
+	constexpr FORCE_INLINE Quat(Vec3<float32> inRotvec)
 	{
-		float32 alpha = v.getSize();
+		float32 alpha = inRotvec.getSize();
 		float32 a = alpha * 0.5f;
 
-		v *= PlatformMath::sin(a) / alpha;
+		inRotvec *= (PlatformMath::sin(a) / alpha);
 
-		this->x = v.x;
-		this->y = v.y;
-		this->z = v.z;
-		this->w = PlatformMath::cos(a);
+		x = inRotvec.x;
+		y = inRotvec.y;
+		z = inRotvec.z;
+		w = PlatformMath::cos(a);
 	}
 
 	/**
@@ -66,21 +74,29 @@ public:
 	 * @param [out] outAngle rotation angle
 	 * @param [out] outAxis rotation axis
 	 */
-	FORCE_INLINE void getAngleAndAxis(float32 & outAngle, Vec3<float32> & outAxis) const
+	constexpr FORCE_INLINE void getAngleAndAxis(float32 & outAngle, Vec3<float32> & outAxis) const
 	{
-		float32 a = PlatformMath::acos(this->w);
-		float32 s = 1.f / PlatformMath::sin(a);
+		const float32 a = PlatformMath::acos(w);
+		const float32 s = 1.f / PlatformMath::sin(a);
 
 		outAngle = a * 2.f;
-		outAxis = Vec3<float32>(this->x * s, this->y * s, this->w * s);
+		outAxis = {x * s, y * s, w * s};
 	}
 
 	/**
 	 * Returns angle of rotation
 	 */
-	FORCE_INLINE float32 getAngle() const
+	constexpr FORCE_INLINE float32 getAngle() const
 	{
-		return PlatformMath::acos(this->w) * 2.f;
+		return PlatformMath::acos(w) * 2.f;
+	}
+
+	/**
+	 * @brief Invert quaternion rotation.
+	 */
+	constexpr FORCE_INLINE Quat & invert()
+	{
+		return (w = -w, *this);
 	}
 
 	/**
@@ -88,16 +104,16 @@ public:
 	 * 
 	 * @return new quaternion
 	 */
-	FORCE_INLINE Quat operator-() const
+	constexpr FORCE_INLINE Quat operator-() const
 	{
-		return Quat{this->x, this->y, this->z, -this->w};
+		return Quat{*this}.invert();
 	}
 
 	/**
 	 * @brief Normalizes quaternion, a rotation
 	 * quaternion must be a unit quaternion. 
 	 */
-	FORCE_INLINE Quat & normalize()
+	constexpr FORCE_INLINE Quat & normalize()
 	{
 		return static_cast<Quat&>(static_cast<Vec4&>(*this).normalize());
 	}
@@ -106,7 +122,7 @@ public:
 	 * @brief Returns a normalized copy of
 	 * the quaternion. 
 	 */
-	FORCE_INLINE Quat getNormal() const
+	constexpr FORCE_INLINE Quat getNormal() const
 	{
 		return Quat{*this}.normalize();
 	}
@@ -117,21 +133,21 @@ public:
 	 * the combined rotation of q1 and q2
 	 * in inverse order (apply q2 then q1)
 	 * 
-	 * @param [in] other quaternion operand (q2)
+	 * @param other quaternion operand (q2)
 	 * @return new quaternion
 	 */
-	FORCE_INLINE Quat operator*(const Quat & other) const
+	constexpr FORCE_INLINE Quat operator&(const Quat & other) const
 	{
 		// @ref https://en.wikipedia.org/wiki/Quaternion#Hamilton_product
 		// Wikipedia uses (angle, axis<i, j, k>) notation
 		// Here we use (axis<x, y, z>, angle) notation,
-		// thus everything is inverted
+		// everything is inverted
 		
 		return Quat{
-			this->w * other.x + this->x * other.w - this->y * other.z + this->z * other.y,
-			this->w * other.y + this->x * other.z + this->y * other.w - this->z * other.x,
-			this->w * other.z - this->x * other.y + this->y * other.x + this->z * other.w,
-			this->w * other.w - this->x * other.x - this->y * other.y - this->z * other.z
+			w * other.x + x * other.w - y * other.z + z * other.y,
+			w * other.y + x * other.z + y * other.w - z * other.x,
+			w * other.z - x * other.y + y * other.x + z * other.w,
+			w * other.w - x * other.x - y * other.y - z * other.z
 		};
 	}
 
@@ -141,12 +157,12 @@ public:
 	 * 
 	 * @param [in] v vector operand
 	 */
-	FORCE_INLINE Vec3<float32> operator*(const Vec3<float32> & v) const
+	constexpr FORCE_INLINE Vec3<float32> operator&(const Vec3<float32> & v) const
 	{
 		/** @see http://people.csail.mit.edu/bkph/articles/Quaternions.pdf */
-		const Vec3<float32> q{this->x, this->y, this->z};
-		const Vec3<float32> t = 2.f * (q ^ v);
-		return v + (this->w * t) + (q ^ t);
+		const Vec3<float32> q{x, y, z};
+		const Vec3<float32> t = (q ^ v) * 2.f;
+		return v + (w * t) + (q ^ t);
 	}
 
 	/**
@@ -154,11 +170,11 @@ public:
 	 * 
 	 * @return tuple with x, y, z axes
 	 */
-	FORCE_INLINE StaticArray<Vec3<float32>, 3> getAxes() const
+	constexpr FORCE_INLINE StaticArray<Vec3<float32>, 3> getAxes() const
 	{
-		const vec3 x = *this * Vec3<float32>::right;
-		const vec3 y = *this * Vec3<float32>::up;
-		const vec3 z = x ^ y;
+		const Vec3<float32> x = *this * Vec3<float32>::right;
+		const Vec3<float32> y = *this * Vec3<float32>::up;
+		const Vec3<float32> z = x ^ y;
 
 		return {x, y, z};
 	}
@@ -167,34 +183,34 @@ public:
 	 * Returns direction vector
 	 * @{
 	 */
-	FORCE_INLINE Vec3<float32> getRight() const
+	constexpr FORCE_INLINE Vec3<float32> getRight() const
 	{
-		return *this * Vec3<float32>::right;
+		return *this & Vec3<float32>::right;
 	}
 
-	FORCE_INLINE Vec3<float32> getLeft() const
+	constexpr FORCE_INLINE Vec3<float32> getLeft() const
 	{
-		return *this * Vec3<float32>::left;
+		return *this & Vec3<float32>::left;
 	}
 
-	FORCE_INLINE Vec3<float32> getUp() const
+	constexpr FORCE_INLINE Vec3<float32> getUp() const
 	{
-		return *this * Vec3<float32>::up;
+		return *this & Vec3<float32>::up;
 	}
 
-	FORCE_INLINE Vec3<float32> getDown() const
+	constexpr FORCE_INLINE Vec3<float32> getDown() const
 	{
-		return *this * Vec3<float32>::down;
+		return *this & Vec3<float32>::down;
 	}
 
-	FORCE_INLINE Vec3<float32> getForward() const
+	constexpr FORCE_INLINE Vec3<float32> getForward() const
 	{
-		return *this * Vec3<float32>::forward;
+		return *this & Vec3<float32>::forward;
 	}
 
-	FORCE_INLINE Vec3<float32> getBackward() const
+	constexpr FORCE_INLINE Vec3<float32> getBackward() const
 	{
-		return *this * Vec3<float32>::backward;
+		return *this & Vec3<float32>::backward;
 	}
 	/// @}
 };

@@ -71,12 +71,12 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * Returns i-th component
 	 * @{
 	 */
-	FORCE_INLINE const T & operator[](int32 i) const
+	constexpr FORCE_INLINE const T & operator[](int32 i) const
 	{
 		return array[i];
 	}
 
-	FORCE_INLINE T & operator[](int32 i)
+	constexpr FORCE_INLINE T & operator[](int32 i)
 	{
 		return array[i];
 	}
@@ -85,7 +85,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	/**
 	 * Returns vector squared size
 	 */
-	FORCE_INLINE T getSquaredSize() const
+	constexpr FORCE_INLINE T getSquaredSize() const
 	{
 		return x * x + y * y;
 	}
@@ -103,7 +103,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * 
 	 * @return self
 	 */
-	FORCE_INLINE Vec2 & normalize()
+	constexpr FORCE_INLINE Vec2 & normalize()
 	{
 		return *this /= getSize();
 	}
@@ -113,7 +113,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * 
 	 * @return new vector
 	 */
-	FORCE_INLINE Vec2 getNormal() const
+	constexpr FORCE_INLINE Vec2 getNormal() const
 	{
 		return *this / getSize();
 	}
@@ -121,7 +121,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	/**
 	 * Returns inverted vector
 	 */
-	FORCE_INLINE Vec2 operator-() const
+	constexpr FORCE_INLINE Vec2 operator-() const
 	{
 		return Vec2{-x, -y};
 	}
@@ -133,25 +133,25 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @return self
 	 * @{
 	 */
-	FORCE_INLINE Vec2 & operator+=(Vec2 other)
+	constexpr FORCE_INLINE Vec2 & operator+=(Vec2 other)
 	{
 		x += other.x, y += other.y;
 		return *this;
 	}
 
-	FORCE_INLINE Vec2 & operator-=(Vec2 other)
+	constexpr FORCE_INLINE Vec2 & operator-=(Vec2 other)
 	{
 		x -= other.x, y -= other.y;
 		return *this;
 	}
 
-	FORCE_INLINE Vec2 & operator*=(Vec2 other)
+	constexpr FORCE_INLINE Vec2 & operator*=(Vec2 other)
 	{
 		x *= other.x, y *= other.y;
 		return *this;
 	}
 
-	FORCE_INLINE Vec2 & operator/=(Vec2 other)
+	constexpr FORCE_INLINE Vec2 & operator/=(Vec2 other)
 	{
 		x /= other.x, y /= other.y;
 		return *this;
@@ -165,25 +165,25 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @return self
 	 * @{
 	 */
-	FORCE_INLINE Vec2 & operator+=(T s)
+	constexpr FORCE_INLINE Vec2 & operator+=(T s)
 	{
 		x += s, y += s;
 		return *this;
 	}
 
-	FORCE_INLINE Vec2 & operator-=(T s)
+	constexpr FORCE_INLINE Vec2 & operator-=(T s)
 	{
 		x -= s, y -= s;
 		return *this;
 	}
 
-	FORCE_INLINE Vec2 & operator*=(T s)
+	constexpr FORCE_INLINE Vec2 & operator*=(T s)
 	{
 		x *= s, y *= s;
 		return *this;
 	}
 
-	FORCE_INLINE Vec2 & operator/=(T s)
+	constexpr FORCE_INLINE Vec2 & operator/=(T s)
 	{
 		x /= s, y /= s;
 		return *this;
@@ -197,22 +197,22 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @return new vector
 	 * @{
 	 */
-	FORCE_INLINE Vec2 operator+(Vec2 other) const
+	constexpr FORCE_INLINE Vec2 operator+(Vec2 other) const
 	{
 		return Vec2{*this} += other;
 	}
 
-	FORCE_INLINE Vec2 operator-(Vec2 other) const
+	constexpr FORCE_INLINE Vec2 operator-(Vec2 other) const
 	{
 		return Vec2{*this} -= other;
 	}
 
-	FORCE_INLINE Vec2 operator*(Vec2 other) const
+	constexpr FORCE_INLINE Vec2 operator*(Vec2 other) const
 	{
 		return Vec2{*this} *= other;
 	}
 
-	FORCE_INLINE Vec2 operator/(Vec2 other) const
+	constexpr FORCE_INLINE Vec2 operator/(Vec2 other) const
 	{
 		return Vec2{*this} /= other;
 	}
@@ -225,42 +225,42 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @return new vector
 	 * @{
 	 */
-	FORCE_INLINE Vec2 operator+(T s) const
+	constexpr FORCE_INLINE Vec2 operator+(T s) const
 	{
 		return Vec2{*this} += s;
 	}
 
-	FORCE_INLINE Vec2 operator-(T s) const
+	constexpr FORCE_INLINE Vec2 operator-(T s) const
 	{
 		return Vec2{*this} -= s;
 	}
 
-	FORCE_INLINE Vec2 operator*(T s) const
+	constexpr FORCE_INLINE Vec2 operator*(T s) const
 	{
 		return Vec2{*this} *= s;
 	}
 
-	FORCE_INLINE Vec2 operator/(T s) const
+	constexpr FORCE_INLINE Vec2 operator/(T s) const
 	{
 		return Vec2{*this} /= s;
 	}
 
-	friend FORCE_INLINE Vec2 operator+(T s, Vec2 v)
+	friend constexpr FORCE_INLINE Vec2 operator+(T s, Vec2 v)
 	{
 		return v += s;
 	}
 
-	friend FORCE_INLINE Vec2 operator-(T s, Vec2 v)
+	friend constexpr FORCE_INLINE Vec2 operator-(T s, Vec2 v)
 	{
 		return v -= s;
 	}
 
-	friend FORCE_INLINE Vec2 operator*(T s, Vec2 v)
+	friend constexpr FORCE_INLINE Vec2 operator*(T s, Vec2 v)
 	{
 		return v *= s;
 	}
 
-	friend FORCE_INLINE Vec2 operator/(T s, Vec2 v)
+	friend constexpr FORCE_INLINE Vec2 operator/(T s, Vec2 v)
 	{
 		return v /= s;
 	}
@@ -272,7 +272,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @param [in] other vector operand
 	 * @return dot product
 	 */
-	FORCE_INLINE T operator&(Vec2 other) const
+	constexpr FORCE_INLINE T operator&(Vec2 other) const
 	{
 		return x * other.x + y * other.y;
 	}
@@ -283,7 +283,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @param [in] other vector operand
 	 * @return scaled z-axis vector
 	 */
-	FORCE_INLINE Vec3<T> operator^(Vec2 other) const
+	constexpr FORCE_INLINE Vec3<T> operator^(Vec2 other) const
 	{
 		return Vec3<T>{0.f, 0.f, x * other.y - y * other.x};
 	}
@@ -295,32 +295,32 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @return comparison mask
 	 * @{
 	 */
-	FORCE_INLINE int32 cmpeq(Vec2 other) const
+	constexpr FORCE_INLINE int32 cmpeq(Vec2 other) const
 	{
 		return (x == other.x) | (y == other.y) << 1;
 	}
 
-	FORCE_INLINE int32 cmpne(Vec2 other) const
+	constexpr FORCE_INLINE int32 cmpne(Vec2 other) const
 	{
 		return (x != other.x) | (y != other.y) << 1;
 	}
 
-	FORCE_INLINE int32 cmplt(Vec2 other) const
+	constexpr FORCE_INLINE int32 cmplt(Vec2 other) const
 	{
 		return (x < other.x) | (y < other.y) << 1;
 	}
 
-	FORCE_INLINE int32 cmpgt(Vec2 other) const
+	constexpr FORCE_INLINE int32 cmpgt(Vec2 other) const
 	{
 		return (x > other.x) | (y > other.y) << 1;
 	}
 
-	FORCE_INLINE int32 cmple(Vec2 other) const
+	constexpr FORCE_INLINE int32 cmple(Vec2 other) const
 	{
 		return (x <= other.x) | (y <= other.y) << 1;
 	}
 
-	FORCE_INLINE int32 cmpge(Vec2 other) const
+	constexpr FORCE_INLINE int32 cmpge(Vec2 other) const
 	{
 		return (x >= other.x) | (y >= other.y) << 1;
 	}
@@ -333,32 +333,32 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @return true if true for all components
 	 * @{
 	 */
-	FORCE_INLINE bool operator==(Vec2 other) const
+	constexpr FORCE_INLINE bool operator==(Vec2 other) const
 	{
 		return cmpeq(other) == 0x3;
 	}
 
-	FORCE_INLINE bool operator!=(Vec2 other) const
+	constexpr FORCE_INLINE bool operator!=(Vec2 other) const
 	{
 		return cmpne(other) == 0x3;
 	}
 
-	FORCE_INLINE bool operator<(Vec2 other) const
+	constexpr FORCE_INLINE bool operator<(Vec2 other) const
 	{
 		return cmplt(other) == 0x3;
 	}
 
-	FORCE_INLINE bool operator>(Vec2 other) const
+	constexpr FORCE_INLINE bool operator>(Vec2 other) const
 	{
 		return cmpgt(other) == 0x3;
 	}
 
-	FORCE_INLINE bool operator<=(Vec2 other) const
+	constexpr FORCE_INLINE bool operator<=(Vec2 other) const
 	{
 		return cmple(other) == 0x3;
 	}
 
-	FORCE_INLINE bool operator>=(Vec2 other) const
+	constexpr FORCE_INLINE bool operator>=(Vec2 other) const
 	{
 		return cmpge(other) == 0x3;
 	}
@@ -370,7 +370,7 @@ struct alignas(2 * sizeof(T)) Vec2
 	 * @return new vector
 	 */
 	template<typename U>
-	FORCE_INLINE operator Vec2<U>() const
+	constexpr FORCE_INLINE operator Vec2<U>() const
 	{
 		return Vec2<U>{static_cast<U>(x), static_cast<U>(y)};
 	}
@@ -381,7 +381,7 @@ struct alignas(2 * sizeof(T)) Vec2
 //////////////////////////////////////////////////
 
 template<>
-FORCE_INLINE float32 Vec2<float32>::getSize() const
+constexpr FORCE_INLINE float32 Vec2<float32>::getSize() const
 {
 	return PlatformMath::sqrt(getSquaredSize());
 }

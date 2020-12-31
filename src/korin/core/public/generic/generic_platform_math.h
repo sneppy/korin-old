@@ -7,33 +7,33 @@
 #include "templates/utility.h"
 
 /**
- * Platform independent math utilities
+ * @brief Platform independent math utilities.
  */
 struct GenericPlatformMath
 {
-	/// Trigonometric functions
+	/// @brief Trigonometric functions.
 	/// @{
-	static FORCE_INLINE float32 sin(float32 v)	{ return ::sinf(v); }
-	static FORCE_INLINE float32 cos(float32 v)	{ return ::cosf(v); }
-	static FORCE_INLINE float32 tan(float32 v)	{ return ::tanf(v); }
+	static constexpr FORCE_INLINE float32 sin(float32 v)	{ return ::sinf(v); }
+	static constexpr FORCE_INLINE float32 cos(float32 v)	{ return ::cosf(v); }
+	static constexpr FORCE_INLINE float32 tan(float32 v)	{ return ::tanf(v); }
 
-	static FORCE_INLINE float32 asin(float32 v)	{ return ::asinf(v); }
-	static FORCE_INLINE float32 acos(float32 v)	{ return ::acosf(v); }
-	static FORCE_INLINE float32 atan(float32 v)	{ return ::atanf(v); }
+	static constexpr FORCE_INLINE float32 asin(float32 v)	{ return ::asinf(v); }
+	static constexpr FORCE_INLINE float32 acos(float32 v)	{ return ::acosf(v); }
+	static constexpr FORCE_INLINE float32 atan(float32 v)	{ return ::atanf(v); }
 	/// @}
 
-	/// Pow functions
+	/// @brief Pow functions.
 	/// @{
-	static FORCE_INLINE float32 pow(float32 b, float32 e) { return ::powf(b, e); }
+	static constexpr FORCE_INLINE float32 pow(float32 b, float32 e) { return ::powf(b, e); }
 
-	static FORCE_INLINE float32 sqrt(float32 v) { return ::sqrtf(v); }
+	static constexpr FORCE_INLINE float32 sqrt(float32 v) { return ::sqrtf(v); }
 	/// @}
 
 	/**
-	 * Integer power
+	 * @brief Integer power.
 	 */
 	template<typename T, typename U>
-	static FORCE_INLINE typename EnableIf<IsIntegral<U>::value, T>::Type pow(const T & x, const U & y)
+	static constexpr FORCE_INLINE typename EnableIf<IsIntegral<U>::value, T>::Type pow(const T & x, const U & y)
 	{
 		if (y == 0) return T{1};
 		T z = pow(x, y >> 1);

@@ -11,15 +11,16 @@
 template<typename T>
 struct Vec3
 {
+	// TODO: Make these constexpr
 	/// Static values @{
-	static const Vec3 zero;
-	static const Vec3 unit;
-	static const Vec3 right;
-	static const Vec3 left;
-	static const Vec3 up;
-	static const Vec3 down;
-	static const Vec3 forward;
-	static const Vec3 backward;
+	static constexpr Vec3 zero = 0;
+	static constexpr Vec3 unit = 1;
+	static constexpr Vec3 right = {1, 0, 0};
+	static constexpr Vec3 left = {-1, 0, 0};
+	static constexpr Vec3 up = {0, 1, 0};
+	static constexpr Vec3 down = {0, -1, 0};
+	static constexpr Vec3 forward = {0, 0, 1};
+	static constexpr Vec3 backward = {0, 0, -1};
 	/// @}
 
 	union
@@ -77,7 +78,7 @@ struct Vec3
 	 * @param [in] other Vec2 vector
 	 * @param [in] inZ z component
 	 */
-	FORCE_INLINE Vec3(const Vec2<T> & other, T inZ)
+	constexpr FORCE_INLINE Vec3(const Vec2<T> & other, T inZ)
 		: array{other.x, other.y, inZ}
 	{
 		//
@@ -87,12 +88,12 @@ struct Vec3
 	 * Returns i-th component
 	 * @{
 	 */
-	FORCE_INLINE const T & operator[](int32 i) const
+	constexpr FORCE_INLINE const T & operator[](int32 i) const
 	{
 		return array[i];
 	}
 
-	FORCE_INLINE T & operator[](int32 i)
+	constexpr FORCE_INLINE T & operator[](int32 i)
 	{
 		return array[i];
 	}
@@ -101,7 +102,7 @@ struct Vec3
 	/**
 	 * Returns vector squared length
 	 */
-	FORCE_INLINE T getSquaredSize() const
+	constexpr FORCE_INLINE T getSquaredSize() const
 	{
 		return x * x + y * y + z * z;
 	}
@@ -109,7 +110,7 @@ struct Vec3
 	/**
 	 * Returns vector size
 	 */
-	FORCE_INLINE T getSize() const
+	constexpr FORCE_INLINE T getSize() const
 	{
 		CHECKF(false, "getSize() implemented only for floating-point types")
 	}
@@ -119,7 +120,7 @@ struct Vec3
 	 * 
 	 * @return self
 	 */
-	FORCE_INLINE Vec3 & normalize()
+	constexpr FORCE_INLINE Vec3 & normalize()
 	{
 		return *this /= getSize();
 	}
@@ -129,7 +130,7 @@ struct Vec3
 	 * 
 	 * @return new vector
 	 */
-	FORCE_INLINE Vec3 getNormal() const
+	constexpr FORCE_INLINE Vec3 getNormal() const
 	{
 		return *this / getSize();
 	}
@@ -139,7 +140,7 @@ struct Vec3
 	 * 
 	 * @return new vector
 	 */
-	FORCE_INLINE Vec3 operator-() const
+	constexpr FORCE_INLINE Vec3 operator-() const
 	{
 		return Vec3{-x, -y, -z};
 	}
@@ -151,25 +152,25 @@ struct Vec3
 	 * @return self
 	 * @{
 	 */
-	FORCE_INLINE Vec3 & operator+=(const Vec3 & other)
+	constexpr FORCE_INLINE Vec3 & operator+=(const Vec3 & other)
 	{
 		x += other.x, y += other.y, z += other.z;
 		return *this;
 	}
 
-	FORCE_INLINE Vec3 & operator-=(const Vec3 & other)
+	constexpr FORCE_INLINE Vec3 & operator-=(const Vec3 & other)
 	{
 		x -= other.x, y -= other.y, z -= other.z;
 		return *this;
 	}
 
-	FORCE_INLINE Vec3 & operator*=(const Vec3 & other)
+	constexpr FORCE_INLINE Vec3 & operator*=(const Vec3 & other)
 	{
 		x *= other.x, y *= other.y, z *= other.z;
 		return *this;
 	}
 
-	FORCE_INLINE Vec3 & operator/=(const Vec3 & other)
+	constexpr FORCE_INLINE Vec3 & operator/=(const Vec3 & other)
 	{
 		x /= other.x, y /= other.y, z /= other.z;
 		return *this;
@@ -183,25 +184,25 @@ struct Vec3
 	 * @return self
 	 * @{
 	 */
-	FORCE_INLINE Vec3 & operator+=(T s)
+	constexpr FORCE_INLINE Vec3 & operator+=(T s)
 	{
 		x += s, y += s, z += s;
 		return *this;
 	}
 
-	FORCE_INLINE Vec3 & operator-=(T s)
+	constexpr FORCE_INLINE Vec3 & operator-=(T s)
 	{
 		x -= s, y -= s, z -= s;
 		return *this;
 	}
 
-	FORCE_INLINE Vec3 & operator*=(T s)
+	constexpr FORCE_INLINE Vec3 & operator*=(T s)
 	{
 		x *= s, y *= s, z *= s;
 		return *this;
 	}
 
-	FORCE_INLINE Vec3 & operator/=(T s)
+	constexpr FORCE_INLINE Vec3 & operator/=(T s)
 	{
 		x /= s, y /= s, z /= s;
 		return *this;
@@ -215,22 +216,22 @@ struct Vec3
 	 * @return new vector
 	 * @{
 	 */
-	FORCE_INLINE Vec3 operator+(const Vec3 & other) const
+	constexpr FORCE_INLINE Vec3 operator+(const Vec3 & other) const
 	{
 		return Vec3{*this} += other;
 	}
 
-	FORCE_INLINE Vec3 operator-(const Vec3 & other) const
+	constexpr FORCE_INLINE Vec3 operator-(const Vec3 & other) const
 	{
 		return Vec3{*this} -= other;
 	}
 
-	FORCE_INLINE Vec3 operator*(const Vec3 & other) const
+	constexpr FORCE_INLINE Vec3 operator*(const Vec3 & other) const
 	{
 		return Vec3{*this} *= other;
 	}
 
-	FORCE_INLINE Vec3 operator/(const Vec3 & other) const
+	constexpr FORCE_INLINE Vec3 operator/(const Vec3 & other) const
 	{
 		return Vec3{*this} /= other;
 	}
@@ -243,42 +244,42 @@ struct Vec3
 	 * @return new vector
 	 * @{
 	 */
-	FORCE_INLINE Vec3 operator+(T s) const
+	constexpr FORCE_INLINE Vec3 operator+(T s) const
 	{
 		return Vec3{*this} += s;
 	}
 
-	FORCE_INLINE Vec3 operator-(T s) const
+	constexpr FORCE_INLINE Vec3 operator-(T s) const
 	{
 		return Vec3{*this} -= s;
 	}
 
-	FORCE_INLINE Vec3 operator*(T s) const
+	constexpr FORCE_INLINE Vec3 operator*(T s) const
 	{
 		return Vec3{*this} *= s;
 	}
 
-	FORCE_INLINE Vec3 operator/(T s) const
+	constexpr FORCE_INLINE Vec3 operator/(T s) const
 	{
 		return Vec3{*this} /= s;
 	}
 
-	friend FORCE_INLINE Vec3 operator+(T s, const Vec3 & v)
+	friend constexpr FORCE_INLINE Vec3 operator+(T s, const Vec3 & v)
 	{
 		return v + s;
 	}
 
-	friend FORCE_INLINE Vec3 operator-(T s, const Vec3 & v)
+	friend constexpr FORCE_INLINE Vec3 operator-(T s, const Vec3 & v)
 	{
 		return v - s;
 	}
 
-	friend FORCE_INLINE Vec3 operator*(T s, const Vec3 & v)
+	friend constexpr FORCE_INLINE Vec3 operator*(T s, const Vec3 & v)
 	{
 		return v * s;
 	}
 
-	friend FORCE_INLINE Vec3 operator/(T s, const Vec3 & v)
+	friend constexpr FORCE_INLINE Vec3 operator/(T s, const Vec3 & v)
 	{
 		return v / s;
 	}
@@ -290,7 +291,7 @@ struct Vec3
 	 * @param [in] other vector operand
 	 * @return dot product
 	 */
-	FORCE_INLINE T operator&(const Vec3 & other) const
+	constexpr FORCE_INLINE T operator&(const Vec3 & other) const
 	{
 		return x * other.x + y * other.y + z * other.z;
 	}
@@ -301,7 +302,7 @@ struct Vec3
 	 * @param [in] other vector operand
 	 * @return y component of cross product
 	 */
-	FORCE_INLINE Vec3 operator^(const Vec3 & other) const
+	constexpr FORCE_INLINE Vec3 operator^(const Vec3 & other) const
 	{
 		return Vec3{
 			y * other.z - z * other.y,
@@ -371,7 +372,7 @@ struct Vec3
 
 	constexpr FORCE_INLINE bool operator!=(const Vec3 & other) const
 	{
-		return cmpne(other) == 0x7;
+		return !(*this == other);
 	}
 
 	constexpr FORCE_INLINE bool operator<(const Vec3 & other) const
@@ -412,13 +413,13 @@ struct Vec3
 //////////////////////////////////////////////////
 
 template<>
-FORCE_INLINE float32 Vec3<float32>::getSize() const
+constexpr FORCE_INLINE float32 Vec3<float32>::getSize() const
 {
 	return PlatformMath::sqrt(getSquaredSize());
 }
 
 template<>
-FORCE_INLINE bool Vec3<float32>::isNearlyZero() const
+constexpr FORCE_INLINE bool Vec3<float32>::isNearlyZero() const
 {
 	return getSquaredSize() < 4 * FLT_EPSILON;
 }
