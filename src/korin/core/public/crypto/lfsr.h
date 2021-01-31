@@ -3,6 +3,7 @@
 #include "core_types.h"
 #include "hal/platform_math.h"
 #include "./crypto_types.h"
+#include "./crypto_utils.h"
 
 namespace Crypto
 {

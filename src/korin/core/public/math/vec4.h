@@ -112,6 +112,14 @@ struct Vec4
 	}
 
 	/**
+	 * @brief Returns true if size is nearly zero. 
+	 */
+	constexpr FORCE_INLINE bool isNearlyZero() const
+	{
+		return getSquaredSize() < FLT_MIN;
+	}
+
+	/**
 	 * Normalize vector in-place
 	 * 
 	 * @return self

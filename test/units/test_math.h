@@ -309,14 +309,14 @@ TEST(math, quat)
 	ASSERT_TRUE((b - (r * a)).isNearlyZero());
 	ASSERT_TRUE((c - (s * a)).isNearlyZero());
 
-	t = r * s;
+	t = r & s;
 	c = {-1.f, 0.f, -1.f};
 	c.normalize();
 
 	ASSERT_TRUE(((t * a) - (r * (s * a))).isNearlyZero());
 	ASSERT_TRUE((c - (t * a)).isNearlyZero());
 
-	t = (-s) * t;
+	t = (-s) & t;
 
 	ASSERT_TRUE((Vec3<float32>::up - t.getUp()).isNearlyZero());
 	ASSERT_TRUE((Vec3<float32>::forward - t.getLeft()).isNearlyZero());

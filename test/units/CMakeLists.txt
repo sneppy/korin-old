@@ -7,6 +7,7 @@ set(UNITS
 	"math"
 	"containers"
 	"regex"
+	"crypto"
 )
 
 list(LENGTH UNIT NUM_UNITS)
