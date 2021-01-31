@@ -159,6 +159,16 @@ struct GenericPlatformMath
 
 		return (n | (alignment - 1)) + 1;
 	}
+
+	/**
+	 * @brief Compute parity of unsigned number,
+	 * i.e. the number of 1s modulo 2.
+	 * 
+	 * @param n unsigned number
+	 * @return parity of number
+	 */
+	template<typename T>
+	static constexpr FORCE_INLINE T parity(const T & n);
 };
 
 template<>
